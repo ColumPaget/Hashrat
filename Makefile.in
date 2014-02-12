@@ -1,0 +1,23 @@
+
+CC = @CC@
+VERSION = @VERSION@
+CFLAGS = @CFLAGS@
+LIBS = @LIBS@
+INSTALL=@INSTALL@
+prefix=@prefix@
+bindir=$(prefix)@bindir@
+FLAGS=$(CFLAGS) @DEFS@
+OBJ=
+EXE=hasher
+
+all: $(OBJ) main.c
+	@cd libUseful-2.0; $(MAKE)
+	gcc -g $(LIBS) -o$(EXE) $(OBJ) main.c libUseful-2.0/libUseful-2.0.a
+
+
+clean:
+	rm -f *.o */*.o */*.a */*.so $(EXE)
+
+install:
+	@mkdir -p $(DESTDIR)$(prefix)/sbin
+	cp -f $(EXE) $(DESTDIR)$(prefix)/sbin

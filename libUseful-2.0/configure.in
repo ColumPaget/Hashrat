@@ -1,0 +1,88 @@
+#AC_INIT(libUseful,colums.projects@googlemail.com,,http://sites.google.com/site/columscode) 
+AC_INIT(defines.h)
+
+VERSION="0.0.1" 
+AC_SUBST(VERSION) 
+
+AC_PROG_CC 
+AC_LANG_C 
+AC_PROG_MAKE_SET 
+AC_HEADER_STDC 
+
+cf_have_libssl=no
+cf_have_libcrypto=no
+cf_have_libz=no
+cf_have_oss=no
+cf_have_libesd=no
+
+
+AC_ARG_ENABLE(largefiles, [  --enable-largefiles       enable largefile support], cf_use_largefiles=$enableval )
+
+if test "$cf_use_largefiles" = "yes"
+then
+AC_DEFINE([_LARGEFILE64_SOURCE])
+AC_DEFINE([_FILE_OFFSET_BITS],[64])
+fi
+
+AC_ARG_ENABLE(ssl, [  --enable-ssl       use Secure Sockets Layer], cf_use_ssl=$enableval )
+
+if test "$cf_use_ssl" = "yes"
+then
+AC_CHECK_LIB(ssl,SSL_library_init,,)
+cf_have_libssl=$ac_cv_lib_ssl_SSL_library_init
+
+AC_CHECK_LIB(crypto,EVP_CIPHER_CTX_init,,)
+cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_init
+
+AC_CHECK_FUNCS(OpenSSL_add_all_algorithms EVP_bf_cbc EVP_rc2_cbc EVP_rc4 EVP_rc5_32_12_16_cbc EVP_des_cbc EVP_desx_cbc EVP_cast5_cbc EVP_idea_cbc EVP_aes_128_cbc EVP_aes_256_cbc)
+
+ AC_MSG_CHECKING([that OpenSSL Library is at least version 0.9.7])   
+ AC_EGREP_CPP(yes,      [
+		#include <openssl/evp.h>
+		#if SSLEAY_VERSION_NUMBER >= 0x00907000L
+		yes        
+		#endif
+	],      
+	[
+		AC_MSG_RESULT([yes])
+    AC_DEFINE(USE_OPENSSL_ADD_ALL_ALGORITHMS, 1, [Use OpenSSL_add_all_algorithms]) 
+	],[AC_MSG_RESULT([no])])
+fi
+
+if test "cf_have_libssl" = "yes"
+then
+cf_use_zlib=yes
+fi
+
+
+AC_ARG_ENABLE(z, [  --enable-zlib       use ZLib Compression], cf_use_zlib=$enableval )
+
+if test "$cf_use_zlib" = "yes"
+then
+AC_CHECK_LIB(z,deflate,,)
+cf_have_libz=$ac_cv_lib_z_deflate
+fi
+
+
+AC_ARG_ENABLE(oss, [  --enable-oss       use Open Sound System], cf_use_oss=$enableval )
+
+dnl Always use oss if available
+cf_use_oss=yes
+
+if test "$cf_use_oss" = "yes"
+then
+AC_CHECK_HEADER(sys/soundcard.h,AC_DEFINE([HAVE_OSS]),cf_have_oss=no,)
+fi
+
+
+#AC_ARG_ENABLE(esd, [  --enable-esd       use ESound], cf_use_esd=$enableval )
+
+if test "$cf_use_esd" = "yes"
+then
+AC_CHECK_LIB(esd,esd_open_sound,,)
+cf_have_libesd=$ac_cv_lib_esd_esd_open_sound
+fi
+
+
+dnl read Makefile.in and write Makefile 
+AC_OUTPUT(Makefile)

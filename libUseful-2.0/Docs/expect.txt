@@ -1,0 +1,43 @@
+Functions that implement an 'expect'-style interface, in which strings are read from a stream, and when certain strings are seen certain responses are sent.
+
+
+int STREAMExpectAndReply(STREAM *S, char *Expect, char *Reply);
+
+Simple interface, wait to see the string 'Expect' on a stream, and send 'Reply' when you see it.
+
+Example:
+
+int STREAMExpectAndReply(S, "assword:", "MyP@55W0rd");
+
+The STREAM can be anything that can be represented by a file descriptor. Thus it can be a pipe, socket, file, pseudo-tty. Streams can be made from file descriptors using 'STREAMFromFD(int fd)' or 'STREAMFromDualFD(int fd)' 
+
+void DialogAdd(ListNode *Dialogs, char *Expect, char *Reply, int Flags);
+
+Add 'Dialogs' to a list. A dialog is an expected string, and a reply that's sent to it. The list is of the type described in 'lists.txt'.
+
+Example:
+
+DialogAdd(Diags,"assword:","MyP@55W0rd",0);
+
+
+
+
+
+
+#define FLAG_FINAL_DIALOG 1
+#define FLAG_DIALOG_FAIL 2
+
+typedef struct
+{
+int Flags;
+int Match;
+char *Expect;
+char *Reply;
+} TDialog;
+
+
+
+int STREAMExpectSilence(STREAM *S, int wait);
+int STREAMDialog(STREAM *S, ListNode *Dialogs);
+
+

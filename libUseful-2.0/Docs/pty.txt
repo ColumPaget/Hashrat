@@ -1,0 +1,48 @@
+Functions for tty lines and pty pseudo-terminals.
+
+
+int OpenTTY(char *devname, int LineSpeed, int Flags);
+
+Opens a serial device. 'devname' is the path (like /dev/ttyS0) and LineSpeed is the baudrate. Flags can be:
+
+TTYFLAG_ECHO 			Turn on character echo.
+TTYFLAG_CRLF			Lines end with /r/n 
+TTYFLAG_LFCR			Lines end with /n/r 
+TTYFLAG_NONBLOCK  Nonblocking reads
+TTYFLAG_CANON			Canonical mode tty 
+TTYFLAG_HARDWARE_FLOW Hardwre flow control
+TTYFLAG_SOFTWARE_FLOW Software flow control
+TTYFLAG_CRLF_KEEP Don't set CRLF or LFCR, just stick with current setting 
+
+
+void HangUpLine(int tty);
+
+Hang up a tty previously opened with 'OpenTTY'
+
+
+InitTTY(int tty, int LineSpeed, int Flags);
+
+Like 'OpenTTY', but tty device has already been opened with 'open'
+
+
+
+void ResetTTY(int tty);
+
+Reset tty
+
+
+
+int GrabPseudoTTY(int *pty, int *tty);
+
+Open a pseudo tty. The master end is returned as pty, the slave is returned as tty.
+
+
+
+int PseudoTTYSpawnFunction(int *pty, BASIC_FUNC Func, void *Data);
+
+
+Fork a process running a function that will talk back to the main program via Pseudo tty (pty). The funtion's end of the pipe will appear as its stdin and stdout.
+
+int PseudoTTYSpawn(int *pty, const char *Command);
+
+Launch a Command that will think it's talking to a serial line on stdin/stdout, but is actually talking via Pseudo tty (pty) to the main program.

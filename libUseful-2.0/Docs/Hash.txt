@@ -1,0 +1,56 @@
+Hashing functions. Call 'HashInit'
+
+THash *HashInit(char *Type);
+
+passing in a type (either "sha1", "md5" or "crc32". This will return a THash structure (or NULL on error). The Hash structure contains too functions, 'Update' and 'Finish', of the forms:
+
+Hash->Update(THash *Hash, char *Data, int DataLen);
+Hash->Finish(THash *Hash, int Encoding, char **RetStr);
+
+The 'Encoding' argument to 'Finish' can be either of the #defined values ENCODE_HEX or ENCODE_BASE64.
+
+Example:
+
+THash *Hash;
+STREAM *S;
+char *Tempstr=NULL;
+int result;
+
+Hash=InitHash("md5");
+S=STREAMOpenFile("testfile",O_RDONLY);
+
+if (S)
+{
+	Tempstr=SetStrLen(Tempstr,4096);
+	result=STREAMReadBytes(S,Tempstr,4096);
+	while (Tempstr)
+	{
+		Hash->Update(Hash,Tempstr,result);
+		result=STREAMReadBytes(S,Tempstr,4096);
+	}
+
+	Hash->Finish(Hash,ENCODE_HEX,&Tempstr);
+  printf("MD5 Digest of file is: %s\n",Tempstr);
+STREAMClose(S);
+}
+else printf("Couldn't open file\n");
+
+
+
+char *HashBytes(char *Return, char *Type, char *text, int len, int Encoding);
+
+A simpler interface to the hashing functions, for when you just want to hash a string of bytes.
+
+Example
+
+char *Str="I wonder what the sha1 hash of this sentence is?";
+char *Digest=NULL;
+
+Digest=HashBytes(Digest,"sha1",Str,StrLen,ENCODE_HEX);
+
+printf("hash is: %s\n",Digest);
+
+
+char *EncodeBase64(char *Return, char *Text, int len);
+char *DecodeBase64(char *Return, int *len, char *Text);
+
