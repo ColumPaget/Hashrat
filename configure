@@ -643,6 +643,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_largefiles
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1255,6 +1256,12 @@ fi
 if test -n "$ac_init_help"; then
 
   cat <<\_ACEOF
+
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-largefiles       enable largefile support
 
 Some influential environment variables:
   CC          C compiler command
@@ -3149,6 +3156,22 @@ $as_echo "$ac_cv_header_stdc" >&6; }
 if test $ac_cv_header_stdc = yes; then
 
 $as_echo "#define STDC_HEADERS 1" >>confdefs.h
+
+fi
+
+
+
+# Check whether --enable-largefiles was given.
+if test "${enable_largefiles+set}" = set; then :
+  enableval=$enable_largefiles; cf_use_largefiles=$enableval
+fi
+
+
+if test "$cf_use_largefiles" = "yes"
+then
+$as_echo "#define _LARGEFILE64_SOURCE 1" >>confdefs.h
+
+$as_echo "#define _FILE_OFFSET_BITS 64" >>confdefs.h
 
 fi
 

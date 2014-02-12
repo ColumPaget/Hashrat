@@ -13,6 +13,16 @@ AC_PROG_MAKE_SET
 AC_PROG_INSTALL 
 AC_HEADER_STDC 
 
+
+AC_ARG_ENABLE(largefiles, [  --enable-largefiles       enable largefile support], cf_use_largefiles=$enableval )
+
+if test "$cf_use_largefiles" = "yes"
+then
+AC_DEFINE([_LARGEFILE64_SOURCE])
+AC_DEFINE([_FILE_OFFSET_BITS],[64])
+fi
+
+
 dnl read Makefile.in and write Makefile 
 AC_OUTPUT(Makefile)
 

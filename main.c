@@ -415,7 +415,7 @@ struct stat Stat;
 			for (i=0; i < Glob.gl_pathc; i++)
 			{
 				if (StatFile(Glob.gl_pathv[i],&Stat)==0) ProcessItem(S, Hash, Glob.gl_pathv[i], &Stat, HashType);
-				else fprintf(stderr,"\rERROR: Failed to open '%s'\n",Glob.gl_pathv[i]);
+				else fprintf(stderr,"\rERROR: Failed to open '%s'.\n",Glob.gl_pathv[i]);
 			}
 			globfree(&Glob);
 
