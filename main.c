@@ -26,7 +26,9 @@
 #define FLAG_HMAC 32768
 #define FLAG_BASE64 65536
 #define FLAG_ARG_NAMEVALUE 131072
+#define FLAG_FULLCHECK 262144
 
+#define FP_HASSTAT 1
 
 #define BLOCKSIZE 4096
 
@@ -37,10 +39,11 @@ ListNode *Vars;
 
 typedef struct
 {
+int Flags;
 char *Path;
 char *Hash;
 char *HashType;
-int Size;
+struct stat FStat;
 } TFingerprint;
 
 ListNode *IncludeExclude=NULL;
@@ -72,12 +75,14 @@ char *Tempstr=NULL, *Name=NULL, *Value=NULL, *ptr;
 
 FP->Path=CopyStr(FP->Path,"");
 FP->Hash=CopyStr(FP->Hash,"");
-FP->Size=0;
+FP->Flags=0;
+memset(&FP->FStat,0,sizeof(struct stat));
+
 Tempstr=STREAMReadLine(Tempstr,S);
 if (! Tempstr) return(FALSE);
 
 StripTrailingWhitespace(Tempstr);
-if (strncmp(Tempstr,"path=",5) ==0)
+if (strncmp(Tempstr,"hash=",5) ==0)
 {
 //Native format
 
@@ -87,7 +92,36 @@ if (strncmp(Tempstr,"path=",5) ==0)
 		if (StrLen(Name))
 		{
 		if (strcmp(Name,"path")==0) FP->Path=CopyStr(FP->Path,Value);
-		if (strcmp(Name,"size")==0) FP->Size=atoi(Value);
+		if (strcmp(Name,"size")==0) 
+		{
+			FP->Flags |= FP_HASSTAT;
+			FP->FStat.st_size=strtol(Value,NULL,10);
+		}
+		if (strcmp(Name,"mode")==0) 
+		{
+			FP->Flags |= FP_HASSTAT;
+			FP->FStat.st_mode=strtol(Value,NULL,8);
+		}
+		if (strcmp(Name,"mtime")==0)
+		{
+			FP->Flags |= FP_HASSTAT;
+			FP->FStat.st_mtime=strtol(Value,NULL,10);
+		}
+		if (strcmp(Name,"inode")==0) 
+		{
+			FP->Flags |= FP_HASSTAT;
+			FP->FStat.st_ino=strtol(Value,NULL,10);
+		}
+		if (strcmp(Name,"uid")==0) 
+		{
+			FP->Flags |= FP_HASSTAT;
+			FP->FStat.st_uid=strtol(Value,NULL,10);
+		}
+		if (strcmp(Name,"gid")==0) 
+		{
+			FP->Flags |= FP_HASSTAT;
+			FP->FStat.st_gid=strtol(Value,NULL,10);
+		}
 		if (strcmp(Name,"hash")==0)
 		{
 			 FP->Hash=CopyStr(FP->Hash,GetToken(Value,":",&FP->HashType,0));
@@ -152,8 +186,23 @@ if (Flags & FLAG_XATTR) setxattr(Path, HashType, Hash, StrLen(Hash), 0);
 if (Flags & FLAG_TRAD_OUTPUT) Tempstr=MCopyStr(Tempstr,Hash, "  ", Path,NULL);
 else
 {
-	Tempstr=FormatStr(Tempstr,"path='%s' size='%ld' mode='%d' mtime='%d' ",Path,Stat->st_size,Stat->st_mode,Stat->st_mtime);
-	Tempstr=MCatStr(Tempstr,"hash='",HashType,":",Hash,"' ",NULL);
+	/*
+		struct stat {
+    dev_t     st_dev;     // ID of device containing file 
+    ino_t     st_ino;     // inode number 
+    mode_t    st_mode;    // protection 
+    nlink_t   st_nlink;   // number of hard links 
+    uid_t     st_uid;     // user ID of owner
+    gid_t     st_gid;     // group ID of owner
+    dev_t     st_rdev;    // device ID (if special file) 
+    off_t     st_size;    // total size, in bytes 
+    blksize_t st_blksize; // blocksize for file system I/O 
+    blkcnt_t  st_blocks;  // number of 512B blocks allocated 
+    time_t    st_atime;   // time of last access 
+    time_t    st_mtime;   // time of last modification 
+    time_t    st_ctime;   // time of last status change 
+	*/
+	Tempstr=FormatStr(Tempstr,"hash='%s:%s' mode='%o' uid='%lu' gid='%lu' size='%lu' mtime='%lu' inode='%lu' path='%s'",HashType,Hash,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
 }
 
 Tempstr=CatStr(Tempstr,"\n");
@@ -284,11 +333,12 @@ int result=TRUE, val;
 	if (S_ISDIR(FStat->st_mode))
 	{
 		if (Flags & FLAG_RECURSE) return(FLAG_RECURSE);
+		else *HashStr=ProcessData(*HashStr, Hash, Path, (char *) &FStat->st_ino, sizeof(ino_t), HashType, FStat);
 	}
-	else if ((! (Flags & FLAG_DEVMODE)) && S_ISCHR(FStat->st_mode))  *HashStr=ProcessData(*HashStr, Hash, Path, (char *) FStat->st_rdev, sizeof(dev_t), HashType, FStat);
-	else if ((! (Flags & FLAG_DEVMODE)) && S_ISBLK(FStat->st_mode))  *HashStr=ProcessData(*HashStr, Hash, Path, (char *) FStat->st_rdev, sizeof(dev_t), HashType, FStat);
-	else if ((! (Flags & FLAG_DEVMODE)) && S_ISFIFO(FStat->st_mode)) *HashStr=ProcessData(*HashStr, Hash, Path, (char *) FStat->st_rdev, sizeof(dev_t), HashType, FStat);
-	else if ((! (Flags & FLAG_DEVMODE)) && S_ISSOCK(FStat->st_mode)) *HashStr=ProcessData(*HashStr, Hash, Path, (char *) FStat->st_rdev, sizeof(dev_t), HashType, FStat);
+	else if ((! (Flags & FLAG_DEVMODE)) && S_ISCHR(FStat->st_mode))  *HashStr=ProcessData(*HashStr, Hash, Path, (char *) &FStat->st_rdev, sizeof(dev_t), HashType, FStat);
+	else if ((! (Flags & FLAG_DEVMODE)) && S_ISBLK(FStat->st_mode))  *HashStr=ProcessData(*HashStr, Hash, Path, (char *) &FStat->st_rdev, sizeof(dev_t), HashType, FStat);
+	else if ((! (Flags & FLAG_DEVMODE)) && S_ISFIFO(FStat->st_mode)) *HashStr=ProcessData(*HashStr, Hash, Path, (char *) &FStat->st_ino, sizeof(ino_t), HashType, FStat);
+	else if ((! (Flags & FLAG_DEVMODE)) && S_ISSOCK(FStat->st_mode)) *HashStr=ProcessData(*HashStr, Hash, Path, (char *) &FStat->st_ino, sizeof(ino_t), HashType, FStat);
 	else if ((! (Flags & FLAG_DEVMODE)) && S_ISLNK(FStat->st_mode)) 
 	{
 		Tempstr=SetStrLen(Tempstr,PATH_MAX);
@@ -406,6 +456,22 @@ char *ptr;
 */
 
 
+int HandleCheckFail(char *Path, char *ErrorMessage, int *Errors)
+{
+char *Tempstr=NULL;
+
+	printf("%s: FAILED. %s.\n",Path,ErrorMessage);
+	(*Errors)++;
+	if (StrLen(DiffHook))
+	{
+		Tempstr=MCopyStr(Tempstr,DiffHook," ",Path,NULL);
+		system(Tempstr);
+	}
+
+	DestroyString(Tempstr);
+	return(FALSE);
+}
+
 
 int CheckHashes(ListNode *Vars, char *DefaultHashType)
 {
@@ -431,37 +497,39 @@ while (FingerprintRead(ListStream, FP))
 		Checked++;
 		HashStr=CopyStr(HashStr,"");
 		if (! StrLen(FP->HashType)) FP->HashType=CopyStr(FP->HashType, DefaultHashType);
-		if (StatFile(FP->Path,&Stat)==0)
+
+		if (access(FP->Path,F_OK)!=0) fprintf(stderr,"\rERROR: No such file '%s'\n",FP->Path);
+		else if (FP->Flags & FP_HASSTAT)
 		{
-			if ((FP->Size > 0) && (Stat.st_size != FP->Size))
+			if (StatFile(FP->Path,&Stat)==0)
 			{
-				printf("%s FAILED. Filesize mismatch.\n",FP->Path);
-				Errors++;
-				result=FALSE;
-				if (StrLen(DiffHook))
+				if ((FP->FStat.st_size > 0) && (Stat.st_size != FP->FStat.st_size)) result=HandleCheckFail(FP->Path, "Filesize changed", &Errors);
+				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_ino != FP->FStat.st_ino)) result=HandleCheckFail(FP->Path, "Inode changed", &Errors);
+				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_uid != FP->FStat.st_uid)) result=HandleCheckFail(FP->Path, "Owner changed", &Errors);
+				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_gid != FP->FStat.st_gid)) result=HandleCheckFail(FP->Path, "Group changed", &Errors);
+				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_mode != FP->FStat.st_mode)) 
 				{
-					Tempstr=MCopyStr(Tempstr,DiffHook," ",FP->Path,NULL);
-					system(Tempstr);
+					result=HandleCheckFail(FP->Path, "Mode changed", &Errors);
+				}
+				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_mtime != FP->FStat.st_mtime)) 
+				{
+					result=HandleCheckFail(FP->Path, "MTime changed", &Errors);
+				}
+				else
+				{
+					HashFile(&HashStr,FP->HashType,FP->Path,Encoding);
+					if (strcasecmp(FP->Hash,HashStr)!=0) result=HandleCheckFail(FP->Path, "Hash mismatch", &Errors);
+					else if (! (Flags & FLAG_OUTPUT_FAILS)) printf("%s: OKAY\n",FP->Path);
 				}
 			}
-			else
-			{
-			HashFile(&HashStr,FP->HashType,FP->Path,Encoding);
-			if (strcasecmp(FP->Hash,HashStr)!=0)
-			{
-				Errors++;
-				printf("%s FAILED\n",FP->Path);
-				result=FALSE;
-				if (StrLen(DiffHook))
-				{
-					Tempstr=MCopyStr(Tempstr,DiffHook," ",FP->Path,NULL);
-					system(Tempstr);
-				}
-			}
-			else if (! (Flags & FLAG_OUTPUT_FAILS)) printf("%s OKAY\n",FP->Path);
-			}
+			else fprintf(stderr,"\rERROR: Failed to open '%s'\n",FP->Path);
 		}
-		else fprintf(stderr,"\rERROR: Failed to open '%s'\n",FP->Path);
+		else
+		{
+				HashFile(&HashStr,FP->HashType,FP->Path,Encoding);
+				if (strcasecmp(FP->Hash,HashStr)!=0) result=HandleCheckFail(FP->Path, "Hash mismatch", &Errors);
+				else if (! (Flags & FLAG_OUTPUT_FAILS)) printf("%s: OKAY\n",FP->Path);
+		}
 }
 
 fprintf(stderr,"\nChecked %d files. %d Failures\n",Checked,Errors);
@@ -638,6 +706,7 @@ else if (strcmp(argv[i],"-devmode")==0) HandleArg(argc, argv, i, FLAG_DIRMODE | 
 else if (strcmp(argv[i],"-fs")==0) HandleArg(argc, argv, i, FLAG_ONE_FS, "", "");
 else if (strcmp(argv[i],"-dir-info")==0) HandleArg(argc, argv, i, FLAG_DIR_INFO, "", "");
 else if (strcmp(argv[i],"-xattr")==0) HandleArg(argc, argv, i, FLAG_XATTR, "", "");
+else if (strcmp(argv[i],"-stat")==0) HandleArg(argc, argv, i, FLAG_FULLCHECK, "", "");
 }
 
 if (Flags & FLAG_BASE64) Encoding = ENCODE_BASE64;
@@ -668,8 +737,8 @@ printf("Hasher: version %s\n",VERSION);
 printf("Author: Colum Paget\n");
 printf("Email: colums.projects@gmail.com\n");
 printf("Blog:  http://idratherhack.blogspot.com\n\n");
-printf("Usage:\n    hasher [options] [path to hash]...\n");
-printf("\n    hasher -c [options] [input file of hashes]...\n\n");
+printf("Usage:\n    hashrat [options] [path to hash]...\n");
+printf("\n    hashrat -c [options] [input file of hashes]...\n\n");
 
 printf("Options:\n");
 printf("  %-15s %s\n","--help", "Print this help");

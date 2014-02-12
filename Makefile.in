@@ -8,7 +8,7 @@ prefix=@prefix@
 bindir=$(prefix)@bindir@
 FLAGS=$(CFLAGS) @DEFS@
 OBJ=
-EXE=hasher
+EXE=hashrat
 
 all: $(OBJ) main.c
 	@cd libUseful-2.0; $(MAKE)
