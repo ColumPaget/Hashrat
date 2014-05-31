@@ -6,14 +6,34 @@ LIBS = @LIBS@
 INSTALL=@INSTALL@
 prefix=@prefix@
 bindir=$(prefix)@bindir@
-FLAGS=$(CFLAGS) @DEFS@
-OBJ=
+FLAGS=$(CFLAGS) @DEFS@ -g
+OBJ=common.o command-line-args.o ssh.o fingerprint.o files.o xattr.o cgi.o
 EXE=hashrat
 
 all: $(OBJ) main.c
 	@cd libUseful-2.0; $(MAKE)
-	gcc -g $(LIBS) -o$(EXE) $(OBJ) main.c libUseful-2.0/libUseful-2.0.a
+	gcc $(FLAGS) -o$(EXE) $(OBJ) main.c libUseful-2.0/libUseful-2.0.a $(LIBS) 
 
+common.o: common.h common.c
+	gcc $(FLAGS) -c common.c
+
+fingerprint.o: fingerprint.h fingerprint.c
+	gcc $(FLAGS) -c fingerprint.c
+
+files.o: files.h files.c
+	gcc $(FLAGS) -c files.c
+
+xattr.o: xattr.h xattr.c
+	gcc $(FLAGS) -c xattr.c
+
+ssh.o: ssh.h ssh.c
+	gcc $(FLAGS) -c ssh.c
+
+cgi.o: cgi.h cgi.c
+	gcc $(FLAGS) -c cgi.c
+
+command-line-args.o: command-line-args.h command-line-args.c
+	gcc $(FLAGS) -c command-line-args.c
 
 clean:
 	rm -f *.o */*.o */*.a */*.so $(EXE)

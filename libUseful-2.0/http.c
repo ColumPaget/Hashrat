@@ -3,8 +3,10 @@
 #include "Hash.h"
 #include "ParseURL.h"
 
+const char *HTTP_AUTH_BY_TOKEN="AuthTokenType";
 ListNode *Cookies=NULL;
 int g_Flags=0;
+
 
 void HTTPAuthSet(HTTPAuthStruct *Auth, char *Logon, char *Password, int Type)
 {
@@ -85,13 +87,16 @@ THTTPChunk *Chunk;
 char *ptr, *vptr;
 
 Chunk=(THTTPChunk *) Mod->Data;
+if (InLen > 0)
+{
 len=Chunk->BuffLen+InLen;
 Chunk->Buffer=SetStrLen(Chunk->Buffer,len);
 memcpy(Chunk->Buffer+Chunk->BuffLen,InBuff,InLen);
 Chunk->BuffLen=len;
 Chunk->Buffer[len]='\0';
+}
+else len=Chunk->BuffLen;
 ptr=Chunk->Buffer;
-
 
 if (Chunk->ChunkSize==0)
 {
@@ -99,7 +104,7 @@ if (Chunk->ChunkSize==0)
 
 	//if there's nothing in our buffer, and nothing being added, then
 	//we've already finished!
-	if (InLen==0) return(EOF);
+  if ((Chunk->BuffLen==0) && (InLen==0)) return(EOF);
 
 	vptr=ptr;
 	//skip past any leading '\r' or '\n'
@@ -107,6 +112,7 @@ if (Chunk->ChunkSize==0)
 	if (*vptr=='\n') vptr++;
 
 	ptr=strchr(vptr,'\n');
+
 
 	//sometimes people seem to miss off the final '\n', so if we get told there's no more data
 	//we should use a '\r' if we've got one
@@ -117,12 +123,15 @@ if (Chunk->ChunkSize==0)
 		ptr++;
 	}
 	else return(0);
+	
 	Chunk->ChunkSize=strtol(vptr,NULL,16);
-
 	Chunk->BuffLen=Chunk->Buffer+len-ptr;
 
 
 	if (Chunk->BuffLen > 0)	memmove(Chunk->Buffer,ptr,Chunk->BuffLen);
+	//in case it went negative in the above calcuation
+	else Chunk->BuffLen=0;
+
 
 	//if we got chunksize of 0 then we're done, return EOF
 	if (Chunk->ChunkSize==0) return(EOF);
@@ -638,7 +647,14 @@ if (! AuthInfo) return(RetStr);
 
 SendStr=CatStr(RetStr,"");
 
-  if (AuthInfo->Flags & HTTP_AUTH_DIGEST)
+	//Authentication by an opaque authentication token that is handled 
+	//elsewhere, and is set as the 'Password'
+  if (AuthInfo->Flags & HTTP_AUTH_TOKEN)
+	{
+    SendStr=MCatStr(SendStr,AuthHeader,": ",AuthInfo->Password,"\r\n",NULL);
+    AuthInfo->Flags |= HTTP_SENT_AUTH;
+	}
+  else if (AuthInfo->Flags & HTTP_AUTH_DIGEST)
   {
     AuthCounter++;
     Tempstr=FormatStr(Tempstr,"%s:%s:%s",AuthInfo->Logon,AuthInfo->AuthRealm,AuthInfo->Password);
@@ -665,8 +681,7 @@ SendStr=CatStr(RetStr,"");
     Tempstr=CatStr(Tempstr,AuthInfo->Password);
     Digest=SetStrLen(Digest,StrLen(Tempstr) *2);
     to64frombits(Digest,Tempstr,strlen(Tempstr));
-    Tempstr=FormatStr(Tempstr,"%s: %s %s\r\n",AuthHeader,"Basic",Digest);
-    SendStr=CatStr(SendStr,Tempstr);
+    SendStr=MCatStr(SendStr,AuthHeader,": Basic ",Digest,"\r\n",NULL);
     AuthInfo->Flags |= HTTP_SENT_AUTH;
   }
 
@@ -1129,17 +1144,27 @@ return(Info->S);
 
 
 
-STREAM *HTTPMethod(char *Method, char *URL, char *Logon, char *Password)
+STREAM *HTTPMethod(char *Method, char *URL, char *Logon, char *Password, char *ContentType, char *ContentData, int ContentLength)
 {
 HTTPInfoStruct *Info;
 STREAM *S;
 
 
 Info=HTTPInfoFromURL(Method, URL);
+
+if (StrLen(ContentType))
+{
+Info->PostContentType=CopyStr(Info->PostContentType,ContentType);
+Info->PostData=CopyStr(Info->PostData,ContentData);
+Info->PostContentLength=ContentLength;
+}
+
 if (StrLen(Logon) || StrLen(Password))
 {
 	if (! Info->Authorization) Info->Authorization=(HTTPAuthStruct *) calloc(1,sizeof(HTTPAuthStruct));
-	HTTPAuthSet(Info->Authorization,Logon, Password, HTTP_AUTH_BASIC);
+
+	if (Logon==HTTP_AUTH_BY_TOKEN) HTTPAuthSet(Info->Authorization,"", Password, HTTP_AUTH_TOKEN);
+	else HTTPAuthSet(Info->Authorization,Logon, Password, HTTP_AUTH_BASIC);
 }
 S=HTTPTransact(Info);
 
@@ -1150,29 +1175,13 @@ return(S);
 
 STREAM *HTTPGet(char *URL, char *Logon, char *Password)
 {
-return(HTTPMethod("GET", URL, Logon, Password));
+return(HTTPMethod("GET", URL, Logon, Password,"","",0));
 }
 
 
 STREAM *HTTPPost(char *URL, char *Logon, char *Password, char *ContentType, char *Content)
 {
-HTTPInfoStruct *Info;
-STREAM *S;
-
-
-Info=HTTPInfoFromURL("POST", URL);
-Info->PostContentType=CopyStr(Info->PostContentType,ContentType);
-Info->PostData=CopyStr(Info->PostData,Content);
-Info->PostContentLength=StrLen(Content);
-if (StrLen(Logon) || StrLen(Password))
-{
-  if (! Info->Authorization) Info->Authorization=(HTTPAuthStruct *) calloc(1,sizeof(HTTPAuthStruct));
-  HTTPAuthSet(Info->Authorization,Logon, Password, HTTP_AUTH_BASIC);
-}
-S=HTTPTransact(Info);
-
-HTTPInfoDestroy(Info);
-return(S);
+return(HTTPMethod("POST", URL, Logon, Password, ContentType, Content, StrLen(Content)));
 }
 
 

@@ -25,7 +25,34 @@ return(Tempstr);
 }
 
 
-pid_t ForkWithContext()
+void SwitchProgram(char *CommandLine, char *User, char *Group, char *Dir)
+{
+char **argv, *ptr;
+char *Token=NULL;
+int i;
+
+argv=(char **) calloc(101,sizeof(char *));
+ptr=CommandLine;
+for (i=0; i < 100; i++)
+{
+	ptr=GetToken(ptr,"\\S",&Token,GETTOKEN_QUOTES);
+	if (! ptr) break;
+	argv[i]=CopyStr(argv[i],Token);
+}
+
+if (StrLen(Dir)) chdir(Dir);
+if (StrLen(User)) SwitchUser(User);
+if (StrLen(Group)) SwitchGroup(Group);
+
+
+/* we are the child so we continue */
+execv(argv[0],argv);
+//no point trying to free stuff here, we will no longer
+//be the main program
+}
+
+
+pid_t ForkWithContext(char *User, char *Dir, char *Group)
 {
 char *ptr;
 pid_t pid;
@@ -34,12 +61,9 @@ LogFileFlushAll(TRUE);
 pid=fork();
 if (pid==0)
 {
-	ptr=LibUsefulGetValue("FORK:Dir");
-	if (StrLen(ptr)) chdir(ptr);
-	ptr=LibUsefulGetValue("FORK:User");
-	if (StrLen(ptr)) SwitchUser(ptr);
-	ptr=LibUsefulGetValue("FORK:Group");
-	if (StrLen(ptr)) SwitchGroup(ptr);
+	if (StrLen(Dir)) chdir(Dir);
+	if (StrLen(User)) SwitchUser(User);
+	if (StrLen(Group)) SwitchGroup(Group);
 }
 return(pid);
 }
@@ -59,7 +83,7 @@ if (result != 0) exit(0);
 /*we can only get to here if result= 0 i.e. we are the child process*/
 setsid();
 
-result=ForkWithContext();
+result=ForkWithContext(NULL, NULL, NULL);
 if (result !=0) exit(0);
 umask(0);
 
@@ -91,7 +115,7 @@ int ForkWithIO(int StdIn, int StdOut, int StdErr)
 pid_t pid;
 int fd;
 
-pid=ForkWithContext();
+pid=ForkWithContext(NULL, NULL, NULL);
 if (pid==0)
 {
 	if (StdIn > -1) 
@@ -153,7 +177,7 @@ int fd, i;
 pid=ForkWithIO(StdIn,StdOut,StdErr);
 if (pid==0)
 {
-SwitchProgram(CommandLine);
+SwitchProgram(CommandLine,NULL,NULL,NULL);
 _exit(pid);
 }
 
@@ -161,9 +185,17 @@ return(pid);
 }
 
 
-int Spawn(char *ProgName)
+int Spawn(char *ProgName, char *User, char *Group, char *Dir)
 {
-return(SpawnWithIO(ProgName, 0,1,2));
+int pid;
+
+pid=ForkWithIO(0,1,2);
+if (pid==0)
+{
+	SwitchProgram(ProgName, User, Group, Dir);
+	_exit(pid);
+}
+return(pid);
 }
 
 
@@ -178,7 +210,7 @@ if (infd) pipe(channel1);
 if (outfd) pipe(channel2);
 if (errfd) pipe(channel3);
 
-pid=ForkWithContext();
+pid=ForkWithContext(NULL,NULL,NULL);
 if (pid==0)
 {
 /* we are the child */
@@ -258,17 +290,23 @@ char *Tempstr=NULL;
 
 if (GrabPseudoTTY(&pty, &tty, TTYFlags))
 {
-pid=ForkWithContext();
+pid=ForkWithContext(NULL,NULL,NULL);
 if (pid==0)
 {
 for (i=0; i < 4; i++) close(i);
 close(pty);
 
 setsid();
-dup(tty);
-dup(tty);
-dup(tty);
 ioctl(tty,TIOCSCTTY,0);
+
+dup(tty);
+dup(tty);
+dup(tty);
+
+///now that we've dupped it, we don't need to keep it open
+//as it will be open on stdin/stdout
+close(tty);
+
 Func((char *) Data);
 _exit(0);
 }

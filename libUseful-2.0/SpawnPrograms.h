@@ -17,12 +17,13 @@ extern "C" {
 #define SHELLSAFE_BLANK 1
 
 char *MakeShellSafeString(char *RetStr, const char *String, int SafeLevel);
+void SwitchProgram(char *CommandLine, char *User, char *Group, char *Dir);
 int ForkWithContext();
 /* This function turns our process into a demon */
 int demonize();
 int ForkWithIO(int StdIn, int StdOut, int StdErr);
 int SpawnWithIO(char *CommandLine, int StdIn, int StdOut, int StdErr);
-int Spawn(char *ProgName);
+int Spawn(char *ProgName, char *User, char *Group, char *Dir);
 /* This creates a child process that we can talk to using a couple of pipes*/
 int PipeSpawnFunction(int *infd,int  *outfd,int  *errfd, BASIC_FUNC Func, void *Data );
 int PipeSpawn(int *infd,int  *outfd,int  *errfd, const char *Command);

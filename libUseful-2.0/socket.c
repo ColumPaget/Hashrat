@@ -1,31 +1,52 @@
-#include "includes.h"
+#include "socket.h"
+#include "ConnectionChain.h"
 
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 
-#ifdef HAVE_LIBSSL
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 
-#endif
 
-#include "ConnectionChain.h"
-
-int IsAddress(char *Str)
+int IsIP4Address(char *Str)
 {
-int len,count;
-len=StrLen(Str);
-if (len <1) return(FALSE);
-for (count=0; count < len; count++)
+char *ptr;
+int dot_count=0;
+int AllowDot=FALSE;
+
+if (! Str) return(FALSE);
+
+for (ptr=Str; *ptr != '\0'; ptr++)
 {
- if ((! isdigit(Str[count])) && (Str[count] !='.')) 
- {
-	return(FALSE);
- }
+	if (*ptr == '.') 
+	{
+		if (! AllowDot) return(FALSE);
+		dot_count++;
+		AllowDot=FALSE;
+	}
+	else 
+	{
+		if (! isdigit(*ptr)) return(FALSE);
+		AllowDot=TRUE;
+	}
+}
+
+if (dot_count != 3) return(FALSE);
+
+return(TRUE);
+}
+
+
+int IsIP6Address(char *Str)
+{
+char *ptr;
+const char *IP6CHARS="0123456789abcdefABCDEF:%";
+
+if (!Str) return(FALSE);
+
+for (ptr=Str; *ptr != '\0'; ptr++)
+{
+ if (*ptr=='%') break;
+ if (! strchr(IP6CHARS,*ptr)) return(FALSE);
 }
 
 return(TRUE);
@@ -64,28 +85,124 @@ const char *GetInterfaceIP(const char *Interface)
 }
 
 
+#ifdef USE_INET6
 int InitServerSock(char *Address, int Port)
 {
 int sock;
-struct sockaddr_in sa;
+struct sockaddr_storage sa;
+struct sockaddr_in *sa4;
+struct sockaddr_in6 *sa6;
 int salen;
 int result;
+char *p_Addr=NULL, *ptr;
+
+
+if (StrLen(Address))  
+{
+	if (IsIP4Address(Address)) 
+	{
+		sa.ss_family=AF_INET;
+		p_Addr=Address;
+	}
+	else if (IsIP6Address(Address)) 
+	{
+		sa.ss_family=AF_INET6;
+		p_Addr=Address;
+	}
+	else 
+	{
+		sa.ss_family=AF_INET;
+		p_Addr=GetInterfaceIP(Address);
+	}
+}
+else sa.ss_family=AF_INET;
+
+if (sa.ss_family==AF_INET)
+{
+	sa4=(struct sockaddr_in *) &sa;
+	if (StrLen(p_Addr)) sa4->sin_addr.s_addr=StrtoIP(p_Addr);
+	else sa4->sin_addr.s_addr=INADDR_ANY;
+	sa4->sin_port=htons(Port);
+	sa4->sin_family=AF_INET;
+	salen=sizeof(struct sockaddr_in);
+}
+else
+{
+	sa6=(struct sockaddr_in6 *) &sa;
+	sa6->sin6_port=htons(Port);
+	sa6->sin6_family=AF_INET6;
+	if (StrLen(p_Addr)) 
+	{
+		ptr=strchr(p_Addr,'%');
+		if (ptr)
+		{
+			sa6->sin6_scope_id=if_nametoindex(ptr+1);
+			*ptr='\0';	
+		}
+		inet_pton(AF_INET6, p_Addr, &(sa6->sin6_addr));
+	}
+	else sa6->sin6_addr=in6addr_any;
+	salen=sizeof(struct sockaddr_in6);
+}
+
+sock=socket(sa.ss_family,SOCK_STREAM,0);
+if (sock <0) return(-1);
+
+//No reason to pass server/listen sockets across an exec
+fcntl(sock, F_SETFD, FD_CLOEXEC);
+
+result=1;
+setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,&result,sizeof(result));
+
+result=bind(sock,(struct sockaddr *) &sa, salen);
+
+if (result==0)
+{
+ result=listen(sock,10);
+}
+
+if (result==0) return(sock);
+else 
+{
+close(sock);
+return(-1);
+}
+}
+
+#else 
+
+int InitServerSock(char *Address, int Port)
+{
+struct sockaddr_in sa;
+int result;
+char *ptr;
+int salen;
+int sock;
+
+sa.sin_port=htons(Port);
+sa.sin_family=AF_INET;
+
+
+if (StrLen(Address) > 0) 
+{
+	if (IsIP6Address(Address)) return(-1);
+
+	if (IsIP4Address(Address)) ptr=Address;
+	else ptr=GetInterfaceIP(Address);
+	sa.sin_addr.s_addr=StrtoIP(ptr);
+}
+else sa.sin_addr.s_addr=INADDR_ANY;
 
 sock=socket(AF_INET,SOCK_STREAM,0);
 if (sock <0) return(-1);
+
+//No reason to pass server/listen sockets across an exec
+fcntl(sock, F_SETFD, FD_CLOEXEC);
 
 result=1;
 salen=sizeof(result);
 setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,&result,salen);
 
-sa.sin_port=htons(Port);
-sa.sin_family=AF_INET;
-if (StrLen(Address) > 0) 
-{
-	if (! IsAddress(Address)) sa.sin_addr.s_addr=StrtoIP(GetInterfaceIP(Address));
-	else sa.sin_addr.s_addr=StrtoIP(Address);
-}
-else sa.sin_addr.s_addr=INADDR_ANY;
 
 salen=sizeof(struct sockaddr_in);
 result=bind(sock,(struct sockaddr *) &sa, salen);
@@ -102,7 +219,7 @@ close(sock);
 return(-1);
 }
 }
-
+#endif
 
 
 int InitUnixServerSock(char *Path)
@@ -114,6 +231,10 @@ int result;
 
 sock=socket(AF_UNIX,SOCK_STREAM,0);
 if (sock <0) return(-1);
+
+//No reason to pass server/listen sockets across an exec
+fcntl(sock, F_SETFD, FD_CLOEXEC);
+
 result=1;
 salen=sizeof(result);
 strcpy(sa.sun_path,Path);
@@ -135,17 +256,22 @@ return(-1);
 }
 
 
-int TCPServerSockAccept(int ServerSock, int *Addr)
+int TCPServerSockAccept(int ServerSock, char **Addr)
 {
-struct sockaddr_in sa;
+struct sockaddr_storage sa;
 int salen;
 int sock;
 
 salen=sizeof(sa);
 sock=accept(ServerSock,(struct sockaddr *) &sa,&salen);
-if (Addr) *Addr=sa.sin_addr.s_addr;
+if (Addr) 
+{
+*Addr=SetStrLen(*Addr,NI_MAXHOST);
+getnameinfo((struct sockaddr *) &sa, salen, *Addr, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+}
 return(sock);
 }
+
 
 int UnixServerSockAccept(int ServerSock)
 {
@@ -162,6 +288,53 @@ return(sock);
 
 
 
+
+
+#ifdef USE_INET6
+int GetSockDetails(int sock, char **LocalAddress, int *LocalPort, char **RemoteAddress, int *RemotePort)
+{
+int salen, result;
+struct sockaddr_storage sa;
+char *Tempstr=NULL;
+
+*LocalPort=0;
+*RemotePort=0;
+*LocalAddress=CopyStr(*LocalAddress,"");
+*RemoteAddress=CopyStr(*RemoteAddress,"");
+
+salen=sizeof(struct sockaddr_storage);
+result=getsockname(sock, (struct sockaddr *) &sa, &salen);
+
+if (result==0)
+{
+*LocalAddress=SetStrLen(*LocalAddress,NI_MAXHOST);
+Tempstr=SetStrLen(Tempstr,NI_MAXSERV);
+getnameinfo((struct sockaddr *) &sa, salen, *LocalAddress, NI_MAXHOST, Tempstr, NI_MAXSERV, NI_NUMERICHOST|NI_NUMERICSERV);
+	*LocalPort=atoi(Tempstr);
+
+	//Set Address to be the same as control sock, as it might not be INADDR_ANY
+	result=getpeername(sock, (struct sockaddr *) &sa, &salen);
+
+	if (result==0)
+	{
+		*RemoteAddress=SetStrLen(*RemoteAddress,NI_MAXHOST);
+		Tempstr=SetStrLen(Tempstr,NI_MAXSERV);
+		getnameinfo((struct sockaddr *) &sa, salen, *RemoteAddress, NI_MAXHOST, Tempstr, NI_MAXSERV, NI_NUMERICHOST|NI_NUMERICSERV);
+		*RemotePort=atoi(Tempstr);
+
+	}
+
+	//We've got the local sock, so lets still call it a success
+	result=0;
+}
+
+DestroyString(Tempstr);
+
+if (result==0) return(TRUE);
+return(FALSE);
+}
+
+#else
 
 int GetSockDetails(int sock, char **LocalAddress, int *LocalPort, char **RemoteAddress, int *RemotePort)
 {
@@ -198,7 +371,7 @@ if (result==0) return(TRUE);
 return(FALSE);
 }
 
-
+#endif
 
 
 
@@ -215,7 +388,7 @@ struct hostent *hostdata;
 sa.sin_family=AF_INET;
 sa.sin_port=htons(Port);
 
-if (IsAddress(Host))
+if (IsIP4Address(Host))
 {
 inet_aton(Host, (struct in_addr *) &sa.sin_addr);
 }
@@ -537,275 +710,6 @@ return(result);
 
 
 
-#ifdef HAVE_LIBSSL
-void STREAM_INTERNAL_SSL_ADD_SECURE_KEYS(STREAM *S, SSL_CTX *ctx)
-{
-ListNode *Curr;
-char *VerifyFile=NULL, *VerifyPath=NULL;
-
-Curr=ListGetNext(LibUsefulValuesGetHead());
-while (Curr)
-{
-  if ((StrLen(Curr->Tag)) && (strncasecmp(Curr->Tag,"SSL_CERT_FILE:",14)==0))
-  {
-	  SSL_CTX_use_certificate_chain_file(ctx,(char *) Curr->Item);
-  }
-
-  if ((StrLen(Curr->Tag)) && (strncasecmp(Curr->Tag,"SSL_KEY_FILE:",13)==0))
-  {
-	  SSL_CTX_use_PrivateKey_file(ctx,(char *) Curr->Item,SSL_FILETYPE_PEM);
-  }
-
-  if ((StrLen(Curr->Tag)) && (strncasecmp(Curr->Tag,"SSL_VERIFY_CERTDIR",18)==0))
-  {
-	  VerifyPath=CopyStr(VerifyPath,(char *) Curr->Item);
-  }
-
-	if ((StrLen(Curr->Tag)) && (strncasecmp(Curr->Tag,"SSL_VERIFY_CERTFILE",19)==0))
-	{
-	  VerifyFile=CopyStr(VerifyFile,(char *) Curr->Item);
-	}
-
-  Curr=ListGetNext(Curr);
-}
-
-
-
-Curr=ListGetNext(S->Values);
-while (Curr)
-{
-  if ((StrLen(Curr->Tag)) && (strncasecmp(Curr->Tag,"SSL_CERT_FILE:",14)==0))
-  {
-	  SSL_CTX_use_certificate_chain_file(ctx,(char *) Curr->Item);
-  }
-
-  if ((StrLen(Curr->Tag)) && (strncasecmp(Curr->Tag,"SSL_KEY_FILE:",13)==0))
-  {
-	  SSL_CTX_use_PrivateKey_file(ctx,(char *) Curr->Item,SSL_FILETYPE_PEM);
-  }
-
-  if ((StrLen(Curr->Tag)) && (strncasecmp(Curr->Tag,"SSL_VERIFY_CERTDIR",18)==0))
-  {
-	  VerifyPath=CopyStr(VerifyPath,(char *) Curr->Item);
-  }
-
-	if ((StrLen(Curr->Tag)) && (strncasecmp(Curr->Tag,"SSL_VERIFY_CERTFILE",19)==0))
-	{
-	  VerifyFile=CopyStr(VerifyFile,(char *) Curr->Item);
-	}
-
-
-  Curr=ListGetNext(Curr);
-}
-
-
-SSL_CTX_load_verify_locations(ctx,VerifyFile,VerifyPath);
-
-DestroyString(VerifyFile);
-DestroyString(VerifyPath);
-
-}
-#endif
-
-
-void HandleSSLError()
-{
-int val;
-
-#ifdef HAVE_LIBSSL
-	  val=ERR_get_error();
-	  fprintf(stderr,"Failed to create SSL_CTX: %s\n",ERR_error_string(val,NULL));
-	  fflush(NULL);
-#endif
-}
-
-
-int INTERNAL_SSL_INIT()
-{
-static int InitDone=FALSE;
-
-#ifdef HAVE_LIBSSL
-if (InitDone) return(TRUE);
-  SSL_library_init();
-#ifdef USE_OPENSSL_ADD_ALL_ALGORITHMS
-  OpenSSL_add_all_algorithms();
-#endif
-  SSL_load_error_strings();
-
-  InitDone=TRUE;
-  return(TRUE);
-#endif
-
-return(FALSE);
-}
-
-
-int SSLAvailable()
-{
-	return(INTERNAL_SSL_INIT());
-}
-
-
-
-int DoSSLClientNegotiation(STREAM *S, int Flags)
-{
-int result=FALSE, val;
-#ifdef HAVE_LIBSSL
-SSL_METHOD *Method;
-SSL_CTX *ctx;
-SSL *ssl;
-//struct x509 *cert=NULL;
-X509 *cert=NULL;
-
-if (S)
-{
-INTERNAL_SSL_INIT();
-//  SSL_load_ciphers();
-  Method=SSLv23_client_method();
-  if (! Method) Method=SSLv2_client_method();
-  ctx=SSL_CTX_new(Method);
-  if (! ctx) HandleSSLError();
-  else
-  {
-  STREAM_INTERNAL_SSL_ADD_SECURE_KEYS(S,ctx);
-  ssl=SSL_new(ctx);
-  SSL_set_fd(ssl,S->in_fd);
-  STREAMSetItem(S,"LIBUSEFUL-SSL-CTX",ssl);
-  result=SSL_connect(ssl);
-  S->Flags|=SF_SSL;
-
-	val=SSL_get_verify_result(ssl);
-
-	switch(val)
-	{
-		case X509_V_OK: STREAMSetValue(S,"SSL-Certificate-Verify","OK"); break;
-		case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT: STREAMSetValue(S,"SSL-Certificate-Verify","unable to get issuer"); break;
-		case X509_V_ERR_UNABLE_TO_GET_CRL: STREAMSetValue(S,"SSL-Certificate-Verify","unable to get certificate CRL"); break;
-		case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE: STREAMSetValue(S,"SSL-Certificate-Verify","unable to decrypt certificate's signature"); break;
-		case X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE: STREAMSetValue(S,"SSL-Certificate-Verify","unable to decrypt CRL's signature"); break;
-		case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY: STREAMSetValue(S,"SSL-Certificate-Verify","unable to decode issuer public key"); break;
-		case X509_V_ERR_CERT_SIGNATURE_FAILURE: STREAMSetValue(S,"SSL-Certificate-Verify","certificate signature invalid"); break;
-		case X509_V_ERR_CRL_SIGNATURE_FAILURE: STREAMSetValue(S,"SSL-Certificate-Verify","CRL signature invalid"); break;
-		case X509_V_ERR_CERT_NOT_YET_VALID: STREAMSetValue(S,"SSL-Certificate-Verify","certificate is not yet valid"); break;
-		case X509_V_ERR_CERT_HAS_EXPIRED: STREAMSetValue(S,"SSL-Certificate-Verify","certificate has expired"); break;
-		case X509_V_ERR_CRL_NOT_YET_VALID: STREAMSetValue(S,"SSL-Certificate-Verify","CRL is not yet valid the CRL is not yet valid."); break;
-		case X509_V_ERR_CRL_HAS_EXPIRED: STREAMSetValue(S,"SSL-Certificate-Verify","CRL has expired the CRL has expired."); break;
-		case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD: STREAMSetValue(S,"SSL-Certificate-Verify","invalid notBefore value"); break;
-		case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD: STREAMSetValue(S,"SSL-Certificate-Verify","invalid notAfter value"); break;
-		case X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD: STREAMSetValue(S,"SSL-Certificate-Verify","invalid CRL lastUpdate value"); break;
-		case X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD: STREAMSetValue(S,"SSL-Certificate-Verify","invalid CRL nextUpdate value"); break;
-		case X509_V_ERR_OUT_OF_MEM: STREAMSetValue(S,"SSL-Certificate-Verify","out of memory"); break;
-		case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT: STREAMSetValue(S,"SSL-Certificate-Verify","self signed certificate"); break;
-		case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN: STREAMSetValue(S,"SSL-Certificate-Verify","self signed certificate in certificate chain"); break;
-		case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY: STREAMSetValue(S,"SSL-Certificate-Verify","cant find root certificate in local database"); break;
-		case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE: STREAMSetValue(S,"SSL-Certificate-Verify","ERROR: unable to verify the first certificate"); break;
-		case X509_V_ERR_CERT_CHAIN_TOO_LONG: STREAMSetValue(S,"SSL-Certificate-Verify","certificate chain too long"); break;
-		case X509_V_ERR_CERT_REVOKED: STREAMSetValue(S,"SSL-Certificate-Verify","certificate revoked"); break;
-		case X509_V_ERR_INVALID_CA: STREAMSetValue(S,"SSL-Certificate-Verify","invalid CA certificate"); break;
-		case X509_V_ERR_PATH_LENGTH_EXCEEDED: STREAMSetValue(S,"SSL-Certificate-Verify","path length constraint exceeded"); break;
-		case X509_V_ERR_INVALID_PURPOSE: STREAMSetValue(S,"SSL-Certificate-Verify","unsupported certificate purpose"); break;
-		case X509_V_ERR_CERT_UNTRUSTED: STREAMSetValue(S,"SSL-Certificate-Verify","certificate not trusted"); break;
-		case X509_V_ERR_CERT_REJECTED: STREAMSetValue(S,"SSL-Certificate-Verify","certificate rejected"); break;
-		case X509_V_ERR_SUBJECT_ISSUER_MISMATCH: STREAMSetValue(S,"SSL-Certificate-Verify","subject issuer mismatch"); break;
-		case X509_V_ERR_AKID_SKID_MISMATCH: STREAMSetValue(S,"SSL-Certificate-Verify","authority and subject key identifier mismatch"); break;
-		case X509_V_ERR_AKID_ISSUER_SERIAL_MISMATCH: STREAMSetValue(S,"SSL-Certificate-Verify","authority and issuer serial number mismatch"); break;
-		case X509_V_ERR_KEYUSAGE_NO_CERTSIGN: STREAMSetValue(S,"SSL-Certificate-Verify","key usage does not include certificate signing"); break;
-		case X509_V_ERR_APPLICATION_VERIFICATION: STREAMSetValue(S,"SSL-Certificate-Verify","application verification failure"); break;
-	}
-  }
-
-cert=SSL_get_peer_certificate(ssl);
-if (cert)
-{
- STREAMSetValue(S,"SSL-Certificate-Issuer",X509_NAME_oneline( X509_get_issuer_name(cert),NULL, 0));
-}
-}
-
-STREAMSetValue(S,"SSL-Cipher",STREAMQuerySSLCipher(S));
-
-#endif
-return(result);
-}
-
-
-int DoSSLServerNegotiation(STREAM *S, int Flags)
-{
-int result=FALSE;
-#ifdef HAVE_LIBSSL
-SSL_METHOD *Method;
-SSL_CTX *ctx;
-SSL *ssl;
-
-
-if (S)
-{
-INTERNAL_SSL_INIT();
-  Method=SSLv23_server_method();
-  if (! Method) Method=SSLv2_server_method();
-  if (Method)
-  {
-  ctx=SSL_CTX_new(Method);
-	  
-  if (ctx)
- {
-  STREAM_INTERNAL_SSL_ADD_SECURE_KEYS(S,ctx);
-  ssl=SSL_new(ctx);
-  SSL_set_fd(ssl,S->in_fd);
-  STREAMSetItem(S,"LIBUSEFUL-SSL-CTX",ssl);
-  SSL_set_verify(ssl,SSL_VERIFY_NONE,NULL);
-  SSL_set_accept_state(ssl);
-  result=SSL_accept(ssl);
-  if (result != TRUE)
-  {
-	 result=SSL_get_error(ssl,result);
-	 result=ERR_get_error();
-	 fprintf(stderr,"error: %s\n",ERR_error_string(result,NULL));
-	 result=FALSE;
-  }
-  S->Flags|=SF_SSL;
-  }
-  }
-}
-
-#endif
-return(result);
-}
-
-
-const char *STREAMQuerySSLCipher(STREAM *S)
-{
-void *ptr;
-
-if (! S) return(NULL);
-ptr=STREAMGetItem(S,"LIBUSEFUL-SSL-CTX");
-if (! ptr) return(NULL);
-
-#ifdef HAVE_LIBSSL
-
-return(SSL_get_cipher((SSL *) ptr));
-#else
-return(NULL);
-#endif
-}
-
-
-int STREAMIsPeerAuth(STREAM *S)
-{
-void *ptr;
-
-#ifdef HAVE_LIBSSL
-ptr=STREAMGetItem(S,"LIBUSEFUL-SSL-CTX");
-if (! ptr) return(FALSE);
-
-if (SSL_get_verify_result((SSL *) ptr)==X509_V_OK)
-{
-  if (SSL_get_peer_certificate((SSL *) ptr) !=NULL) return(TRUE);
-}
-#endif
-return(FALSE);
-}
-
-
 
 int OpenUDPSock(int Port)
 {
@@ -840,7 +744,7 @@ sa.sin_family=AF_INET;
 inet_aton(Host,& sa.sin_addr);
 salen=sizeof(sa);
 
-if (IsAddress(Host))
+if (IsIP4Address(Host))
 {
    inet_aton(Host, (struct in_addr *) &sa.sin_addr);
 }

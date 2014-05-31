@@ -1,6 +1,8 @@
 #include "includes.h"
 
 
+
+
 ListNode *ListGetHead(ListNode *Node)
 {
 if (! Node) return(NULL);
@@ -21,7 +23,6 @@ intptr=(int *) Head->Item;
 return(*intptr);
 
 }
-
 
 
 
@@ -556,11 +557,21 @@ while (Curr)
 {
    if (Curr->Jump)
    {
-		result=strcasecmp(Curr->Jump->Tag,Name);
+		if (Head->Flags & LIST_FLAG_CASE) result=strcmp(Curr->Jump->Tag,Name);
+		else result=strcasecmp(Curr->Jump->Tag,Name);
 		if (result < 0) Curr=Curr->Jump;
    }
-   if (Curr->Tag && (strcasecmp(Curr->Tag,Name)==0)) return(Curr);
-   Curr=ListGetNext(Curr);
+
+	if (Curr->Tag)
+	{
+  	if (Head->Flags & LIST_FLAG_CASE)
+		{
+			if (strcmp(Curr->Tag,Name)==0) return(Curr);
+		}
+  	else if (strcasecmp(Curr->Tag,Name)==0) return(Curr);
+	}
+
+  Curr=ListGetNext(Curr);
 }
 return(Curr);
 }
@@ -601,13 +612,6 @@ while (Curr)
 if (Curr->Jump)
 {
 	if (Curr->Jump==Node) Curr->Jump=NULL;
-	/*
-	if (strcmp(Curr->Jump->Tag,Node->Tag) > -1)
-	{
-		Curr=Curr->Jump;
-		continue;
-	}
-	*/
 }
 
 Curr=ListGetNext(Curr);

@@ -13,8 +13,9 @@ extern "C" {
 int WritePidFile(char *ProgName);
 int HexStrToBytes(char **Buffer, char *HexStr);
 char *BytesToHexStr(char *Buffer, char *Bytes, int len);
+char *EncodeBytes(char *Buffer, unsigned const char *Bytes, int len, int Encoding);
 
-void SwitchProgram(char *CommandLine);
+
 int SwitchUser(char *User);
 int SwitchGroup(char *Group);
 char *GetCurrUserHomeDir();
@@ -37,6 +38,8 @@ double ParseHumanReadableDataQty(char *Data, int Type);
 char *GetHumanReadableDataQty(double Size, int Type);
 
 void EraseString(char *Buff, char *Target);
+
+int GenerateRandomBytes(char **RetBuff, int ReqLen, int Encoding);
 
 
 #ifdef __cplusplus

@@ -1,36 +1,36 @@
 #include "includes.h"
 #include "base64.h"
+#include "Hash.h"
+#include <sys/utsname.h>
 
-int WritePidFile(char *ProgName) 
-{ 
-char *Tempstr=NULL; 
-STREAM *S;
-int result=FALSE;
- 
+int WritePidFile(char *ProgName)
+{
+char *Tempstr=NULL;
+int result=FALSE, fd;
+
 
 if (*ProgName=='/') Tempstr=CopyStr(Tempstr,ProgName);
 else Tempstr=FormatStr(Tempstr,"/var/run/%s.pid",ProgName);
 
-S=STREAMOpenFile(Tempstr,O_CREAT | O_WRONLY); 
-if (S)
+fd=open(Tempstr,O_CREAT | O_TRUNC | O_WRONLY,0600);
+if (fd > -1)
 {
-	fchmod(S->in_fd,0644); 
-	if (flock(S->in_fd,LOCK_EX|LOCK_NB) !=0) 
-	{ 
-		STREAMClose(S); 
-		exit(1); 
-	}
-	result=TRUE; 
-	Tempstr=FormatStr(Tempstr,"%d\n",getpid()); 
-	STREAMWriteLine(Tempstr,S); 
-	STREAMFlush(S); 
-} 
+  fchmod(fd,0644);
+  if (flock(fd,LOCK_EX|LOCK_NB) !=0)
+  {
+    close(fd);
+    exit(1);
+  }
+  result=TRUE;
+  Tempstr=FormatStr(Tempstr,"%d\n",getpid());
+  write(fd,Tempstr,StrLen(Tempstr));
+}
 
-//Don't close 'S'!
+//Don't close 'fd'!
 
 DestroyString(Tempstr);
 
-return(result);
+return(fd);
 } 
 
 
@@ -81,26 +81,64 @@ return(len / 2);
 }
 
 
-void SwitchProgram(char *CommandLine)
+
+char *EncodeBytes(char *Buffer, unsigned const char *Bytes, int len, int Encoding)
 {
-char **argv, *ptr;
-char *Token=NULL;
+char *Tempstr=NULL, *RetStr=NULL;
 int i;
 
-argv=(char **) calloc(101,sizeof(char *));
-ptr=CommandLine;
-for (i=0; i < 100; i++)
+RetStr=CopyStr(Buffer,"");
+switch (Encoding)
 {
-ptr=GetToken(ptr,"\\S",&Token,GETTOKEN_QUOTES);
-if (! ptr) break;
-argv[i]=CopyStr(argv[i],Token);
+	case ENCODE_BASE64: 
+	RetStr=SetStrLen(RetStr,len * 4);
+	to64frombits(RetStr,Bytes,len); break;
+	break;
+
+	case ENCODE_OCTAL:
+  for (i=0; i < len; i++)
+  {
+  Tempstr=FormatStr(Tempstr,"%03o",Bytes[i] & 255);
+  RetStr=CatStr(RetStr,Tempstr);
+  }
+	break;
+
+	case ENCODE_DECIMAL:
+  for (i=0; i < len; i++)
+  {
+  Tempstr=FormatStr(Tempstr,"%03d",Bytes[i] & 255);
+  RetStr=CatStr(RetStr,Tempstr);
+  }
+	break;
+
+	case ENCODE_HEX:
+  for (i=0; i < len; i++)
+  {
+  Tempstr=FormatStr(Tempstr,"%02x",Bytes[i] & 255);
+  RetStr=CatStr(RetStr,Tempstr);
+  }
+	break;
+
+	case ENCODE_HEXUPPER:
+  for (i=0; i < len; i++)
+  {
+  Tempstr=FormatStr(Tempstr,"%02X",Bytes[i] & 255);
+  RetStr=CatStr(RetStr,Tempstr);
+  }
+	break;
+	
+
+	default:
+	RetStr=SetStrLen(RetStr,len );
+	memcpy(RetStr,Bytes,len);
+	RetStr[len]='\0';
+	break;
 }
 
-/* we are the child so we continue */
-execv(argv[0],argv);
-//no point trying to free stuff here, we will no longer
-//be the main program
+DestroyString(Tempstr);
+return(RetStr);
 }
+
 
 
 #include <pwd.h>
@@ -109,23 +147,57 @@ execv(argv[0],argv);
 int SwitchUser(char *NewUser)
 {
 struct passwd *pwent;
+char *ptr;
 
     pwent=getpwnam(NewUser);
-    if (! pwent) return(FALSE);
-    if (setreuid(pwent->pw_uid,pwent->pw_uid) !=0) return(FALSE);
-    return(TRUE);
+    if (! pwent)
+		{
+			syslog(LOG_ERR,"ERROR: Cannot switch to user '%s'. No such user",NewUser);
+			ptr=LibUsefulGetValue("SwitchUserAllowFail");
+			if (ptr && (strcasecmp(ptr,"yes")==0)) return(FALSE);
+			exit(1);
+		}
+
+
+    if (setreuid(pwent->pw_uid,pwent->pw_uid) !=0) 
+		{
+			syslog(LOG_ERR,"ERROR: Switch to user '%s' failed. Error was: %s",NewUser,strerror(errno));
+			ptr=LibUsefulGetValue("SwitchUserAllowFail");
+			if (ptr && (strcasecmp(ptr,"yes")==0)) return(FALSE);
+			exit(1);
+		}
+
+	return(TRUE);
 }
 
 
 int SwitchGroup(char *NewGroup)
 {
 struct group *grent;
+char *ptr;
  
-     grent=getgrnam(NewGroup);
-     if (! grent) return(FALSE);
-     if (setgid(grent->gr_gid) !=0) return(FALSE);
-     return(TRUE);
+		grent=getgrnam(NewGroup);
+		if (! grent) 
+		{
+			syslog(LOG_ERR,"ERROR: Cannot switch to group '%s'. No such group",NewGroup);
+			ptr=LibUsefulGetValue("SwitchGroupAllowFail");
+			if (ptr && (strcasecmp(ptr,"yes")==0)) return(FALSE);
+			exit(1);
+		}
+
+
+		if (setgid(grent->gr_gid) !=0) 
+		{
+			syslog(LOG_ERR,"ERROR: Switch to group '%s' failed. Error was: %s",NewGroup,strerror(errno));
+			ptr=LibUsefulGetValue("SwitchGroupAllowFail");
+			if (ptr && (strcasecmp(ptr,"yes")==0)) return(FALSE);
+			exit(1);
+		}
+
+	return(TRUE);
 }
+
+
 
 char *GetCurrUserHomeDir()
 {
@@ -171,7 +243,7 @@ char *ptr, *ptr2;
 char *Token=NULL;
 
 ptr=GetToken(Input,PairDelim,&Token,GETTOKEN_QUOTES);
-if (StrLen(Token) && strstr(Token,NameValueDelim))
+if (StrLen(Token))
 {
 ptr2=GetToken(Token,NameValueDelim,Name,GETTOKEN_QUOTES);
 ptr2=GetToken(ptr2,PairDelim,Value,GETTOKEN_QUOTES);
@@ -301,18 +373,18 @@ GIG=GIGIBYTE;
       kMGT='T';
     }
     else*/
-	 if (val > (GIG))
+	 if (val >= (GIG))
     {
       val=val / GIG;
       kMGT='G';
     }
-    else if (val > (MEG))
+    else if (val >= (MEG))
     {
       val=val / MEG;
       kMGT='M';
 
     }
-    else if (val > (KAY))
+    else if (val >= (KAY))
     {
       val=val /  KAY;
       kMGT='k';
@@ -337,3 +409,59 @@ ptr=strstr(ptr,Target);
 }
 
 }
+
+
+
+int GenerateRandomBytes(char **RetBuff, int ReqLen, int Encoding)
+{
+struct utsname uts;
+int i, len;
+clock_t ClocksStart, ClocksEnd;
+struct timeval tv1, tv2;
+char *Tempstr=NULL, *RandomBytes=NULL;
+int fd;
+
+
+fd=open("/dev/random",O_RDONLY);
+if (fd > -1)
+{
+	RandomBytes=SetStrLen(RandomBytes,ReqLen);
+  len=read(fd,RandomBytes,ReqLen);
+  close(fd);
+}
+else
+{
+	ClocksStart=clock();
+	gettimeofday(&tv1,NULL);
+	//how many clock cycles used here will depend on overall
+	//machine activity/performance/number of running processes
+	for (i=0; i < 100; i++) sleep(0);
+	uname(&uts);
+	ClocksEnd=clock();
+	gettimeofday(&tv2,NULL);
+
+
+	Tempstr=FormatStr(Tempstr,"%lu:%lu:%lu:%lu:%lu:%lu\n",getpid(),getuid(),ClocksStart,ClocksEnd,tv1.tv_usec,tv2.tv_usec);
+	//This stuff should be unique to a machine
+	Tempstr=CatStr(Tempstr, uts.sysname);
+	Tempstr=CatStr(Tempstr, uts.nodename);
+	Tempstr=CatStr(Tempstr, uts.machine);
+	Tempstr=CatStr(Tempstr, uts.release);
+	Tempstr=CatStr(Tempstr, uts.version);
+
+
+	len=HashBytes(&RandomBytes, "sha256", Tempstr, StrLen(Tempstr), 0);
+	if (len > ReqLen) len=ReqLen;
+}
+
+
+*RetBuff=EncodeBytes(*RetBuff, RandomBytes, len, Encoding);
+
+DestroyString(Tempstr);
+DestroyString(RandomBytes);
+
+return(len);
+}
+
+
+

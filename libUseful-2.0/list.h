@@ -2,6 +2,7 @@
 #define LIB_USEFUL_LIST
 
 #define LIST_FLAG_DELETE 1
+#define LIST_FLAG_CASE 2
 
 typedef struct lnode
 {

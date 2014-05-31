@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+void SetTypedVar(ListNode *Vars, const char *Name, const char *Data, int Type);
 void SetVar(ListNode *Vars, const char *Name, const char *Data);
 char *GetVar(ListNode *Vars, const char *Name);
 void UnsetVar(ListNode *Vars,const char *Name);

@@ -11,9 +11,23 @@ AC_HEADER_STDC
 
 cf_have_libssl=no
 cf_have_libcrypto=no
-cf_have_libz=no
+cf_have_libz=yes
 cf_have_oss=no
 cf_have_libesd=no
+cf_have_sendfile=no
+
+AC_ARG_ENABLE(sendfile, [  --enable-sendfile       enable sendfile support], cf_use_sendfile=$enableval )
+
+if test "$cf_use_sendfile" != "no"
+then
+AC_CHECK_HEADER(sys/sendfile.h,cf_have_sendfile=yes,cf_have_sendfile=no,)
+fi 
+
+if test "$cf_have_sendfile" = "yes"
+then
+AC_DEFINE([USE_SENDFILE])
+fi
+
 
 
 AC_ARG_ENABLE(largefiles, [  --enable-largefiles       enable largefile support], cf_use_largefiles=$enableval )
@@ -23,6 +37,15 @@ then
 AC_DEFINE([_LARGEFILE64_SOURCE])
 AC_DEFINE([_FILE_OFFSET_BITS],[64])
 fi
+
+
+AC_ARG_ENABLE(ip6, [  --enable-ip6       enable IPv6 support], cf_use_ip6=$enableval )
+
+if test "$cf_use_ip6" = "yes"
+then
+AC_DEFINE([USE_INET6],1)
+fi
+
 
 AC_ARG_ENABLE(ssl, [  --enable-ssl       use Secure Sockets Layer], cf_use_ssl=$enableval )
 

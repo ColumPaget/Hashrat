@@ -55,8 +55,8 @@ TLogFile *LogFileGetEntry(char *FileName)
 		else if (strcmp(FileName,"SYSLOG")==0) S=STREAMCreate();
 		else
 		{
-			 S=STREAMOpenFile(FileName,O_CREAT | O_APPEND | O_WRONLY);
-			 S->Flags &= ~FLUSH_ALWAYS;
+			S=STREAMOpenFile(FileName,O_CREAT | O_APPEND | O_WRONLY);
+			if (S) S->Flags &= ~FLUSH_ALWAYS;
 		}
 
 		if (S)

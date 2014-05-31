@@ -5,9 +5,6 @@
 #include "includes.h"
 
 
-#define ENCODE_HEX 1
-#define ENCODE_BASE64 2
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -29,6 +26,7 @@ HASH_UPDATE Update;
 HASH_FINISH Finish;
 };
 
+void HashAvailableTypes(ListNode *Vars);
 THash *HashInit(char *Type);
 void HMACSetKey(THash *HMAC, char *Key, int Len);
 void HashDestroy(THash *Hash);

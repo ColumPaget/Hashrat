@@ -2,19 +2,29 @@
 #include "defines.h"
 #include "list.h"
 
-void SetVar(ListNode *Vars, const char *Name, const char *Data)
+void SetTypedVar(ListNode *Vars, const char *Name, const char *Data, int ItemType)
 {
 ListNode *Node;
 char *Tempstr=NULL;
 
+if (! Vars) return;
 Tempstr=CopyStr(Tempstr,Name);
 //strlwr(Tempstr);
 Node=ListFindNamedItem(Vars,Tempstr);
 if (Node) Node->Item=(void *) CopyStr((char *) Node->Item,Data);
-else ListAddNamedItem(Vars,Tempstr,CopyStr(NULL,Data));
+else Node=ListAddNamedItem(Vars,Tempstr,CopyStr(NULL,Data));
+
+Node->ItemType=ItemType;
 
 DestroyString(Tempstr);
 }
+
+
+void SetVar(ListNode *Vars, const char *Name, const char *Data)
+{
+SetTypedVar(Vars,Name,Data,0);
+}
+
 
 char *GetVar(ListNode *Vars, const char *Name)
 {
@@ -78,7 +88,7 @@ if (! Source) return;
 Curr=ListGetNext(Source);
 while (Curr)
 {
-SetVar(Dest,Curr->Tag,Curr->Item);
+SetTypedVar(Dest,Curr->Tag,Curr->Item,Curr->ItemType);
 Curr=ListGetNext(Curr);
 }
 

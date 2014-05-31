@@ -1,8 +1,7 @@
 #ifndef LIBUSEFUL_SOCK
 #define LIBUSEFUL_SOCK
 
-#include <stdio.h>
-#include "file.h"
+#include "includes.h"
 
 #define CONNECT_NONBLOCK 1
 #define CONNECT_SSL 2
@@ -16,6 +15,8 @@
 extern "C" {
 #endif
 
+int IsIP4Address(char *Str);
+int IsIP6Address(char *Str);
 
 const char *GetInterfaceIP(const char *Interface);
 
@@ -23,7 +24,7 @@ const char *GetInterfaceIP(const char *Interface);
 /* Server Socket Funcs*/
 int InitServerSock(char *Address, int Port);
 int InitUnixServerSock(char *Path);
-int TCPServerSockAccept(int ServerSock,int *Addr);
+int TCPServerSockAccept(int ServerSock,char **Addr);
 int UnixServerSockAccept(int ServerSock);
 
 int GetSockDetails(int fd, char **LocalAddress, int *LocalPort, char **RemoteAddress, int *RemotePort);
@@ -43,10 +44,6 @@ int STREAMSendDgram(STREAM *S, char *Host, int Port, char *Bytes, int len);
 int STREAMConnectToHost(STREAM *S, char *Host, int Port, int Flags);
 int STREAMIsConnected(STREAM *S);
 int DoPostConnect(STREAM *S, int Flags);
-int DoSSLClientNegotiation(STREAM *S, int Flags);
-int DoSSLServerNegotiation(STREAM *S, int Flags);
-const char *STREAMQuerySSLCipher(STREAM *S);
-int STREAMIsPeerAuth(STREAM *S);
 
 /* Stuff relating to standard inet download procedure (until \r\n.\r\n) */
 typedef struct
@@ -72,7 +69,6 @@ char *IPtoStr(unsigned long);
 unsigned long StrtoIP(char *);
 int IsIPAddress(char *);
 
-int SSLAvailable();
 
 #ifdef __cplusplus
 }

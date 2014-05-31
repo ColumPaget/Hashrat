@@ -18,8 +18,9 @@ extern "C" {
 //down to macros using weird stuff like the ternary condition 
 //operator '?' and the dreaded comma operator ','
 #define StrLen(str) ( str ? strlen(str) : 0 )
+#define StrEnd(str) if ((! str) || (*str == '\0') || (str > __builtin_frame_address (0)) return(TRUE); return(FALSE);
 
-//int StrLen(char *Str);
+//size_t StrLen(const char *Str);
 char *DestroyString(char *);
 int CompareStr(const char *S1, const char *S2);
 char *CopyStrLen(char *,const char *,int);

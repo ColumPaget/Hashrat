@@ -7,8 +7,9 @@
 
 #define HTTP_AUTH_BASIC  1
 #define HTTP_AUTH_DIGEST 2
-#define HTTP_SENT_AUTH 4
-#define HTTP_PROXY_AUTH 8
+#define HTTP_AUTH_TOKEN 4
+#define HTTP_PROXY_AUTH 64
+#define HTTP_SENT_AUTH 128
 
 
 #define HTTP_OKAY 0
@@ -43,6 +44,10 @@
 #define HTTP_HEADERS_SENT 1
 #define HTTP_CLIENTDATA_SENT 2
 #define HTTP_HEADERS_READ 4
+
+extern const char *HTTP_AUTH_BY_TOKEN;
+
+
 
 typedef struct
 {
@@ -100,7 +105,7 @@ HTTPInfoStruct *HTTPInfoCreate(char *Host, int Port, char *Logon, char *Password
 STREAM *HTTPConnect(HTTPInfoStruct *Info);
 STREAM *HTTPTransact(HTTPInfoStruct *Info);
 HTTPInfoStruct *HTTPInfoFromURL(char *Method, char *URL);
-STREAM *HTTPMethod(char *Method, char *URL, char *Logon, char *Password);
+STREAM *HTTPMethod(char *Method, char *URL, char *Logon, char *Password, char *ContentType, char *ContentData, int ContentLength);
 STREAM *HTTPGet(char *URL, char *Logon, char *Password);
 STREAM *HTTPPost(char *URL, char *Logon, char *Password, char *ContentType, char *Content);
 int HTTPReadBytes(STREAM *Con, char **Buffer);

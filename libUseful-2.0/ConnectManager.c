@@ -236,12 +236,11 @@ while (1)
 
 			if (FD_ISSET(S->in_fd,&ReadSet))
 			{
-				sock=TCPServerSockAccept(S->in_fd,&ipaddr);
+				sock=TCPServerSockAccept(S->in_fd,&S->Path);
 				if (sock > -1)
 				{
 				S=STREAMFromFD(sock);
 				STREAMSetFlushType(S,FLUSH_LINE,0);
-				S->Path=CopyStr(S->Path,IPtoStr(ipaddr));
 				NewItem=ConnectManagerAddIncoming(S,Item->Name, Item->OnData);
 				if (Item->OnConnect) Item->OnConnect(NewItem);	
 				}

@@ -9,10 +9,17 @@
 #define TRUE 1
 #endif
 
+#define __LIBUSEFUL_VERSION__ "2.0"
+#define __LIBUSEFUL_BUILD_DATE__ __DATE__ 
+#define __LIBUSEFUL_BUILD_TIME__ __TIME__ 
+
+//__TIME__
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include "memory.h"
 #include "socket.h"
 #include "unix_socket.h"
 #include "string.h"

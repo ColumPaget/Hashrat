@@ -12,6 +12,7 @@
 #endif
 
 
+
 int FDSelect(int fd, int Flags, struct timeval *tv)
 {
 fd_set *readset=NULL, *writeset=NULL;
@@ -123,10 +124,23 @@ void STREAMResizeBuffer(STREAM *Stream, int size)
 
 int STREAMCheckForBytes(STREAM *S)
 {
-  if (! S) return(0);
-	if (S->State & SS_EMBARGOED) return(0);
-  if (S->InEnd > S->InStart) return(1);
-  if (S->in_fd==-1) return(0);
+off_t pos;
+struct stat Stat;
+
+  if (! S) return(FALSE);
+	if (S->State & SS_EMBARGOED) return(FALSE);
+  if (S->InEnd > S->InStart) return(TRUE);
+  if (S->in_fd==-1) return(FALSE);
+
+	if (S->Flags & SF_FOLLOW) 
+	{
+		while (1)
+		{
+			pos=STREAMTell(S);
+			fstat(S->in_fd,&Stat);		
+			if (Stat.st_size > pos) return(TRUE);			
+		}
+	}
   return(FDCheckForBytes(S->in_fd));
 }
 
@@ -316,6 +330,7 @@ while (Curr)
 	if (Mod->Read) 
 	{
 		len=Mod->Read(Mod,InBuff,len,&OutputBuff,&olen,FALSE);
+
 		if (len != EOF) state=0;
 
 		if (len > 0)
@@ -375,7 +390,7 @@ STREAM *STREAMCreate()
 STREAM *S;
 
 S=(STREAM *) calloc(1,sizeof(STREAM));
-STREAMResizeBuffer(S,4096);
+STREAMResizeBuffer(S,BUFSIZ);
 S->in_fd=-1;
 S->out_fd=-1;
 S->Timeout=30;
@@ -540,9 +555,10 @@ SSL_CTX=STREAMGetItem(S,"LIBUSEFUL-SSL-CTX");
 
 if (S->InStart >= S->InEnd)
 {
-S->InEnd=0;
-S->InStart=0;
+	S->InEnd=0;
+	S->InStart=0;
 }
+
 diff=S->InEnd-S->InStart;
 
 if (S->InStart > (S->BuffSize / 2))
@@ -627,15 +643,17 @@ if (read_result==0)
 	}
 	else
 	{
-        if ((read_result == -1) && (errno==EAGAIN)) read_result=STREAM_NODATA;
-        else read_result=STREAM_CLOSED;
-        result=0;
+		if ((read_result == -1) && (errno==EAGAIN)) read_result=STREAM_NODATA;
+		else read_result=STREAM_CLOSED;
+		result=0;
 	}
 }
 
 if (result !=0) read_result=result;
 if (result < 0) result=0;
 read_result=STREAMReadThroughProcessors(S, tmpBuff, result);
+if (read_result==0) read_result=STREAM_NODATA;
+
 //if (result==STREAM_DATA_ERROR) read_result=STREAM_DATA_ERROR;
 
 //We are not returning number of bytes read. We only return something if
@@ -647,7 +665,19 @@ return(read_result);
 }
 
 
+inline int STREAMTransferBytesOut(STREAM *S, char *Dest, int DestSize)
+{
+int bytes;
 
+	bytes=S->InEnd - S->InStart;
+	
+	if (bytes > DestSize) bytes=DestSize;
+	
+	memcpy(Dest,S->InputBuff+S->InStart,bytes);
+	S->InStart+=bytes;
+	
+	return(bytes);
+}
 
 
 
@@ -671,18 +701,9 @@ if (S->InStart >= S->InEnd)
 
 while (total < Buffsize)
 {
-
-	bytes=S->InEnd - S->InStart;
-	
-	
-	if (bytes > (Buffsize-total)) bytes=(Buffsize-total);
-	
-	memcpy(ptr+total,S->InputBuff+S->InStart,bytes);
-	S->InStart+=bytes;
-	total+=bytes;
+	total+=STREAMTransferBytesOut(S, Buffer+total, Buffsize-total);
 	
 	bytes=S->InEnd - S->InStart;
-	
 	
 	if (bytes < 1) 
 	{
@@ -934,6 +955,31 @@ return(* (S->InputBuff + S->InStart));
 }
 
 
+int STREAMPeekBytes(STREAM *S, char *Buffer, int Buffsize)
+{
+int len=0, result=0;
+
+if (S->InStart >= S->InEnd)
+{
+  result=STREAMReadCharsToBuffer(S);
+  if (S->InStart >= S->InEnd)
+  {
+    if (result==STREAM_CLOSED) return(EOF);
+    if (result==STREAM_TIMEOUT) return(STREAM_TIMEOUT);
+    if (result==STREAM_DATA_ERROR) return(STREAM_DATA_ERROR);
+  }
+}
+
+len=S->InEnd-S->InStart;
+if (len > Buffsize) len=Buffsize;
+
+if (len > 0) memcpy(Buffer,S->InputBuff + S->InStart,len);
+
+return(len);
+}
+
+
+
 int STREAMWriteChar(STREAM *S,unsigned char inchar)
 {
 char tmpchar;
@@ -968,41 +1014,44 @@ return(pos);
 
 char *STREAMReadToTerminator(char *Buffer, STREAM *S,unsigned char Term)
 {
-int inchar, len=0;
-char *Tempptr;
+int result, len=0, bytes_read=0;
+char *RetStr=NULL, *end, *ptr;
 
-Tempptr=CopyStr(Buffer,"");
 
-inchar=STREAMReadChar(S);
-while (inchar != EOF)
+RetStr=Buffer;
+while (1)
 {
-	//if ((len % 100)== 0) Tempptr=realloc(Tempptr,(len/100 +1) *100 +2);
-	//*(Tempptr+len)=inchar;
+	if (S->InEnd > S->InStart)
+	{
+		//memchr is wicked fast, so use it
+		ptr=memchr(S->InputBuff+S->InStart,Term,S->InEnd - S->InStart);
+		if (ptr) len=(ptr+1)-(S->InputBuff+S->InStart);
+		else len=S->InEnd-S->InStart;
+	
+		//Get length of RetStr, because SetStrLen might realloc it
+		RetStr=SetStrLen(RetStr,bytes_read + len);
+		len=STREAMTransferBytesOut(S, RetStr+bytes_read , len);
+		bytes_read+=len;
+		*(RetStr+bytes_read)='\0';
 
-		if (inchar >= 0)
+		//Only return if we found the terminator (using memchr, above)
+		if (ptr) return(RetStr);
+	}
+	
+	result=STREAMReadCharsToBuffer(S);
+	if ((result != STREAM_NODATA) && (S->InStart >= S->InEnd))
+	{
+		if (bytes_read==0)
 		{
-    	Tempptr=AddCharToBuffer(Tempptr,len,(char) inchar);
-			len++;
+			DestroyString(RetStr);
+			return(NULL);
 		}
-		else if (inchar !=STREAM_NODATA) break;
-    if (inchar==Term) break;
-    inchar=STREAMReadChar(S);
+		return(RetStr);
+	}
 }
-
-
-*(Tempptr+len)='\0';
-//if ((inchar==EOF) && (errno==ECONNREFUSED)) return(Tempptr);
-if (
-	((inchar==EOF) || (inchar==STREAM_DATA_ERROR))
-	&& 
-	(StrLen(Tempptr)==0)
-   )
-{
-  free(Tempptr);
-  return(NULL);
-}
-
-return(Tempptr);
+	
+//impossible to get here!
+return(NULL);
 }
 
 
@@ -1109,4 +1158,53 @@ if (! S->Items) S->Items=ListCreate();
 Curr=ListFindNamedItem(S->Items,Name);
 if (Curr) Curr->Item=Value;
 else ListAddNamedItem(S->Items,Name,Value);
+}
+
+
+#define SENDFILE_FAILED -1
+off_t STREAMSendFile(STREAM *In, STREAM *Out, off_t Max)
+{
+char *Buffer=NULL;
+int BuffSize=BUFSIZ;
+off_t val, result=SENDFILE_FAILED;
+
+#ifdef USE_SENDFILE
+
+//if we are not using ssl and not using processor modules, we can use 
+//kernel-level copy!
+
+#include <sys/sendfile.h>
+
+val=In->Flags | Out->Flags;
+if ((! (val & SF_SSL)) && (ListSize(In->ProcessingModules)==0) && (ListSize(Out->ProcessingModules)==0))
+{
+	val=0;
+	STREAMFlush(Out);
+	result=sendfile(Out->out_fd, In->in_fd,0,BUFSIZ);
+	while (result > 0)
+	{
+		val+=result;
+		if ((Max > 0) && (val >= Max)) break;
+		result=sendfile(Out->out_fd, In->in_fd,0,BUFSIZ);
+	}
+}
+
+#endif
+
+if (result==SENDFILE_FAILED)
+{
+	val=0;
+	Buffer=SetStrLen(Buffer,BuffSize);
+	result=STREAMReadBytes(In,Buffer,BuffSize);
+	while (result >=0)
+	{
+		val+=STREAMWriteBytes(Out,Buffer,result);
+		if ((Max > 0) && (val >= Max)) break;
+		result=STREAMReadBytes(In,Buffer,BuffSize);
+	}
+}
+
+DestroyString(Buffer);
+
+return(val);
 }

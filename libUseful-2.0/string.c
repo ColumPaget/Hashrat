@@ -4,18 +4,29 @@
 #define va_copy(dest, src) (dest) = (src) 
 #endif 
 
+
 /*
-int StrLen(char *Str)
+size_t StrLen(const char *Str)
 {
+char *ptr, *end;
+
 if (! Str) return(0);
-return(strlen(Str));
+
+ptr=Str;
+end=ptr + LibUsefulObjectSize(Str, 0);
+while ((ptr < end) && (*ptr != '\0')) ptr++;
+return(ptr-Str);
 }
 */
 
 
-char *DestroyString(char *string)
+
+
+char *DestroyString(char *Obj)
 {
-if (string) free(string);
+size_t size;
+
+free(Obj);
 // we return a null to be put into the string ptr 
 return(0);
 }
@@ -75,6 +86,7 @@ char *VCatStr(char *Dest, const char *Str1,  va_list args)
 int len=0;
 char *ptr=NULL;
 const char *sptr=NULL;
+
 
 if (Dest !=NULL) 
 {
@@ -167,7 +179,7 @@ return(CopyStr(NULL,Str));
 
 char *VFormatStr(char *InBuff, const char *InputFmtStr, va_list args)
 {
-int inc=100, count=1, result=0;
+int inc=100, count=1, result=0, FmtLen;
 char *Tempstr=NULL, *FmtStr=NULL;
 va_list argscopy;
 
@@ -175,11 +187,19 @@ Tempstr=InBuff;
 
 //Take a copy of the supplied Format string and change it.
 //Do not allow '%n', it's useable for exploits
+
+FmtLen=StrLen(InputFmtStr);
+#ifdef USE_ALLOCA
+FmtStr=alloca(FmtLen);
+strncpy(FmtStr,InputFmtStr,FmtLen);
+#else
 FmtStr=CopyStr(FmtStr,InputFmtStr);
+#endif
+
 EraseString(FmtStr, "%n");
 
 
-inc=4 * StrLen(FmtStr); //this should be a good average
+inc=4 * FmtLen; //this should be a good average
 for (count=1; count < 100; count++)
 {
 	result=inc * count +1;
@@ -206,8 +226,9 @@ for (count=1; count < 100; count++)
    break;
 }
 
+#ifndef USE_ALLOCA
 DestroyString(FmtStr);
-
+#endif
 
 return(Tempstr);
 }
@@ -365,7 +386,7 @@ len=StrLen(ptr);
 
 if ((*ptr=='"') || (*ptr=='\'')) StartQuote=*ptr;
 
-if ((len > 0) && (StartQuote != '\0'))
+if ((len > 0) && (StartQuote != '\0') && (ptr[len-1]==StartQuote))
 {
 if (ptr[len-1]==StartQuote) ptr[len-1]='\0';
 memmove(Str,ptr+1,len);
@@ -500,20 +521,39 @@ return(ptr);
 }
 
 
-//This function searches for the separator
+
+
+//This function searches for the separator. It uses 'strchr' rather 
+//than a naieve ptr++ approach, because strchr is impossibly fast.
+//No, really, if you've never tried to beat the performance of the
+//glibc strchr, with mmx or sse or something like that, then give it
+//a go. It's enlightening.
 int GetTokenSepMatch(char *Pattern, char **start, char **end, int Flags)
 {
 char *pptr, *eptr;
 int MatchChar, InQuotes=FALSE;
 
 
-pptr=Pattern;
 
-
+//Handle any quotes around the string we are searching in
 if (Flags & GETTOKEN_QUOTES) *start=HandleQuotes(*start);
 if (*start==*end) return(FALSE);
 
-eptr=*start;
+pptr=Pattern;
+if (*pptr !='\\')
+{
+	//strchr is insanely fast, so see if the first character of our separator
+	//is in the string!
+	eptr=strchr(*start,*pptr);
+	if (! eptr) return(FALSE);
+
+	//rewind in case we've found an
+	//escaped character
+	if (eptr > *start) eptr--;
+}
+else eptr=*start;
+
+
 while (1)
 {
 //if we run out of pattern, then we got a match
@@ -560,11 +600,15 @@ else if (*eptr != *pptr) return(FALSE);
 pptr++;
 eptr++;
 }
+
 return(FALSE);
 }
 
 
 
+
+//Get token allows multiple separators, so this breaks up the
+//separator string into individual separators
 char *GetNextSeparator(char *Pattern, char **Sep, int Flags)
 {
 char *ptr;
@@ -687,6 +731,7 @@ char *DeQuoteStr(char *Buffer, const char *Line)
 {
 char *out, *in;
 int olen=0;
+char hex[3];
 
 if (Line==NULL) return(NULL);
 out=CopyStr(Buffer,"");
@@ -705,7 +750,7 @@ while(in && (*in != '\0') )
 			break;
 
 
-		   case 'n': 
+		  case 'n': 
 			out=AddCharToBuffer(out,olen,'\n');
 			olen++;
 			break;
@@ -715,14 +760,21 @@ while(in && (*in != '\0') )
 			olen++;
 			break;
 
-		   case 't': 
+		  case 't': 
 			out=AddCharToBuffer(out,olen,'\t');
 			olen++;
 			break;
 
+			case 'x':
+			in++; hex[0]=*in;
+			in++; hex[1]=*in;
+			hex[2]='\0';
+			out=AddCharToBuffer(out,olen,strtol(hex,NULL,16) & 0xFF);
+			olen++;
+			break;
 
-		   case '\\': 
-		   default:
+		  case '\\': 
+		  default:
 			out=AddCharToBuffer(out,olen,*in);
 			olen++;
 			break;

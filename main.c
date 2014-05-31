@@ -1,489 +1,18 @@
-#include "libUseful-2.0/libUseful.h"
-#include "glob.h"
+#include "common.h"
+#include "ssh.h"
+#include "fingerprint.h"
 
 
-#define ACT_NONE 0
-#define ACT_HASH 1
-#define ACT_CHECK 2
-#define ACT_HASH_LISTFILE 3
-#define ACT_PRINTUSAGE 4
-
-#define FLAG_RECURSE 1
-#define FLAG_VERBOSE 2
-#define FLAG_DIRMODE 4
-#define FLAG_DEVMODE 8
-#define FLAG_CHECK   16
-#define FLAG_STDIN	 32
-#define FLAG_ONE_FS  64
-#define FLAG_DIR_INFO 128
-#define FLAG_XATTR   256
-#define FLAG_FROM_LISTFILE 512
-#define FLAG_OUTPUT_FAILS 1024 
-#define FLAG_TRAD_OUTPUT 2048 
-#define FLAG_INCLUDE 4096
-#define FLAG_EXCLUDE 8192
-#define FLAG_DEREFERENCE 16384
-#define FLAG_HMAC 32768
-#define FLAG_BASE64 65536
-#define FLAG_ARG_NAMEVALUE 131072
-#define FLAG_FULLCHECK 262144
-
-#define FP_HASSTAT 1
-
-#define BLOCKSIZE 4096
-
-#define VERSION "0.1"
-
-ListNode *Vars;
-
-
-typedef struct
+int CheckHashesFromList(HashratCtx *Ctx)
 {
-int Flags;
-char *Path;
-char *Hash;
-char *HashType;
-struct stat FStat;
-} TFingerprint;
-
-ListNode *IncludeExclude=NULL;
-dev_t StartingFS=0;
-int Flags=0;
-int Encoding=ENCODE_HEX;
-char *DiffHook=NULL;
-char *Key=NULL;
-
-
-#define USE_XATTR
-
-#ifdef USE_XATTR
- #include <sys/types.h>
- #include <sys/xattr.h>
-#endif
-
-
-int StatFile(char *Path, struct stat *Stat)
-{
-if (Flags & FLAG_DEREFERENCE) return(stat(Path,Stat));
-return(lstat(Path,Stat));
-}
-
-
-int FingerprintRead(STREAM *S, TFingerprint *FP)
-{
-char *Tempstr=NULL, *Name=NULL, *Value=NULL, *ptr;
-
-FP->Path=CopyStr(FP->Path,"");
-FP->Hash=CopyStr(FP->Hash,"");
-FP->Flags=0;
-memset(&FP->FStat,0,sizeof(struct stat));
-
-Tempstr=STREAMReadLine(Tempstr,S);
-if (! Tempstr) return(FALSE);
-
-StripTrailingWhitespace(Tempstr);
-if (strncmp(Tempstr,"hash=",5) ==0)
-{
-//Native format
-
-	ptr=GetNameValuePair(Tempstr," ","=",&Name,&Value);
-	while (ptr)
-	{
-		if (StrLen(Name))
-		{
-		if (strcmp(Name,"path")==0) FP->Path=CopyStr(FP->Path,Value);
-		if (strcmp(Name,"size")==0) 
-		{
-			FP->Flags |= FP_HASSTAT;
-			FP->FStat.st_size=strtol(Value,NULL,10);
-		}
-		if (strcmp(Name,"mode")==0) 
-		{
-			FP->Flags |= FP_HASSTAT;
-			FP->FStat.st_mode=strtol(Value,NULL,8);
-		}
-		if (strcmp(Name,"mtime")==0)
-		{
-			FP->Flags |= FP_HASSTAT;
-			FP->FStat.st_mtime=strtol(Value,NULL,10);
-		}
-		if (strcmp(Name,"inode")==0) 
-		{
-			FP->Flags |= FP_HASSTAT;
-			FP->FStat.st_ino=strtol(Value,NULL,10);
-		}
-		if (strcmp(Name,"uid")==0) 
-		{
-			FP->Flags |= FP_HASSTAT;
-			FP->FStat.st_uid=strtol(Value,NULL,10);
-		}
-		if (strcmp(Name,"gid")==0) 
-		{
-			FP->Flags |= FP_HASSTAT;
-			FP->FStat.st_gid=strtol(Value,NULL,10);
-		}
-		if (strcmp(Name,"hash")==0)
-		{
-			 FP->Hash=CopyStr(FP->Hash,GetToken(Value,":",&FP->HashType,0));
-		}
-		}
-		ptr=GetNameValuePair(ptr," ","=",&Name,&Value);
-	}
-
-}
-else
-{
-	ptr=GetToken(Tempstr," ",&FP->Hash,0);
-	while (isspace(*ptr)) ptr++;
-	FP->Path=CopyStr(FP->Path,ptr);
-}
-
-DestroyString(Tempstr);
-DestroyString(Name);
-DestroyString(Value);
-
-return(TRUE);
-}
-
-
-
-
-void FingerprintDestroy(void *p_FP)
-{
-TFingerprint *FP;
-
-FP=(TFingerprint *) p_FP;
-DestroyString(FP->Path);
-DestroyString(FP->Hash);
-DestroyString(FP->HashType);
-free(FP);
-}
-
-
-
-int FPCompare(const void *v1, const void *v2)
-{
-const TFingerprint *FP1, *FP2;
-
-FP1=(TFingerprint *) v1;
-FP2=(TFingerprint *) v2;
-
-if (! FP1->Hash) return(FALSE);
-if (! FP2->Hash) return(TRUE);
-if (strcmp(FP1->Hash,FP2->Hash) < 0) return(TRUE);
-
-return(FALSE);
-}
-
-
-int FDigestOutputInfo(STREAM *Out, char *Path, struct stat *Stat, char *HashType, char *Hash)
-{
-char *Tempstr=NULL;
-ListNode *Curr;
-
-if (Flags & FLAG_XATTR) setxattr(Path, HashType, Hash, StrLen(Hash), 0);
-
-if (Flags & FLAG_TRAD_OUTPUT) Tempstr=MCopyStr(Tempstr,Hash, "  ", Path,NULL);
-else
-{
-	/*
-		struct stat {
-    dev_t     st_dev;     // ID of device containing file 
-    ino_t     st_ino;     // inode number 
-    mode_t    st_mode;    // protection 
-    nlink_t   st_nlink;   // number of hard links 
-    uid_t     st_uid;     // user ID of owner
-    gid_t     st_gid;     // group ID of owner
-    dev_t     st_rdev;    // device ID (if special file) 
-    off_t     st_size;    // total size, in bytes 
-    blksize_t st_blksize; // blocksize for file system I/O 
-    blkcnt_t  st_blocks;  // number of 512B blocks allocated 
-    time_t    st_atime;   // time of last access 
-    time_t    st_mtime;   // time of last modification 
-    time_t    st_ctime;   // time of last status change 
-	*/
-	Tempstr=FormatStr(Tempstr,"hash='%s:%s' mode='%o' uid='%lu' gid='%lu' size='%lu' mtime='%lu' inode='%lu' path='%s'",HashType,Hash,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
-}
-
-Tempstr=CatStr(Tempstr,"\n");
-
-STREAMWriteString(Tempstr,Out);
-
-DestroyString(Tempstr);
-}
-
-
-int FDigestHashFile(THash *Hash, char *Path)
-{
-STREAM *S;
-char *Tempstr=NULL;
-int result;
-
-if (strcmp(Path,"-")==0) S=STREAMFromFD(0);
-else S=STREAMOpenFile(Path,O_RDONLY);
-if (! S) return(FALSE);
-
-Tempstr=SetStrLen(Tempstr,4096);
-
-result=STREAMReadBytes(S,Tempstr,4096);
-while (result > 0)
-{
-	Hash->Update(Hash ,Tempstr, result);
-	result=STREAMReadBytes(S,Tempstr,4096);
-}
-
-STREAMClose(S);
-
-DestroyString(Tempstr);
-
-
-return(TRUE);
-}
-
-
-char *FDigestHashSingleFile(char *RetStr, char *HashType, char *Path)
-{
-THash *Hash;
-char *ptr;
-
-			RetStr=CopyStr(RetStr,"");
-			Hash=HashInit(HashType);
-			ptr=GetVar(Vars,"EncryptionKey");
-			HMACSetKey(Hash, ptr, StrLen(ptr));
-
-			FDigestHashFile(Hash,Path);
-			Hash->Finish(Hash,Encoding,&RetStr);
-			HashDestroy(Hash);
-
-	return(RetStr);
-}
-
-
-
-int IsIncluded(char *Path, struct stat *FStat)
-{
-ListNode *Curr;
-char *mptr, *dptr;
-int result=TRUE;
-
-if (Flags & FLAG_EXCLUDE) result=FALSE;
-if (S_ISDIR(FStat->st_mode)) result=TRUE;
-
-Curr=ListGetNext(IncludeExclude);
-while (Curr)
-{
-mptr=(char *) Curr->Item;
-dptr=Path;
-if (*mptr!='/') 
-{
-mptr=basename(mptr);
-dptr=basename(Path);
-}
-
-if (fnmatch(mptr,dptr,0)==0) 
-{
-	if (Curr->ItemType==FLAG_INCLUDE) result=TRUE;
-	else result=FALSE;
-}
-
-Curr=ListGetNext(Curr);
-}
-
-
-return(result);
-}
-
-
-
-//This is used to processs small pieces of data like device IDs
-char *ProcessData(char *RetStr, THash *Hash, char *Path, char *Data, int DataLen, char *HashType, struct stat *Stat)
-{
-char *ptr;
-
-		if (! Hash) 
-		{
-			Hash=HashInit(HashType);
-			ptr=GetVar(Vars,"EncryptionKey");
-			HMACSetKey(Hash, ptr, StrLen(ptr));
-
-			Hash->Update(Hash ,Data, DataLen);
-			Hash->Finish(Hash,Encoding,&RetStr);
-			HashDestroy(Hash);
-		} else Hash->Update(Hash ,Data, DataLen);
-
-return(RetStr);
-}
-
-
-
-int HashItem(THash *Hash, char *Path, struct stat *FStat, char *HashType, char **HashStr)
-{
-char *Tempstr=NULL;
-int result=TRUE, val;
-
-
-	if (Flags & FLAG_ONE_FS)
-	{
-		if (StartingFS==0) StartingFS=FStat->st_dev;
-		else if (FStat->st_dev != StartingFS) return(FLAG_ONE_FS);
-	}
-
-	if (! IsIncluded(Path, FStat)) return(FLAG_EXCLUDE);
-
-	if (S_ISDIR(FStat->st_mode))
-	{
-		if (Flags & FLAG_RECURSE) return(FLAG_RECURSE);
-		else *HashStr=ProcessData(*HashStr, Hash, Path, (char *) &FStat->st_ino, sizeof(ino_t), HashType, FStat);
-	}
-	else if ((! (Flags & FLAG_DEVMODE)) && S_ISCHR(FStat->st_mode))  *HashStr=ProcessData(*HashStr, Hash, Path, (char *) &FStat->st_rdev, sizeof(dev_t), HashType, FStat);
-	else if ((! (Flags & FLAG_DEVMODE)) && S_ISBLK(FStat->st_mode))  *HashStr=ProcessData(*HashStr, Hash, Path, (char *) &FStat->st_rdev, sizeof(dev_t), HashType, FStat);
-	else if ((! (Flags & FLAG_DEVMODE)) && S_ISFIFO(FStat->st_mode)) *HashStr=ProcessData(*HashStr, Hash, Path, (char *) &FStat->st_ino, sizeof(ino_t), HashType, FStat);
-	else if ((! (Flags & FLAG_DEVMODE)) && S_ISSOCK(FStat->st_mode)) *HashStr=ProcessData(*HashStr, Hash, Path, (char *) &FStat->st_ino, sizeof(ino_t), HashType, FStat);
-	else if ((! (Flags & FLAG_DEVMODE)) && S_ISLNK(FStat->st_mode)) 
-	{
-		Tempstr=SetStrLen(Tempstr,PATH_MAX);
-		val=readlink(Path, Tempstr,PATH_MAX);
-		if (val > 0)
-		{
-			Tempstr[val]='\0';
-			*HashStr=ProcessData(*HashStr, Hash, Path, Tempstr, val, HashType, FStat);
-		}
-	}
-	else
-	{
-		if (! Hash) 
-		{
-			*HashStr=FDigestHashSingleFile(*HashStr, HashType, Path);
-		} else FDigestHashFile(Hash,Path);
-
-	}
-
-DestroyString(Tempstr);
-
-return(0);
-}
-
-
-
-
-void ProcessItem(STREAM *Out, THash *Hash, char *Path, struct stat *Stat, char *HashType)
-{
-char *HashStr=NULL;
-
-				switch (HashItem(Hash, Path, Stat, HashType, &HashStr))
-				{
-					case FLAG_RECURSE:
-					FDigestRecurse(Out, Hash, HashType, Path, &HashStr, 0);
-					break;
-
-					case FLAG_EXCLUDE:
-					break;
-
-					default:
-					FDigestOutputInfo(Out, Path, Stat, HashType, HashStr);
-					break;
-				}
-
-DestroyString(HashStr);
-}
-
-
-
-int ProcessDir(THash *Hash, char *Dir, char *HashType, int Flags, STREAM *Output)
-{
-char *Tempstr=NULL, *HashStr=NULL;
-STREAM *S=NULL;
-glob_t Glob;
-int i;
-int result=TRUE;
-struct stat Stat;
-
-			if (strcmp(Dir,".")==0) return(TRUE);
-			if (strcmp(Dir,"..")==0) return(TRUE);
-
-
-			if (Flags & FLAG_DIR_INFO)
-			{
-				Tempstr=MCopyStr(Tempstr,Dir,"/.fdigest.info",NULL);
-				S=STREAMOpenFile(Tempstr,O_WRONLY|O_CREAT|O_TRUNC);	
-			}
-			else S=Output;
-
-			Tempstr=MCopyStr(Tempstr,Dir,"/*",NULL);
-
-			glob(Tempstr,0,0,&Glob);
-			for (i=0; i < Glob.gl_pathc; i++)
-			{
-				if (StatFile(Glob.gl_pathv[i],&Stat)==0) ProcessItem(S, Hash, Glob.gl_pathv[i], &Stat, HashType);
-				else fprintf(stderr,"\rERROR: Failed to open '%s'.\n",Glob.gl_pathv[i]);
-			}
-			globfree(&Glob);
-
-			if (Flags & FLAG_DIR_INFO) STREAMClose(S);
-
-
-DestroyString(Tempstr);
-DestroyString(HashStr);
-
-return(result);
-}
-
-
-
-int FDigestRecurse(STREAM *Out, THash *Hash, char *HashType, char *Path, char **HashStr, int result)
-{
-char *ptr;
-
-		if ((Flags & FLAG_DIRMODE) && (! Hash)) 
-		{
-				Hash=HashInit(HashType);
-				ptr=GetVar(Vars,"EncryptionKey");
-				HMACSetKey(Hash, ptr, StrLen(ptr));
-
-				if (! ProcessDir(Hash, Path, HashType, Flags, Out)) result=FALSE;
-				Hash->Finish(Hash,Encoding,HashStr);
-				HashDestroy(Hash);
-
-				FDigestOutputInfo(Out, Path, NULL, HashType, HashStr);
-		}
-		else if (! ProcessDir(Hash, Path, HashType, Flags,Out)) result=FALSE;
-
-	return(result);
-}
-
-
-/*
-*/
-
-
-int HandleCheckFail(char *Path, char *ErrorMessage, int *Errors)
-{
-char *Tempstr=NULL;
-
-	printf("%s: FAILED. %s.\n",Path,ErrorMessage);
-	(*Errors)++;
-	if (StrLen(DiffHook))
-	{
-		Tempstr=MCopyStr(Tempstr,DiffHook," ",Path,NULL);
-		system(Tempstr);
-	}
-
-	DestroyString(Tempstr);
-	return(FALSE);
-}
-
-
-int CheckHashes(ListNode *Vars, char *DefaultHashType)
-{
-char *HashStr=NULL, *Tempstr=NULL,  *ptr;
-int result=TRUE, i;
+int result=0;
 int Checked=0, Errors=0;
-struct stat Stat;
 STREAM *ListStream;
 TFingerprint *FP;
+char *ptr;
 
 
-ptr=GetVar(Vars,"Path");
+ptr=GetVar(Ctx->Vars,"Path");
 if (strcmp(ptr,"-")==0) 
 {
 	ListStream=STREAMFromFD(0);
@@ -494,48 +23,13 @@ else ListStream=STREAMOpenFile(ptr, O_RDONLY);
 FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
 while (FingerprintRead(ListStream, FP))
 {
-		Checked++;
-		HashStr=CopyStr(HashStr,"");
-		if (! StrLen(FP->HashType)) FP->HashType=CopyStr(FP->HashType, DefaultHashType);
-
-		if (access(FP->Path,F_OK)!=0) fprintf(stderr,"\rERROR: No such file '%s'\n",FP->Path);
-		else if (FP->Flags & FP_HASSTAT)
-		{
-			if (StatFile(FP->Path,&Stat)==0)
-			{
-				if ((FP->FStat.st_size > 0) && (Stat.st_size != FP->FStat.st_size)) result=HandleCheckFail(FP->Path, "Filesize changed", &Errors);
-				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_ino != FP->FStat.st_ino)) result=HandleCheckFail(FP->Path, "Inode changed", &Errors);
-				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_uid != FP->FStat.st_uid)) result=HandleCheckFail(FP->Path, "Owner changed", &Errors);
-				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_gid != FP->FStat.st_gid)) result=HandleCheckFail(FP->Path, "Group changed", &Errors);
-				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_mode != FP->FStat.st_mode)) 
-				{
-					result=HandleCheckFail(FP->Path, "Mode changed", &Errors);
-				}
-				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_mtime != FP->FStat.st_mtime)) 
-				{
-					result=HandleCheckFail(FP->Path, "MTime changed", &Errors);
-				}
-				else
-				{
-					HashFile(&HashStr,FP->HashType,FP->Path,Encoding);
-					if (strcasecmp(FP->Hash,HashStr)!=0) result=HandleCheckFail(FP->Path, "Hash mismatch", &Errors);
-					else if (! (Flags & FLAG_OUTPUT_FAILS)) printf("%s: OKAY\n",FP->Path);
-				}
-			}
-			else fprintf(stderr,"\rERROR: Failed to open '%s'\n",FP->Path);
-		}
-		else
-		{
-				HashFile(&HashStr,FP->HashType,FP->Path,Encoding);
-				if (strcasecmp(FP->Hash,HashStr)!=0) result=HandleCheckFail(FP->Path, "Hash mismatch", &Errors);
-				else if (! (Flags & FLAG_OUTPUT_FAILS)) printf("%s: OKAY\n",FP->Path);
-		}
+	if (! StrLen(FP->HashType)) FP->HashType=CopyStr(FP->HashType, Ctx->HashType);
+	result=HashratCheckFile(Ctx, FP);
+	Checked++;
 }
 
 fprintf(stderr,"\nChecked %d files. %d Failures\n",Checked,Errors);
 
-DestroyString(Tempstr);
-DestroyString(HashStr);
 FingerprintDestroy(FP);
 
 return(result); 
@@ -543,256 +37,122 @@ return(result);
 
 
 
-void HashFromListFile(char *HashType, char *ListFilePath)
+void HashFromListFile(HashratCtx *Ctx)
 {
 char *Tempstr=NULL, *HashStr=NULL;
-STREAM *S, *Out;
+STREAM *S;
 struct stat Stat;
 
-if (strcmp(ListFilePath,"-")==0) S=STREAMFromFD(0);
-else S=STREAMOpenFile(ListFilePath,O_RDONLY);
-
-Out=STREAMFromFD(1);
+if (strcmp(Ctx->ListPath,"-")==0) S=STREAMFromFD(0);
+else S=STREAMOpenFile(Ctx->ListPath,O_RDONLY);
 Tempstr=STREAMReadLine(Tempstr, S);
 while (Tempstr)
 {
 	StripTrailingWhitespace(Tempstr);
-	if (StatFile(Tempstr,&Stat)==0) HashItem(NULL, Tempstr, &Stat, HashType, &HashStr);
-	FDigestOutputInfo(Out, Tempstr, &Stat, HashType, HashStr);
+	if (StatFile(Tempstr,&Stat)==0) HashItem(NULL, Tempstr, &Stat, Ctx->HashType, &HashStr);
+
+	HashratAction(Ctx, Tempstr, &Stat, HashStr);
 	Tempstr=STREAMReadLine(Tempstr, S);
 }
 
 STREAMClose(S);
-STREAMClose(Out);
 
 DestroyString(Tempstr);
 DestroyString(HashStr);
 }
 
 
-
-//if first item added to Include/Exclude is an include
-//then the program will exclude by default
-void AddIncludeExclude(int Type, const char *Item)
+void HMACSetup(HashratCtx *Ctx)
 {
-ListNode *Node;
+char *Tempstr=NULL, *ptr;
+STREAM *S;
 
-if (! IncludeExclude) 
-{
-	IncludeExclude=ListCreate();
-	if (Type==FLAG_INCLUDE) Flags |= FLAG_EXCLUDE;
-}
-
-Node=ListAddItem(IncludeExclude, CopyStr(NULL, Item));
-Node->ItemType=Type;
-}
-
-
-
-int HandleArg(int argc, char *argv[], int pos, int SetFlags, char *VarName, char *VarValue)
-{
-	Flags |= SetFlags;
-	
-	if (SetFlags & FLAG_ARG_NAMEVALUE)
+	ptr=GetVar(Ctx->Vars,"EncryptionKey");
+	if (StrLen(ptr)==0) 
 	{
-	if (argv[pos + 1] ==NULL)
-	{
-		printf("ERROR: The %s option requires an argument.\n",argv[pos]);
-		exit(1);
-	}
-	else
-	{
-		strcpy(argv[pos],"");
-		pos++;
-		if (SetFlags & FLAG_INCLUDE) AddIncludeExclude(FLAG_INCLUDE, argv[pos]);
-		else if (SetFlags & FLAG_EXCLUDE) AddIncludeExclude(FLAG_EXCLUDE, argv[pos]);
-		else SetVar(Vars,VarName,argv[pos]);
-	}
-	}
-	else if (StrLen(VarName)) SetVar(Vars,VarName,VarValue);
-
-	if (argc > 0) strcpy(argv[pos],"");
-return(pos);
-}
-
-
-
-int ParseArgs(int argc,char *argv[], ListNode *Vars)
-{
-int i;
-char *ptr;
-int Action=ACT_HASH;
-
-//You never know
-if (argc < 1) return(ACT_PRINTUSAGE);
-
-//argv[0] might be full path to the program, or just its name
-ptr=strrchr(argv[0],'/');
-if (! ptr) ptr=argv[0];
-else ptr++;
-
-
-if (strcmp(ptr,"md5sum")==0) 
-HandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "md5");
-if (
-		(strcmp(ptr,"sha1sum")==0) ||
-		(strcmp(ptr,"shasum")==0) 
-	) 
-HandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "sha1");
-if (strcmp(ptr,"sha256sum")==0) 
-HandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "sha256");
-if (strcmp(ptr,"sha512sum")==0) 
-HandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "sha512");
-
-
-for (i=1; i < argc; i++)
-{
-if (
-		(strcmp(argv[i],"--version")==0) ||
-		(strcmp(argv[i],"-version")==0)
-	)
-{
-	printf("version: %s\n",VERSION);
-	return(ACT_NONE);
-}
-else if (
-		(strcmp(argv[i],"--help")==0) ||
-		(strcmp(argv[i],"-help")==0) ||
-		(strcmp(argv[i],"-?")==0)
-	)
-{
-	return(ACT_PRINTUSAGE);
-}
-else if (strcmp(argv[i],"-c")==0)
-{
-	Action = ACT_CHECK;
-	strcpy(argv[i],"");
-}
-else if (strcmp(argv[i],"-cf")==0)
-{
-	Action = ACT_CHECK;
-	HandleArg(argc, argv, i, FLAG_OUTPUT_FAILS, "", "");
-}
-else if (strcmp(argv[i],"-diff-hook")==0) 
-{
-	strcpy(argv[i],"");
-	i++;
-	DiffHook=CopyStr(DiffHook,argv[i]);
-	strcpy(argv[i],"");
-}
-
-else if (strcmp(argv[i],"-md5")==0) HandleArg(argc, argv, i, 0, "HashType", "md5");
-else if (
-					(strcmp(argv[i],"-sha")==0) ||
-					(strcmp(argv[i],"-sha1")==0)
-				) HandleArg(argc, argv, i, 0, "HashType", "sha1");
-else if (
-					(strcmp(argv[i],"-t")==0) ||
-					(strcmp(argv[i],"-trad")==0)
-				) HandleArg(argc, argv, i, FLAG_TRAD_OUTPUT, "", "");
-else if (strcmp(argv[i],"-sha256")==0) HandleArg(argc, argv, i, 0, "HashType", "sha256");
-else if (strcmp(argv[i],"-sha512")==0) HandleArg(argc, argv, i, 0, "HashType", "sha512");
-else if (strcmp(argv[i],"-crc32")==0) HandleArg(argc, argv, i, 0, "HashType", "crc32");
-else if (strcmp(argv[i],"-64")==0) HandleArg(argc, argv, i, FLAG_BASE64, "", "");
-else if (strcmp(argv[i],"-base64")==0) HandleArg(argc, argv, i, FLAG_BASE64, "", "");
-else if (strcmp(argv[i],"-hmac")==0) HandleArg(argc, argv, i, FLAG_HMAC | FLAG_ARG_NAMEVALUE, "EncryptionKey", "");
-else if (strcmp(argv[i],"-r")==0) HandleArg(argc, argv, i, FLAG_RECURSE, "", "");
-else if (strcmp(argv[i],"-f")==0) HandleArg(argc, argv, i, FLAG_FROM_LISTFILE, "", "");
-else if (strcmp(argv[i],"-i")==0) HandleArg(argc, argv, i, FLAG_INCLUDE | FLAG_ARG_NAMEVALUE, "", "");
-else if (strcmp(argv[i],"-x")==0) HandleArg(argc, argv, i, FLAG_EXCLUDE | FLAG_ARG_NAMEVALUE, "", "");
-else if (strcmp(argv[i],"-d")==0) HandleArg(argc, argv, i, FLAG_DEREFERENCE, "", "");
-else if (strcmp(argv[i],"-dirmode")==0) HandleArg(argc, argv, i, FLAG_DIRMODE | FLAG_RECURSE, "", "");
-else if (strcmp(argv[i],"-devmode")==0) HandleArg(argc, argv, i, FLAG_DIRMODE | FLAG_DEVMODE, "", "");
-else if (strcmp(argv[i],"-fs")==0) HandleArg(argc, argv, i, FLAG_ONE_FS, "", "");
-else if (strcmp(argv[i],"-dir-info")==0) HandleArg(argc, argv, i, FLAG_DIR_INFO, "", "");
-else if (strcmp(argv[i],"-xattr")==0) HandleArg(argc, argv, i, FLAG_XATTR, "", "");
-else if (strcmp(argv[i],"-stat")==0) HandleArg(argc, argv, i, FLAG_FULLCHECK, "", "");
-}
-
-if (Flags & FLAG_BASE64) Encoding = ENCODE_BASE64;
-
-if ((Flags & FLAG_FROM_LISTFILE))
-{
-	if (Action==ACT_HASH) Action=ACT_HASH_LISTFILE;
-
-	for (i=1; i < argc; i++)
-	{
-		if (StrLen(argv[i]))
+		if (isatty(0)) 
 		{
-			SetVar(Vars,"Path",argv[i]);
-			strcpy(argv[i],"");
-			break;
+			write(1, "Enter HMAC Key: ",16);
+
+			S=STREAMFromFD(0);
+			Tempstr=STREAMReadLine(Tempstr,S);
+			StripTrailingWhitespace(Tempstr);
+			SetVar(Ctx->Vars,"EncryptionKey",Tempstr);
+			ptr=Tempstr;
+			STREAMDisassociateFromFD(S);			
+		}
+
+		//By now we must have an encryption key!
+		if (! StrLen(ptr))
+		{
+			write(1,"ERROR: No HMAC Key given!\n",27);
+			exit(2);
 		}
 	}
+DestroyString(Tempstr);
 }
 
-return(Action);
-}
 
 
-
-void PrintUsage()
+void HashStdIn(HashratCtx *Ctx)
 {
-printf("Hasher: version %s\n",VERSION);
-printf("Author: Colum Paget\n");
-printf("Email: colums.projects@gmail.com\n");
-printf("Blog:  http://idratherhack.blogspot.com\n\n");
-printf("Usage:\n    hashrat [options] [path to hash]...\n");
-printf("\n    hashrat -c [options] [input file of hashes]...\n\n");
+STREAM *In=NULL;
+char *Tempstr=NULL, *Hash=NULL;
 
-printf("Options:\n");
-printf("  %-15s %s\n","--help", "Print this help");
-printf("  %-15s %s\n","-help", "Print this help");
-printf("  %-15s %s\n","-?", "Print this help");
-printf("  %-15s %s\n","--version", "Print program version");
-printf("  %-15s %s\n","-version", "Print program version");
-printf("  %-15s %s\n","-md5", "Use md5 hash algorithmn");
-printf("  %-15s %s\n","-sha1", "Use sha1 hash algorithmn");
-printf("  %-15s %s\n","-sha256", "Use sha256 hash algorithmn");
-printf("  %-15s %s\n","-sha512", "Use sha512 hash algorithmn");
-printf("  %-15s %s\n","-64", "Encode with base65 instead of hex");
-printf("  %-15s %s\n","-base64", "Encode with base65 instead of hex");
-printf("  %-15s %s\n","-hmac", "HMAC using specified hash algorithm");
-printf("  %-15s %s\n","-r", "Recurse into directories when hashing files");
-printf("  %-15s %s\n","-t", "Output hashes in traditional md5sum, shaXsum format");
-printf("  %-15s %s\n","-f <listfile>", "Hash files listed in <listfile>");
-printf("  %-15s %s\n","-i <pattern>", "Only hash items matching <pattern>");
-printf("  %-15s %s\n","-x <pattern>", "Exclude items matching <pattern>");
-printf("  %-15s %s\n","-c", "Check hashes against list from file (or stdin)");
-printf("  %-15s %s\n","-cf", "Check hashes but only show failures");
-printf("  %-15s %s\n","-d","dereference (follow) symlinks"); 
-printf("  %-15s %s\n","-dev", "DevMode: read from a file EVEN OF IT'S A DEVNODE");
-printf("  %-15s %s\n","-fs", "Stay one one file system");
+if (Flags & FLAG_LINEMODE) 
+{
+	In=STREAMFromFD(0);
+	STREAMSetTimeout(In,0);
+	Tempstr=STREAMReadLine(Tempstr,In);
+	while (Tempstr)
+	{
+		if (! (Flags & FLAG_RAW)) StripTrailingWhitespace(Tempstr);
+		Hash=CopyStr(Hash,"");
+		Hash=ProcessData(Hash, Ctx, Tempstr, StrLen(Tempstr));
+		STREAMWriteString(Hash,Ctx->Out); STREAMWriteString("\n",Ctx->Out);
+		Tempstr=STREAMReadLine(Tempstr,In);
+	}
 }
+else
+{
+	Hash=HashratHashSingleFile(Hash, Ctx, Ctx->HashType, 0, "-");
+	STREAMWriteString(Hash,Ctx->Out); STREAMWriteString("\n",Ctx->Out);
+}
+STREAMDisassociateFromFD(In);
+
+DestroyString(Tempstr);
+DestroyString(Hash);
+}
+
 
 
 
 main(int argc, char *argv[])
 {
-char *Tempstr=NULL, *HashStr=NULL, *HashType=NULL;
-int i, Action, result=FALSE, count=0;
+char *Tempstr=NULL, *HashStr=NULL, *ptr;
+int i, result=FALSE, count=0;
 struct stat Stat;
-STREAM *Out=NULL;
+HashratCtx *Ctx;	
 
-Vars=ListCreate();
-SetVar(Vars,"HashType","md5");
-SetVar(Vars,"Path","-");
+memset(&Stat,0,sizeof(struct stat)); //to keep valgrind happy
 
-Action=ParseArgs(argc,argv,Vars);
-Out=STREAMFromFD(1);
-
-if (Flags & FLAG_HMAC) HashType=MCopyStr(HashType,"hmac-",GetVar(Vars,"HashType"),NULL);
-else HashType=CopyStr(HashType,GetVar(Vars,"HashType"));
-
-switch (Action)
+Ctx=CommandLineParseArgs(argc,argv);
+if (Ctx)
+{
+switch (Ctx->Action)
 {
 	case ACT_CHECK:
 		Flags |= FLAG_CHECK;	
-		result=CheckHashes(Vars,HashType);
+		if (Flags & FLAG_XATTR) result=CheckHashesFromXAttr(Ctx);
+		else result=CheckHashesFromList(Ctx);
+	break;
+
+	case ACT_CGI:
+		CGIDisplayPage();
 	break;
 
 	case ACT_PRINTUSAGE:
-		PrintUsage();
+		CommandLinePrintUsage();
 	break;
 
 	case ACT_HASH:
@@ -803,30 +163,29 @@ switch (Action)
 	{
 			if (StatFile(argv[i],&Stat)==0)
 			{
-			if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
-			ProcessItem(Out, NULL, argv[i], &Stat, HashType);
+				if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
+				ProcessItem(Ctx, argv[i], &Stat);
 			}
+			else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
 			count++;
 	}
 	}
 
 	//if we didn't find anything on the command-line then read from stdin
-	if (count==0)
-	{
-			Tempstr=FDigestHashSingleFile(Tempstr, HashType, GetVar(Vars,"Path"));
-			STREAMWriteString(Tempstr,Out); STREAMWriteString("\n",Out);
-	}
+	if (count==0) HashStdIn(Ctx);
+
 	break;
 
 
 	case ACT_HASH_LISTFILE:
-		HashFromListFile(HashType, GetVar(Vars,"Path"));
+		HashFromListFile(Ctx);
 	break;
 
 }
 
 fflush(NULL);
-STREAMClose(Out);
+STREAMClose(Ctx->Out);
+}
 
 DestroyString(Tempstr);
 

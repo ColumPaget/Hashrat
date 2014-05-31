@@ -203,7 +203,7 @@ if (*pty > -1)
 		InitTTY(*tty,0,TermFlags);
 		return(1);
 	}
-	
+	close(*pty);
 }
 
 //if unix98 fails, try old BSD style
