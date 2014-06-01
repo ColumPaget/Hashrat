@@ -4,3 +4,10 @@ Installation should be as easy as:
 make
 make install 
 
+On systems with largefile support:
+
+./configure --largefiles
+make
+make install
+
+

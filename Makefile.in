@@ -39,5 +39,5 @@ clean:
 	rm -f *.o */*.o */*.a */*.so $(EXE)
 
 install:
-	@mkdir -p $(DESTDIR)$(prefix)/sbin
-	cp -f $(EXE) $(DESTDIR)$(prefix)/sbin
+	@mkdir -p $(DESTDIR)$(prefix)/bin
+	cp -f $(EXE) $(DESTDIR)$(prefix)/bin
