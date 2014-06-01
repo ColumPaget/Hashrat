@@ -45,8 +45,6 @@ int FileType(char *Path, int FTFlags, struct stat *Stat)
 
 	if ((FTFlags & FLAG_NET))
 	{
-//		if (! Stat) printf("\nNOSTAT %s\n", Path);
-//		else printf("NET: %d %s\n",Stat->st_mode,Path);
 		if (strncasecmp(Path,"ssh:",4)==0) return(FT_SSH);
 		if (strncasecmp(Path,"http:",5)==0) return(FT_HTTP);
 		if (strncasecmp(Path,"https:",6)==0) return(FT_HTTP);
@@ -135,7 +133,6 @@ glob_t Glob;
 int i, count=0, val;
 struct stat *Stat;
 
-//printf("GLIB: %d %s\n",FType,Path);
 switch (FType)
 {
 	case FT_SSH: return(SSHGlob(Ctx, Path, Dirs)); break;
@@ -153,7 +150,7 @@ for (i=0; i < Glob.gl_pathc; i++)
 		if (Dirs)
 		{
 			Stat=(struct stat *) calloc(1,sizeof(struct stat));
-			if (StatFile(Path, Stat) != -1) ListAddNamedItem(Dirs, Glob.gl_pathv[i], Stat);
+			if (StatFile(Glob.gl_pathv[i], Stat) != -1) ListAddNamedItem(Dirs, Glob.gl_pathv[i], Stat);
 			else free(Stat);
 		}
 		count++;
@@ -206,7 +203,7 @@ while (result > 0)
 	Tempstr[result]='\0';
 	if (result > 0) Hash->Update(Hash ,Tempstr, result);
 	bytes_read+=result;
-	if (bytes_read >= FStat->st_size) break;
+	if ((Type != FT_HTTP) && (bytes_read >= FStat->st_size)) break;
 	result=STREAMReadBytes(S,Tempstr,4096);
 }
 
@@ -277,14 +274,14 @@ char *Tempstr=NULL;
 	switch (Type)
 	{
 			case FT_HTTP:
-			*HashStr=HashratHashSingleFile(*HashStr, Ctx, Type, Path, FStat);
-			return(0);
+				*HashStr=HashratHashSingleFile(*HashStr, Ctx, Type, Path, FStat);
+				return(0);
 			break;
 
 			case FT_SSH:
 				val=SSHGlob(Ctx, Path, NULL);
 				if (val > 1) return(FLAG_RECURSE);
-			*HashStr=HashratHashSingleFile(*HashStr, Ctx, Type, Path, FStat);
+				*HashStr=HashratHashSingleFile(*HashStr, Ctx, Type, Path, FStat);
 			return(0);
 			break;
 	}
@@ -357,16 +354,12 @@ int result=TRUE;
 
 		Type=FileType(Dir, Flags, NULL);
 
-		if (Flags & FLAG_DIR_INFO)
-		{
-			Tempstr=MCopyStr(Tempstr,Dir,"/.fdigest.info",NULL);
-			S=STREAMOpenFile(Tempstr,O_WRONLY|O_CREAT|O_TRUNC);	
-		}
-		else S=Ctx->Out;
+		S=Ctx->Out;
 
 
 		FileList=ListCreate();
 		i=GlobFiles(Ctx, Dir, Type, FileList);
+
 
 		Curr=ListGetNext(FileList);
 		while (Curr)
@@ -375,8 +368,6 @@ int result=TRUE;
 			//else fprintf(stderr,"\rERROR: Failed to open '%s'.\n",(char *) Curr->Item);
 			Curr=ListGetNext(Curr);
 		}
-
-		if (Flags & FLAG_DIR_INFO) STREAMClose(S);
 
 		ListDestroy(FileList,free);
 
@@ -392,6 +383,7 @@ int HashratRecurse(HashratCtx *Ctx, char *Path, char **HashStr, int result)
 {
 char *ptr;
 THash *Hash;
+
 
 		if ((Flags & FLAG_DIRMODE) && (! Ctx->Hash)) 
 		{

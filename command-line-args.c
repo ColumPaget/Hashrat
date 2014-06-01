@@ -170,11 +170,11 @@ else if (strcmp(argv[i],"-dirmode")==0) CommandLineHandleArg(argc, argv, i, FLAG
 else if (strcmp(argv[i],"-devmode")==0) CommandLineHandleArg(argc, argv, i, FLAG_DIRMODE | FLAG_DEVMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-lines")==0) CommandLineHandleArg(argc, argv, i, FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-fs")==0) CommandLineHandleArg(argc, argv, i, FLAG_ONE_FS, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-dir-info")==0) CommandLineHandleArg(argc, argv, i, FLAG_DIR_INFO, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-xattr")==0) CommandLineHandleArg(argc, argv, i, FLAG_XATTR, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-stat")==0) CommandLineHandleArg(argc, argv, i, FLAG_FULLCHECK, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-strict")==0) CommandLineHandleArg(argc, argv, i, FLAG_FULLCHECK, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-S")==0) CommandLineHandleArg(argc, argv, i, FLAG_FULLCHECK, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-net")==0) CommandLineHandleArg(argc, argv, i, FLAG_NET, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-raw")==0) CommandLineHandleArg(argc, argv, i, FLAG_RAW, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-rl")==0) CommandLineHandleArg(argc, argv, i, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-rawlines")==0) CommandLineHandleArg(argc, argv, i, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (
 					(strcmp(argv[i],"-t")==0) ||
@@ -275,18 +275,34 @@ printf("  %-15s %s\n","-H", "Encode with UPPERCASE hexadecimal");
 printf("  %-15s %s\n","-HEX", "Encode with UPPERCASE hexadecimal");
 printf("  %-15s %s\n","-64", "Encode with base65 instead of hex");
 printf("  %-15s %s\n","-base64", "Encode with base65 instead of hex");
-printf("  %-15s %s\n","-trad", "traditional (md5sum, shasum) format output");
-printf("  %-15s %s\n","-r", "Recurse into directories when hashing files");
 printf("  %-15s %s\n","-t", "Output hashes in traditional md5sum, shaXsum format");
+printf("  %-15s %s\n","-trad", "Output hashes in traditional md5sum, shaXsum format");
+printf("  %-15s %s\n","-r", "Recurse into directories when hashing files");
 printf("  %-15s %s\n","-f <listfile>", "Hash files listed in <listfile>");
 printf("  %-15s %s\n","-i <pattern>", "Only hash items matching <pattern>");
 printf("  %-15s %s\n","-x <pattern>", "Exclude items matching <pattern>");
 printf("  %-15s %s\n","-c", "Check hashes against list from file (or stdin)");
 printf("  %-15s %s\n","-cf", "Check hashes but only show failures");
+printf("  %-15s %s\n","-strict", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
+printf("  %-15s %s\n","-S", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
 printf("  %-15s %s\n","-d","dereference (follow) symlinks"); 
-printf("  %-15s %s\n","-dev", "DevMode: read from a file EVEN OF IT'S A DEVNODE");
+printf("  %-15s %s\n","-dirmode", "DirMode: Read all files in directory and create one hash for them!");
+printf("  %-15s %s\n","-devmode", "DevMode: read from a file EVEN OF IT'S A DEVNODE");
 printf("  %-15s %s\n","-fs", "Stay one one file system");
+printf("  %-15s %s\n","-lines", "Read lines from stdin and hash each line independantly.");
+printf("  %-15s %s\n","-rawlines", "Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')");
+printf("  %-15s %s\n","-rl", "Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')");
 printf("  %-15s %s\n","-cgi", "Run in HTTP CGI mode");
+printf("  %-15s %s\n","-net", "Treat 'file' arguments as either ssh or http URLs, and pull files over the network and then hash them (Allows hashing of files on remote machines).");
+printf("  %-15s %s\n","", "URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..");
+printf("  %-15s %s\n","-idfile <path>", "Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.");
+
+
+/*
+else if (strcmp(argv[i],"-xattr")==0) CommandLineHandleArg(argc, argv, i, FLAG_XATTR, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-attrs")==0) 
+*/
+
 
 printf("\n\nHashrat can also detect if it's being run under any of the following names (e.g., via symlinks)\n\n");
 printf("  %-15s %s\n","md5sum","run with '-trad -md5'");

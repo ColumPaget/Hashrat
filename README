@@ -9,4 +9,4 @@ DISCLAIMER:
   This is free software. It comes with no guarentees and I take no responsiblity if it makes your computer explode or opens a portal to the demon dimensions, or does anything.
 
 SYNOPSIS
-Hashrat is a hash-generation utility that supports md5, sha1, sha256 and sha512 hashing, and the hmac versions of those hashes. 
+Hashrat is a hash-generation utility that supports the md5, sha1, sha256, sha512, whirlpool, jh-244, jh256, jh-384 and jh-512 hash functions, and also the HMAC versions of those functions. It can output in 'traditional' format (same as md5sum and shasum and the like)  
