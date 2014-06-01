@@ -44,7 +44,7 @@
 
 #define BLOCKSIZE 4096
 
-#define VERSION "0.1"
+#define VERSION "1.0"
 
 
 typedef struct

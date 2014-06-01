@@ -1,8 +1,6 @@
 
-
 AC_INIT([main.c])
 
-VERSION="0.1" 
 AC_SUBST(VERSION) 
 
 AC_CONFIG_SUBDIRS([libUseful-2.0])
