@@ -248,7 +248,10 @@ void CommandLinePrintUsage()
 printf("Hashrat: version %s\n",VERSION);
 printf("Author: Colum Paget\n");
 printf("Email: colums.projects@gmail.com\n");
-printf("Blog:  http://idratherhack.blogspot.com\n\n");
+printf("Blog:  http://idratherhack.blogspot.com\n");
+printf("Credits:\n	Thanks to the people who invented the hash functions!\n	MD5: Ronald Rivest\n	Whirlpool: Vincent Rijmen, Paulo S. L. M. Barreto\n	JH: Hongjun Wu\n	SHA: The NSA (thanks, but please stop reading my email. It's kinda creepy.).\n\n Special thanks to Professor Hongjun Wu for taking the time to confirm that his JH algorithm is free for use in GPL programs.\n");
+
+printf("\n");
 printf("Usage:\n    hashrat [options] [path to hash]...\n");
 printf("\n    hashrat -c [options] [input file of hashes]...\n\n");
 
