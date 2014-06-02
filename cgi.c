@@ -24,7 +24,7 @@ printf("<select name=HashType>\r\n");
 Curr=ListGetNext(Vars);
 while(Curr)
 {
-	if (strcmp(Curr->Tag,CurrType)==0) printf("<option selected> %s\r\n",Curr->Tag);
+	if (StrLen(CurrType) && (strcmp(Curr->Tag,CurrType)==0)) printf("<option selected> %s\r\n",Curr->Tag);
 	else printf("<option> %s\r\n",Curr->Tag);
 	Curr=ListGetNext(Curr);
 }
