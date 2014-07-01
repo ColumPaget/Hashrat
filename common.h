@@ -35,10 +35,14 @@
 #define FLAG_NET 524288
 #define FLAG_LINEMODE 1048576
 #define FLAG_RAW 2097152
-#define FLAG_BASE8  4194304
-#define FLAG_BASE10 8388608
-#define FLAG_BASE64 16777216
-#define FLAG_HEXUPPER 33554432
+
+
+#define CTX_CACHED		1
+#define CTX_BASE10		4
+#define CTX_BASE8			8
+#define CTX_HEX				16
+#define CTX_HEXUPPER	32
+#define CTX_BASE64 		64
 
 #define FP_HASSTAT 1
 
@@ -66,7 +70,7 @@ char *HashType;
 char *ListPath;
 char *HashStr;
 int Action;
-int Encoding;
+int Flags;
 ListNode *Vars;
 } HashratCtx;
 

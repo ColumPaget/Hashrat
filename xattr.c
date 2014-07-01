@@ -55,7 +55,7 @@ int result;
 #ifdef USE_XATTR
 	if (getuid()==0) Attr=MCopyStr(Attr,"trusted.","hashrat:",HashType,NULL);
 	else Attr=MCopyStr(Attr,"user.","hashrat:",HashType,NULL);
-	Tempstr=FormatStr(Tempstr,"%lu:%llu:%s",Stat->st_mtime,Stat->st_size,Hash);
+	Tempstr=FormatStr(Tempstr,"%lu:%llu:%s",(unsigned long) time(NULL),(unsigned long long) Stat->st_size,Hash);
 	result=setxattr(Path, Attr, Tempstr, StrLen(Tempstr), 0);
 
 	if (XAttrList)
@@ -74,6 +74,41 @@ exit(1);
 DestroyString(Tempstr);
 DestroyString(Attr);
 }
+
+
+int XAttrGetHash(HashratCtx *Ctx, char *Path, struct stat *FStat, char **Hash)
+{
+char *Tempstr=NULL, *ptr;
+int result=FALSE, len;
+
+#ifdef USE_XATTR
+*Hash=SetStrLen(*Hash,1024);
+
+Tempstr=MCopyStr(Tempstr,"user.hashrat:",Ctx->HashType,NULL);
+len=getxattr(Path, Tempstr, *Hash, 1024); 
+if (len > 0)
+{
+	ptr=*Hash;
+	if (strtol(ptr,&ptr,10) > FStat->st_mtime)
+	{
+		if (*ptr==':') ptr++;
+		if (strtol(ptr,&ptr,10) == FStat->st_size)
+		{
+			if (*ptr==':') ptr++;
+			memmove(*Hash,ptr,StrLen(ptr)+1);
+			result=TRUE;
+		}
+	}
+}
+
+if (! result) printf("XATTR LOAD: [%s] [%s]\n", Path, *Hash);
+
+#endif
+
+DestroyString(Tempstr);
+return(result);
+}
+
 
 
 void XAttrLoadHash(TFingerprint *FP)

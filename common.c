@@ -23,11 +23,14 @@ free(Ctx);
 }
 
 
-int HashratOutputInfo(STREAM *Out, char *Path, struct stat *Stat, char *HashType, char *Hash)
+int HashratOutputInfo(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash)
 {
 char *Tempstr=NULL; 
 
-if (Flags & FLAG_XATTR) HashRatSetXAttr(Out, Path, Stat, HashType, Hash);
+
+//if CTX_CACHED is set, then unset. Otherwise update XATTR for this item
+if (Ctx->Flags & CTX_CACHED) Ctx->Flags &= ~CTX_CACHED;
+else if (Flags & FLAG_XATTR) HashRatSetXAttr(Ctx->Out, Path, Stat, Ctx->HashType, Hash);
 
 if (Flags & FLAG_TRAD_OUTPUT) Tempstr=MCopyStr(Tempstr,Hash, "  ", Path,NULL);
 else
@@ -50,15 +53,15 @@ else
 	*/
 
 #ifdef _LARGEFILE64_SOURCE
-	Tempstr=FormatStr(Tempstr,"hash='%s:%s' mode='%o' uid='%lu' gid='%lu' size='%llu' mtime='%lu' inode='%llu' path='%s'",HashType,Hash,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
+	Tempstr=FormatStr(Tempstr,"hash='%s:%s' mode='%o' uid='%lu' gid='%lu' size='%llu' mtime='%lu' inode='%llu' path='%s'",Ctx->HashType,Hash,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
 #else
-	Tempstr=FormatStr(Tempstr,"hash='%s:%s' mode='%o' uid='%lu' gid='%lu' size='%lu' mtime='%lu' inode='%lu' path='%s'",HashType,Hash,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
+	Tempstr=FormatStr(Tempstr,"hash='%s:%s' mode='%o' uid='%lu' gid='%lu' size='%lu' mtime='%lu' inode='%lu' path='%s'",Ctx->HashType,Hash,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
 #endif
 }
 
 Tempstr=CatStr(Tempstr,"\n");
 
-STREAMWriteString(Tempstr,Out);
+STREAMWriteString(Tempstr,Ctx->Out);
 
 DestroyString(Tempstr);
 }
@@ -85,8 +88,16 @@ int HashratCheckFile(HashratCtx *Ctx,TFingerprint *FP)
 int result=FALSE;
 char *HashStr=NULL;
 struct stat Stat;
+int enc;
 
 		if (Flags & FLAG_XATTR) XAttrLoadHash(FP);
+
+    //Set encoding from args
+    if (Ctx->Flags & CTX_BASE8) enc = ENCODE_OCTAL;
+    else if (Ctx->Flags & CTX_BASE10) enc = ENCODE_DECIMAL;
+    else if (Ctx->Flags & CTX_HEXUPPER) enc = ENCODE_HEXUPPER;
+    else if (Ctx->Flags & CTX_BASE64) enc = ENCODE_BASE64;
+    else enc= ENCODE_HEX;
 
 		HashStr=CopyStr(HashStr,"");
 
@@ -104,7 +115,7 @@ struct stat Stat;
 				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_mtime != FP->FStat.st_mtime)) HandleCheckFail(FP->Path, "MTime changed");
 				else
 				{
-					HashFile(&HashStr,FP->HashType,FP->Path,Ctx->Encoding);
+					HashFile(&HashStr, FP->HashType, FP->Path, enc);
 					if (strcasecmp(FP->Hash,HashStr)!=0) HandleCheckFail(FP->Path, "Hash mismatch");
 					else if (! (Flags & FLAG_OUTPUT_FAILS))
 					{
@@ -117,7 +128,7 @@ struct stat Stat;
 		}
 		else
 		{
-				HashFile(&HashStr,FP->HashType,FP->Path,Ctx->Encoding);
+				HashFile(&HashStr, FP->HashType, FP->Path, enc);
 				if (strcasecmp(FP->Hash,HashStr)!=0) HandleCheckFail(FP->Path, "Hash mismatch");
 				else if (! (Flags & FLAG_OUTPUT_FAILS)) printf("%s: OKAY\n",FP->Path);
 		}
@@ -134,7 +145,7 @@ int HashratAction(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash)
 	{
 	case ACT_HASH:
 	default:
-	HashratOutputInfo(Ctx->Out, Path, Stat, Ctx->HashType, Hash);
+	HashratOutputInfo(Ctx, Path, Stat, Hash);
 	if (Flags & FLAG_XATTR) HashRatSetXAttr(Ctx->Out, Path, Stat, Ctx->HashType, Hash);
 	break;
 

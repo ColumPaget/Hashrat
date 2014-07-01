@@ -46,7 +46,6 @@ HashratCtx *Ctx;
 
 //Setup default context
 Ctx=(HashratCtx *) calloc(1,sizeof(HashratCtx));
-Ctx->Encoding=ENCODE_HEX;
 Ctx->Action=ACT_HASH;
 Ctx->ListPath=CopyStr(Ctx->ListPath,"-");
 
@@ -153,12 +152,13 @@ else if (strcmp(argv[i],"-jh384")==0) CommandLineHandleArg(argc, argv, i, 0, "Ha
 else if (strcmp(argv[i],"-jh512")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-512",Ctx->Vars);
 else if (strcmp(argv[i],"-jh")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-512",Ctx->Vars);
 //else if (strcmp(argv[i],"-crc32")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "crc32",Ctx->Vars);
-else if (strcmp(argv[i],"-8")==0) CommandLineHandleArg(argc, argv, i, FLAG_BASE8, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-10")==0) CommandLineHandleArg(argc, argv, i, FLAG_BASE10, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-H")==0) CommandLineHandleArg(argc, argv, i, FLAG_HEXUPPER, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-HEX")==0) CommandLineHandleArg(argc, argv, i, FLAG_HEXUPPER, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-64")==0) CommandLineHandleArg(argc, argv, i, FLAG_BASE64, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-base64")==0) CommandLineHandleArg(argc, argv, i, FLAG_BASE64, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-8")==0) Ctx->Flags |= CTX_BASE8;
+else if (strcmp(argv[i],"-10")==0) Ctx->Flags |= CTX_BASE10;
+else if (strcmp(argv[i],"-16")==0) Ctx->Flags |= CTX_HEX;
+else if (strcmp(argv[i],"-H")==0) Ctx->Flags |= CTX_HEXUPPER;
+else if (strcmp(argv[i],"-HEX")==0) Ctx->Flags |= CTX_HEXUPPER;
+else if (strcmp(argv[i],"-64")==0) Ctx->Flags |= CTX_BASE64;
+else if (strcmp(argv[i],"-base64")==0) Ctx->Flags |= CTX_BASE64;
 else if (strcmp(argv[i],"-hmac")==0) CommandLineHandleArg(argc, argv, i, FLAG_HMAC | FLAG_ARG_NAMEVALUE, "EncryptionKey", "",Ctx->Vars);
 else if (strcmp(argv[i],"-idfile")==0) CommandLineHandleArg(argc, argv, i, FLAG_ARG_NAMEVALUE, "SshIdFile", "",Ctx->Vars);
 else if (strcmp(argv[i],"-r")==0) CommandLineHandleArg(argc, argv, i, FLAG_RECURSE, "", "",Ctx->Vars);
@@ -193,13 +193,6 @@ else if (strcmp(argv[i],"-attrs")==0)
 }
 
 //The rest of this function finalizes setup based on what we parsed over all the command line
-
-
-//Set encoding from args
-if (Flags & FLAG_BASE8) Ctx->Encoding = ENCODE_OCTAL;
-if (Flags & FLAG_BASE10) Ctx->Encoding = ENCODE_DECIMAL;
-if (Flags & FLAG_HEXUPPER) Ctx->Encoding = ENCODE_HEXUPPER;
-if (Flags & FLAG_BASE64) Ctx->Encoding = ENCODE_BASE64;
 
 
 //if we're reading from a list file, then...

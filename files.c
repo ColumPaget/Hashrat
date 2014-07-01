@@ -222,23 +222,47 @@ return(TRUE);
 
 
 
+char *HashratFinishHash(char *RetStr, HashratCtx *Ctx, THash *Hash)
+{
+int enc;
+
+			//Set encoding from args
+		if (Ctx->Flags & CTX_BASE8) enc = ENCODE_OCTAL;
+		else if (Ctx->Flags & CTX_BASE10) enc = ENCODE_DECIMAL;
+		else if (Ctx->Flags & CTX_HEXUPPER) enc = ENCODE_HEXUPPER;
+		else if (Ctx->Flags & CTX_BASE64) enc = ENCODE_BASE64;
+		else enc= ENCODE_HEX;
+
+		Hash->Finish(Hash,enc,&RetStr);
+		HashDestroy(Hash);
+
+return(RetStr);
+}
+
 char *HashratHashSingleFile(char *RetStr, HashratCtx *Ctx,int Type,char *Path, struct stat *FStat)
 {
 THash *Hash;
 char *ptr;
 
-			RetStr=CopyStr(RetStr,"");
-			Hash=HashInit(Ctx->HashType);
+		if (Flags & FLAG_XATTR)
+		{
+			if (XAttrGetHash(Ctx, Path, FStat, &RetStr)) 
+			{
+				Ctx->Flags |= CTX_CACHED;
+				return(RetStr);
+			}
+		}
 
-			//If we're not doing HMAC then this doesn't do anything
-			ptr=GetVar(Ctx->Vars,"EncryptionKey");
-			if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
+		RetStr=CopyStr(RetStr,"");
+		Hash=HashInit(Ctx->HashType);
 
-			HashratHashFile(Ctx,Hash,Type,Path, FStat);
-			Hash->Finish(Hash,Ctx->Encoding,&RetStr);
-			HashDestroy(Hash);
+		//If we're not doing HMAC then this doesn't do anything
+		ptr=GetVar(Ctx->Vars,"EncryptionKey");
+		if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
-	return(RetStr);
+		HashratHashFile(Ctx,Hash,Type,Path, FStat);
+
+		return(HashratFinishHash(RetStr, Ctx, Hash));
 }
 
 
@@ -256,8 +280,7 @@ THash *Hash;
 			if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
 			Hash->Update(Hash ,Data, DataLen);
-			Hash->Finish(Hash,Ctx->Encoding,&RetStr);
-			HashDestroy(Hash);
+			RetStr=HashratFinishHash(RetStr, Ctx, Hash);
 		} else Hash->Update(Ctx->Hash ,Data, DataLen);
 
 return(RetStr);
@@ -392,8 +415,7 @@ THash *Hash;
 				if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
 				if (! ProcessDir(Ctx, Path, Ctx->HashType)) result=FALSE;
-				Hash->Finish(Hash,Ctx->Encoding,HashStr);
-				HashDestroy(Hash);
+				HashStr=HashratFinishHash(HashStr, Ctx, Hash);
 		}
 		else if (! ProcessDir(Ctx, Path, Ctx->HashType)) result=FALSE;
 
