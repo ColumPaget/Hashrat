@@ -427,7 +427,7 @@ Copyright (C) 2012 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/home/colum/recent-versions/Hashrat'
+ac_pwd='/home/metacosm89/hashrat-1.1'
 srcdir='.'
 INSTALL='/bin/install -c'
 test -n "$AWK" || AWK=awk
@@ -590,7 +590,7 @@ S["CPP"]="gcc -E"
 S["INSTALL_DATA"]="${INSTALL} -m 644"
 S["INSTALL_SCRIPT"]="${INSTALL}"
 S["INSTALL_PROGRAM"]="${INSTALL}"
-S["SET_MAKE"]=""
+S["SET_MAKE"]="MAKE=make"
 S["OBJEXT"]="o"
 S["EXEEXT"]=""
 S["ac_ct_CC"]="gcc"

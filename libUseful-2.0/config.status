@@ -427,7 +427,7 @@ Copyright (C) 2012 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/home/colum/recent-versions/Hashrat/libUseful-2.0'
+ac_pwd='/home/metacosm89/hashrat-1.1/libUseful-2.0'
 srcdir='.'
 test -n "$AWK" || AWK=awk
 # The default lists apply if the user does not specify any file.
@@ -586,7 +586,7 @@ S["LIBOBJS"]=""
 S["EGREP"]="/bin/grep -E"
 S["GREP"]="/bin/grep"
 S["CPP"]="gcc -E"
-S["SET_MAKE"]=""
+S["SET_MAKE"]="MAKE=make"
 S["OBJEXT"]="o"
 S["EXEEXT"]=""
 S["ac_ct_CC"]="gcc"
