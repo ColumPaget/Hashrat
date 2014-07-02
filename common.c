@@ -28,9 +28,6 @@ int HashratOutputInfo(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash
 char *Tempstr=NULL; 
 
 
-//if CTX_CACHED is set, then unset. Otherwise update XATTR for this item
-if (Ctx->Flags & CTX_CACHED) Ctx->Flags &= ~CTX_CACHED;
-else if (Flags & FLAG_XATTR) HashRatSetXAttr(Ctx->Out, Path, Stat, Ctx->HashType, Hash);
 
 if (Flags & FLAG_TRAD_OUTPUT) Tempstr=MCopyStr(Tempstr,Hash, "  ", Path,NULL);
 else
@@ -146,7 +143,11 @@ int HashratAction(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash)
 	case ACT_HASH:
 	default:
 	HashratOutputInfo(Ctx, Path, Stat, Hash);
-	if (Flags & FLAG_XATTR) HashRatSetXAttr(Ctx->Out, Path, Stat, Ctx->HashType, Hash);
+	//if CTX_CACHED is set, then unset. Otherwise update XATTR for this item
+	printf("CACH: %d\n",Ctx->Flags & CTX_CACHED);
+
+	if (Ctx->Flags & CTX_CACHED) Ctx->Flags &= ~CTX_CACHED;
+	else if (Flags & FLAG_XATTR) HashRatSetXAttr(Ctx->Out, Path, Stat, Ctx->HashType, Hash);
 	break;
 
 	case ACT_CHECK:

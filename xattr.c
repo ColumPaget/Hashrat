@@ -53,7 +53,7 @@ char **ptr;
 int result;
 
 #ifdef USE_XATTR
-	if (getuid()==0) Attr=MCopyStr(Attr,"trusted.","hashrat:",HashType,NULL);
+	if ((Flags & FLAG_XATTR_ROOT) && (getuid()==0)) Attr=MCopyStr(Attr,"trusted.","hashrat:",HashType,NULL);
 	else Attr=MCopyStr(Attr,"user.","hashrat:",HashType,NULL);
 	Tempstr=FormatStr(Tempstr,"%lu:%llu:%s",(unsigned long) time(NULL),(unsigned long long) Stat->st_size,Hash);
 	result=setxattr(Path, Attr, Tempstr, StrLen(Tempstr), 0);
