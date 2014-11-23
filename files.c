@@ -1,22 +1,10 @@
 #include "files.h"
 #include "ssh.h"
+#include "memcached.h"
 #include <string.h>
-
 
 dev_t StartingFS=0;
 ListNode *IncludeExclude=NULL;
-
-#define FT_FILE 0
-#define FT_DIR 1
-#define FT_LNK 2
-#define FT_BLK 4
-#define FT_CHR 8
-#define FT_SOCK 16
-#define FT_FIFO 32
-#define FT_STDIN 64
-#define FT_HTTP 256
-#define FT_SSH  512
-
 
 
 
@@ -106,7 +94,7 @@ return(result);
 
 
 
-int StatFile(char *Path, struct stat *Stat)
+int StatFile(HashratCtx *Ctx, char *Path, struct stat *Stat)
 {
 int val;
 
@@ -117,7 +105,7 @@ int val;
     return(0);
   }
 
-  if (Flags & FLAG_DEREFERENCE) val=stat(Path,Stat);
+  if (Ctx->Flags & CTX_DEREFERENCE) val=stat(Path,Stat);
   else val=lstat(Path,Stat);
 
   return(val);
@@ -150,8 +138,15 @@ for (i=0; i < Glob.gl_pathc; i++)
 		if (Dirs)
 		{
 			Stat=(struct stat *) calloc(1,sizeof(struct stat));
-			if (StatFile(Glob.gl_pathv[i], Stat) != -1) ListAddNamedItem(Dirs, Glob.gl_pathv[i], Stat);
-			else free(Stat);
+			if (StatFile(Ctx,Glob.gl_pathv[i], Stat) != -1) 
+			{
+				ListAddNamedItem(Dirs, Glob.gl_pathv[i], Stat);
+			}
+			else 
+			{
+				printf("stat fail [%s] !\n",Glob.gl_pathv[i]);
+				free(Stat);
+			}
 		}
 		count++;
 	}
@@ -168,11 +163,12 @@ return(count);
 
 
 
-int HashratHashFile(HashratCtx *Ctx, THash *Hash, int Type, char *Path, struct stat *FStat)
+int HashratHashFile(HashratCtx *Ctx, THash *Hash, int Type, char *Path, off_t FileSize)
 {
 STREAM *S;
 char *Tempstr=NULL, *User=NULL, *Pass=NULL;
-int result, bytes_read=0;
+int result, val, RetVal=FALSE;
+off_t bytes_read=0;
 
 switch (Type)
 {
@@ -197,17 +193,24 @@ if (S)
 {
 Tempstr=SetStrLen(Tempstr,4096);
 
-result=STREAMReadBytes(S,Tempstr,4096);
+val=FileSize;
+if (val > 4096) val=4096;
+result=STREAMReadBytes(S,Tempstr,val);
 while (result > 0)
 {
 	Tempstr[result]='\0';
+
 	if (result > 0) Hash->Update(Hash ,Tempstr, result);
 	bytes_read+=result;
-	if ((Type != FT_HTTP) && (bytes_read >= FStat->st_size)) break;
-	result=STREAMReadBytes(S,Tempstr,4096);
+	if ((Type != FT_HTTP) && (bytes_read >= FileSize)) break;
+
+	val=FileSize - bytes_read;
+	if (val > 4096) val=4096;
+	result=STREAMReadBytes(S,Tempstr,val);
 }
 
 if (Type != FT_SSH) STREAMClose(S);
+RetVal=TRUE;
 }
 
 DestroyString(Tempstr);
@@ -217,58 +220,59 @@ DestroyString(Pass);
 //for now we close any connection after a 'get'
 //Ctx->NetCon=NULL;
 
-return(TRUE);
+return(RetVal);
 }
 
 
 
-char *HashratFinishHash(char *RetStr, HashratCtx *Ctx, THash *Hash)
+void HashratFinishHash(char **RetStr, HashratCtx *Ctx, THash *Hash)
 {
-int enc;
+int val;
+char *ptr;
 
 			//Set encoding from args
-		if (Ctx->Flags & CTX_BASE8) enc = ENCODE_OCTAL;
-		else if (Ctx->Flags & CTX_BASE10) enc = ENCODE_DECIMAL;
-		else if (Ctx->Flags & CTX_HEXUPPER) enc = ENCODE_HEXUPPER;
-		else if (Ctx->Flags & CTX_BASE64) enc = ENCODE_BASE64;
-		else enc= ENCODE_HEX;
+		if (Ctx->Flags & CTX_BASE8) val = ENCODE_OCTAL;
+		else if (Ctx->Flags & CTX_BASE10) val = ENCODE_DECIMAL;
+		else if (Ctx->Flags & CTX_HEXUPPER) val = ENCODE_HEXUPPER;
+		else if (Ctx->Flags & CTX_BASE64) val = ENCODE_BASE64;
+		else val= ENCODE_HEX;
 
-		Hash->Finish(Hash,enc,&RetStr);
+		Hash->Finish(Hash,val,RetStr);
+
+		ptr=GetVar(Ctx->Vars,"Output:Length");
+		if (StrLen(ptr))
+		{
+			val=atoi(ptr);
+			if ((val > 0) && (StrLen(RetStr) > val)) RetStr[val]='\0';
+		}
 		HashDestroy(Hash);
-
-return(RetStr);
 }
 
-char *HashratHashSingleFile(char *RetStr, HashratCtx *Ctx,int Type,char *Path, struct stat *FStat)
+
+
+int HashratHashSingleFile(char **RetStr, HashratCtx *Ctx,int Type,char *Path, struct stat *FStat)
 {
 THash *Hash;
 char *ptr;
 
-		if (Flags & FLAG_XATTR)
-		{
-			if (XAttrGetHash(Ctx, Path, FStat, &RetStr)) 
-			{
-				Ctx->Flags |= CTX_CACHED;
-				return(RetStr);
-			}
-		}
-
-		RetStr=CopyStr(RetStr,"");
+		*RetStr=CopyStr(*RetStr,"");
 		Hash=HashInit(Ctx->HashType);
 
 		//If we're not doing HMAC then this doesn't do anything
 		ptr=GetVar(Ctx->Vars,"EncryptionKey");
 		if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
-		HashratHashFile(Ctx,Hash,Type,Path, FStat);
+		if (! HashratHashFile(Ctx,Hash,Type,Path, FStat->st_size)) return(FALSE);
 
-		return(HashratFinishHash(RetStr, Ctx, Hash));
+		HashratFinishHash(RetStr, Ctx, Hash);
+
+		return(TRUE);
 }
 
 
 
 //This is used to processs small pieces of data like device IDs
-char *ProcessData(char *RetStr, HashratCtx *Ctx, char *Data, int DataLen)
+void ProcessData(char **RetStr, HashratCtx *Ctx, char *Data, int DataLen)
 {
 char *ptr;
 THash *Hash;
@@ -280,10 +284,9 @@ THash *Hash;
 			if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
 			Hash->Update(Hash ,Data, DataLen);
-			RetStr=HashratFinishHash(RetStr, Ctx, Hash);
-		} else Hash->Update(Ctx->Hash ,Data, DataLen);
-
-return(RetStr);
+			HashratFinishHash(RetStr, Ctx, Hash);
+		} 
+		else Hash->Update(Ctx->Hash ,Data, DataLen);
 }
 
 
@@ -317,27 +320,28 @@ char *Tempstr=NULL;
 
 	if (! IsIncluded(Path, FStat)) return(FLAG_EXCLUDE);
 
+
 	switch (Type)
 	{
 		case FT_DIR:
 		if (Flags & FLAG_RECURSE) return(FLAG_RECURSE);
-		else *HashStr=ProcessData(*HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
+		else ProcessData(HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
 		break;
 
 		case FT_CHR:
-			*HashStr=ProcessData(*HashStr, Ctx, (char *) &FStat->st_rdev, sizeof(dev_t));
+			ProcessData(HashStr, Ctx, (char *) &FStat->st_rdev, sizeof(dev_t));
 		break;
 
 		case FT_BLK:
-			*HashStr=ProcessData(*HashStr, Ctx, (char *) &FStat->st_rdev, sizeof(dev_t));
+			ProcessData(HashStr, Ctx, (char *) &FStat->st_rdev, sizeof(dev_t));
 		break;
 
 		case FT_FIFO:
-			*HashStr=ProcessData(*HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
+			ProcessData(HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
 		break;
 
 		case FT_SOCK:
-		 *HashStr=ProcessData(*HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
+		 ProcessData(HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
 		break;
 
 		case FT_LNK:
@@ -346,15 +350,15 @@ char *Tempstr=NULL;
 		if (val > 0)
 		{
 			Tempstr[val]='\0';
-			*HashStr=ProcessData(*HashStr, Ctx, Tempstr, val);
+			ProcessData(HashStr, Ctx, Tempstr, val);
 		}
 		break;
 
 		default:
 		if (! Ctx->Hash) 
 		{
-			*HashStr=HashratHashSingleFile(*HashStr, Ctx, Type, Path, FStat);
-		} else HashratHashFile(Ctx, Ctx->Hash,Type,Path, FStat);
+			if (! HashratHashSingleFile(HashStr, Ctx, Type, Path, FStat)) return(FLAG_ERROR);
+		} else if (! HashratHashFile(Ctx, Ctx->Hash,Type,Path, FStat->st_size)) return(FLAG_ERROR);
 		break;
 	}
 
@@ -364,6 +368,39 @@ return(0);
 }
 
 
+
+
+void HashratAction(HashratCtx *Ctx, char *Path, struct stat *Stat)
+{
+char *HashStr=NULL;
+TFingerprint *FP;
+int FType;
+
+switch (Ctx->Action)
+{
+case ACT_HASH:
+	HashItem(Ctx, Path, Stat, &HashStr);
+	printf("CAT\n");
+	HashratOutputInfo(Ctx, Ctx->Out, Path, Stat, HashStr);
+	HashratStoreHash(Ctx, Path, Stat, HashStr);
+break;
+
+case ACT_CHECK_XATTR:
+	if (S_ISREG(Stat->st_mode))
+	{
+		FP=XAttrLoadHash(Ctx, Path);
+		if (FP) HashratCheckFile(Ctx, Path, FP->Hash, &FP->FStat);
+		else printf("ERROR: No stored hash for '%s'\n",Path);
+	}
+break;
+
+case ACT_FINDMATCH:
+	CheckForMatch(Ctx, Path, Stat);
+break;
+}
+
+DestroyString(HashStr);
+}
 
 
 
@@ -379,16 +416,14 @@ int result=TRUE;
 
 		S=Ctx->Out;
 
-
 		FileList=ListCreate();
 		i=GlobFiles(Ctx, Dir, Type, FileList);
-
 
 		Curr=ListGetNext(FileList);
 		while (Curr)
 		{
-			ProcessItem(Ctx, Curr->Tag, (struct stat *) Curr->Item);
 			//else fprintf(stderr,"\rERROR: Failed to open '%s'.\n",(char *) Curr->Item);
+			ProcessItem(Ctx, Curr->Tag, (struct stat *) Curr->Item);
 			Curr=ListGetNext(Curr);
 		}
 
@@ -415,7 +450,7 @@ THash *Hash;
 				if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
 				if (! ProcessDir(Ctx, Path, Ctx->HashType)) result=FALSE;
-				HashStr=HashratFinishHash(HashStr, Ctx, Hash);
+				HashratFinishHash(HashStr, Ctx, Hash);
 		}
 		else if (! ProcessDir(Ctx, Path, Ctx->HashType)) result=FALSE;
 
@@ -434,18 +469,12 @@ char *HashStr=NULL;
 					case FLAG_EXCLUDE:
 					break;
 
-
 					case FLAG_RECURSE:
 					HashratRecurse(Ctx, Path, &HashStr, 0);
 					break;
 
 					default:
-					switch (Ctx->Action)
-					{
-					default:
-					HashratAction(Ctx, Path, Stat, HashStr);
-					break;
-					}
+					HashratAction(Ctx, Path, Stat);
 					break;
 				}
 

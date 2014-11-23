@@ -23,7 +23,7 @@ free(Ctx);
 }
 
 
-int HashratOutputInfo(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash)
+int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, char *Path, struct stat *Stat, char *Hash)
 {
 char *Tempstr=NULL; 
 
@@ -58,104 +58,30 @@ else
 
 Tempstr=CatStr(Tempstr,"\n");
 
-STREAMWriteString(Tempstr,Ctx->Out);
+STREAMWriteString(Tempstr,Out);
 
 DestroyString(Tempstr);
 }
 
 
-void HandleCheckFail(char *Path, char *ErrorMessage)
+
+
+void HashratStoreHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash)
 {
-char *Tempstr=NULL;
-
-  printf("%s: FAILED. %s.\n",Path,ErrorMessage);
-  if (StrLen(DiffHook))
-  {
-    Tempstr=MCopyStr(Tempstr,DiffHook," '",Path,"'",NULL);
-    system(Tempstr);
-  }
-
-  DestroyString(Tempstr);
-}
-
-
-
-int HashratCheckFile(HashratCtx *Ctx,TFingerprint *FP)
-{
-int result=FALSE;
-char *HashStr=NULL;
-struct stat Stat;
-int enc;
-
-		if (Flags & FLAG_XATTR) XAttrLoadHash(FP);
-
-    //Set encoding from args
-    if (Ctx->Flags & CTX_BASE8) enc = ENCODE_OCTAL;
-    else if (Ctx->Flags & CTX_BASE10) enc = ENCODE_DECIMAL;
-    else if (Ctx->Flags & CTX_HEXUPPER) enc = ENCODE_HEXUPPER;
-    else if (Ctx->Flags & CTX_BASE64) enc = ENCODE_BASE64;
-    else enc= ENCODE_HEX;
-
-		HashStr=CopyStr(HashStr,"");
-
-		if (access(FP->Path,F_OK)!=0) fprintf(stderr,"\rERROR: No such file '%s'\n",FP->Path);
-		else if (FP->Flags & FP_HASSTAT)
-		{
-			if (StatFile(FP->Path,&Stat)==0)
-			{
-					//printf("%llu %llu\n",FP->FStat.st_size,Stat.st_size);
-				if ((FP->FStat.st_size > 0) && ((size_t) Stat.st_size != (size_t) FP->FStat.st_size)) HandleCheckFail(FP->Path, "Filesize changed");
-				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_ino != FP->FStat.st_ino)) HandleCheckFail(FP->Path, "Inode changed");
-				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_uid != FP->FStat.st_uid)) HandleCheckFail(FP->Path, "Owner changed");
-				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_gid != FP->FStat.st_gid)) HandleCheckFail(FP->Path, "Group changed");
-				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_mode != FP->FStat.st_mode)) HandleCheckFail(FP->Path, "Mode changed");
-				else if ((Flags & FLAG_FULLCHECK) && (Stat.st_mtime != FP->FStat.st_mtime)) HandleCheckFail(FP->Path, "MTime changed");
-				else
-				{
-					HashFile(&HashStr, FP->HashType, FP->Path, enc);
-					if (strcasecmp(FP->Hash,HashStr)!=0) HandleCheckFail(FP->Path, "Hash mismatch");
-					else if (! (Flags & FLAG_OUTPUT_FAILS))
-					{
-						printf("%s: OKAY\n",FP->Path);
-						result=TRUE;
-					}
-				}
-			}
-			else fprintf(stderr,"\rERROR: Failed to open '%s'\n",FP->Path);
-		}
-		else
-		{
-				HashFile(&HashStr, FP->HashType, FP->Path, enc);
-				if (strcasecmp(FP->Hash,HashStr)!=0) HandleCheckFail(FP->Path, "Hash mismatch");
-				else if (! (Flags & FLAG_OUTPUT_FAILS)) printf("%s: OKAY\n",FP->Path);
-		}
-
-DestroyString(HashStr);
-return(result);
-}
-
-
-
-int HashratAction(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash)
-{
-	switch (Ctx->Action)
-	{
-	case ACT_HASH:
-	default:
-	HashratOutputInfo(Ctx, Path, Stat, Hash);
 	//if CTX_CACHED is set, then unset. Otherwise update XATTR for this item
-	printf("CACH: %d\n",Ctx->Flags & CTX_CACHED);
+//	if (Ctx->Flags & CTX_CACHED) Ctx->Flags &= ~CTX_CACHED;
+//	else 
 
-	if (Ctx->Flags & CTX_CACHED) Ctx->Flags &= ~CTX_CACHED;
-	else if (Flags & FLAG_XATTR) HashRatSetXAttr(Ctx->Out, Path, Stat, Ctx->HashType, Hash);
-	break;
+	
+	if (Ctx->Flags & CTX_STORE_XATTR) HashRatSetXAttr(Ctx->Out, Path, Stat, Ctx->HashType, Hash);
 
-	case ACT_CHECK:
-//		if (Flags & FLAG_XATTR) XAttrLoadHash(FP);
-//        if (strcasecmp(FP->Hash,HashStr)!=0) HandleCheckFail(FP->Path, "Hash mismatch");
-//        else if (! (Flags & FLAG_OUTPUT_FAILS)) printf("%s: OKAY\n",FP->Path);
-	break;
+	if (Ctx->Flags & CTX_STORE_MEMCACHED)
+	{
+		MemcachedSet(Hash, 0, Path);
+		MemcachedSet(Path, 0, Hash);
 	}
+
+	if (Ctx->Aux) HashratOutputInfo(Ctx, Ctx->Aux, Path, Stat, Hash);
 }
 
 

@@ -10,6 +10,7 @@ unsigned int Channels;
 unsigned int SampleRate;
 unsigned int SampleSize;
 unsigned int DataSize;
+STREAM *S;
 }TAudioInfo;
 
 #define VOLUME_LEAVEALONE -1
@@ -71,6 +72,7 @@ int SoundOpenInput(char *Dev, TAudioInfo *Info);
 TAudioInfo *SoundReadWAV(STREAM *S);
 TAudioInfo *SoundReadAU(STREAM *S);
 void SoundWriteWAVHeader(STREAM *S, TAudioInfo *AI);
+TAudioInfo *SoundOpenFile(char *FilePath);
 
 
 #ifdef __cplusplus

@@ -35,20 +35,20 @@ return(0);
 
 int CompareStr(const char *S1, const char *S2)
 {
-int len1, len2;
-len1=StrLen(S1);
-len2=StrLen(S2);
-if ((len1==0) && (len2==0)) return(0);
+if (
+		((!S1) || (*S1=='\0')) && 
+		((!S2) || (*S2=='\0'))
+	) return(0);
 
-if (len1==0) return(-1);
-if (len2==0) return(1);
+if ((!S1) || (*S1=='\0')) return(-1);
+if ((!S2) || (*S2=='\0')) return(1);
 
 return(strcmp(S1,S2));
 }
 
 
 
-char *CopyStrLen(char *Dest, const char *Src,int len)
+char *CopyStrLen(char *Dest, const char *Src,size_t len)
 {
 char *ptr;
 ptr=CopyStr(Dest,Src);
@@ -56,10 +56,10 @@ if (StrLen(ptr) >len) ptr[len]=0;
 return(ptr);
 }
 
-char *CatStrLen(char *Dest, const char *Src,int len)
+char *CatStrLen(char *Dest, const char *Src,size_t len)
 {
 char *ptr;
-int catlen=0;
+size_t catlen=0;
 
 catlen=StrLen(Dest);
 ptr=CatStr(Dest,Src);
@@ -71,9 +71,6 @@ return(ptr);
 
 char *CopyStr(char *Dest, const char *Src)
 {
-int len;
-char *ptr;
-
 if (Dest) *Dest=0;
 return(CatStr(Dest,Src));
 }
@@ -83,7 +80,7 @@ return(CatStr(Dest,Src));
 char *VCatStr(char *Dest, const char *Str1,  va_list args)
 {
 //initialize these to keep valgrind happy
-int len=0;
+size_t len=0;
 char *ptr=NULL;
 const char *sptr=NULL;
 
@@ -142,7 +139,7 @@ return(ptr);
 
 char *CatStr(char *Dest, const char *Src)
 {
-int len;
+size_t len;
 char *ptr;
 
 if (Dest !=NULL) 
@@ -237,7 +234,6 @@ return(Tempstr);
 
 char *FormatStr(char *InBuff, const char *FmtStr, ...)
 {
-int inc=100, count=1, result;
 char *tempstr=NULL;
 va_list args;
 
@@ -260,7 +256,7 @@ return(ptr);
 }
 
 
-inline char *AddCharToBuffer(char *Dest, int DestLen, char Char)
+inline char *AddCharToBuffer(char *Dest, size_t DestLen, char Char)
 {
 char *actb_ptr;
 
@@ -275,7 +271,7 @@ return(actb_ptr);
 }
 
 
-inline char *AddBytesToBuffer(char *Dest, int DestLen, char *Bytes, int NoOfBytes)
+inline char *AddBytesToBuffer(char *Dest, size_t DestLen, char *Bytes, size_t NoOfBytes)
 {
 char *actb_ptr=NULL;
 
@@ -290,7 +286,7 @@ return(actb_ptr);
 
 
 
-char *SetStrLen(char *Str,int len)
+char *SetStrLen(char *Str,size_t len)
 {
 /* Note len+1 to allow for terminating NULL */
 if (Str==NULL) return((char *) calloc(1,len+1));
@@ -300,75 +296,85 @@ else return( (char *) realloc(Str,len+1));
 
 char *strlwr(char *str)
 {
-int count, len;
-len=StrLen(str);
-for (count=0; count < len; count++) str[count]=tolower(str[count]);
+char *ptr;
+
+if (! str) return(NULL);
+for (ptr=str; *ptr !='\0'; ptr++) *ptr=tolower(*ptr);
 return(str);
 }
+
 
 char *strupr(char *str)
 {
-int count, len;
-len=StrLen(str);
-for (count=0; count < len; count++) str[count]=toupper(str[count]);
+char *ptr;
+if (! str) return(NULL);
+for (ptr=str; *ptr !='\0'; ptr++) *ptr=toupper(*ptr);
 return(str);
 }
 
+
 char *strrep(char *str, char oldchar, char newchar)
 {
-int count, len;
-len=StrLen(str);
-for (count=0; count < len; count++) 
+char *ptr;
+
+if (! str) return(NULL);
+for (ptr=str; *ptr !='\0'; ptr++) 
 {
-if (str[count]==oldchar) str[count]=newchar;
+if (*ptr==oldchar) *ptr=newchar;
 }
 return(str);
 }
 
 char *strmrep(char *str, char *oldchars, char newchar)
 {
-int count, len;
-len=StrLen(str);
-for (count=0; count < len; count++) 
+char *ptr;
+
+if (! str) return(NULL);
+for (ptr=str; *ptr !='\0'; ptr++) 
 {
-if (strchr(oldchars,str[count])) str[count]=newchar;
+if (strchr(oldchars,*ptr)) *ptr=newchar;
 }
 return(str);
 }
 
-void StripTrailingWhitespace(char *String)
+void StripTrailingWhitespace(char *str)
 {
-int count,len;
+size_t len;
+char *ptr;
 
-len=StrLen(String);
+len=StrLen(str);
 if (len==0) return;
-for(count = len-1; (count >-1) && isspace(String[count]); count--) String[count]=0;
+for(ptr=str+len-1; (ptr >= str) && isspace(*ptr); ptr--) *ptr='\0';
 }
 
 
-void StripLeadingWhitespace(char *String)
+void StripLeadingWhitespace(char *str)
 {
-int count,len;
+char *ptr, *start=NULL;
 
-len=StrLen(String);
-if (len==0) return;
-for(count = 0; (count <len -1) && isspace(String[count]); count++);
-memmove(String,String+count,len-count);
-String[len-count]=0;
+if (! str) return;
+for(ptr=str; *ptr !='\0'; ptr++)
+{
+	if ((! start) && (! isspace(*ptr))) start=ptr;
+}
+
+if (!start) start=ptr;
+ memmove(str,start,ptr+1-start);
 }
 
 
 
 void StripCRLF(char *Line)
 {
-int len, count;
+size_t len;
+char *ptr;
 
 len=StrLen(Line);
 if (len < 1) return;
 
-for (count=len-1; (count > -1); count--)
+for (ptr=Line+len-1; ptr >= Line; ptr--)
 {
-   if ((Line[count]=='\r') || (Line[count]=='\n')) Line[count]=0;
+   if (strchr("\n\r",*ptr)) *ptr='\0';
    else break;
 }
 
@@ -382,14 +388,16 @@ char *ptr, StartQuote='\0';
 
 ptr=Str;
 while (isspace(*ptr)) ptr++;
-len=StrLen(ptr);
 
-if ((*ptr=='"') || (*ptr=='\'')) StartQuote=*ptr;
-
-if ((len > 0) && (StartQuote != '\0') && (ptr[len-1]==StartQuote))
+if ((*ptr=='"') || (*ptr=='\'')) 
 {
-if (ptr[len-1]==StartQuote) ptr[len-1]='\0';
-memmove(Str,ptr+1,len);
+	StartQuote=*ptr;
+	len=StrLen(ptr);
+	if ((len > 0) && (StartQuote != '\0') && (ptr[len-1]==StartQuote))
+	{
+		if (ptr[len-1]==StartQuote) ptr[len-1]='\0';
+		memmove(Str,ptr+1,len);
+	}
 }
 
 }
@@ -399,48 +407,48 @@ char *EnquoteStr(char *Out, const char *In)
 {
 const char *ptr;
 char *ReturnStr=NULL;
-int len=0;
+size_t len=0;
 
 ptr=In;
 ReturnStr=CopyStr(Out,"");
 
 while (ptr && (*ptr != '\0'))
 {
-        switch (*ptr)
-        {
+	switch (*ptr)
+	{
 		case '\\':
-                case '"':
-                case '\'':
-                  ReturnStr=AddCharToBuffer(ReturnStr,len,'\\');
-		  len++;
-                  ReturnStr=AddCharToBuffer(ReturnStr,len, *ptr);
-		  len++;
-                  break;
+		case '"':
+		case '\'':
+		ReturnStr=AddCharToBuffer(ReturnStr,len,'\\');
+		len++;
+		ReturnStr=AddCharToBuffer(ReturnStr,len, *ptr);
+		len++;
+		break;
 
 
-                case '\r':
-                  ReturnStr=AddCharToBuffer(ReturnStr,len,'\\');
-		  len++;
-                  ReturnStr=AddCharToBuffer(ReturnStr,len, 'r');
-		  len++;
-                break;
-
-
-                case '\n':
-                  ReturnStr=AddCharToBuffer(ReturnStr,len,'\\');
-		  len++;
-                  ReturnStr=AddCharToBuffer(ReturnStr,len, 'n');
-		  len++;
-                break;
-
-                default:
-                  ReturnStr=AddCharToBuffer(ReturnStr,len, *ptr);
-		  len++;
-                break;
-        }
-        ptr++;
-
+		case '\r':
+		ReturnStr=AddCharToBuffer(ReturnStr,len,'\\');
+		len++;
+		ReturnStr=AddCharToBuffer(ReturnStr,len, 'r');
+		len++;
+		break;
+		
+		
+		case '\n':
+		ReturnStr=AddCharToBuffer(ReturnStr,len,'\\');
+		len++;
+		ReturnStr=AddCharToBuffer(ReturnStr,len, 'n');
+		len++;
+		break;
+		
+		default:
+		ReturnStr=AddCharToBuffer(ReturnStr,len, *ptr);
+		len++;
+		break;
+		}
+	ptr++;
 }
+
 return(ReturnStr);
 }
 
@@ -448,31 +456,41 @@ return(ReturnStr);
 
 int MatchTokenFromList(const char *Token,char **List, int Flags)
 {
-int count, len;
+int count;
+size_t tlen, ilen;
+char Up1stChar, Lwr1stChar;
+char *Item;
 
+if ((! Token) || (*Token=='\0')) return(-1); 
+Up1stChar=toupper(*Token);
+Lwr1stChar=tolower(*Token);
+tlen=StrLen(Token);
 for (count=0; List[count] !=NULL; count++)
 {
-  len=StrLen(List[count]);
-  if (len==0) continue;
-  if (StrLen(Token) < len) continue;
+	Item=List[count];
+	if ((*Item==Lwr1stChar) || (*Item==Up1stChar))
+	{
+	ilen=StrLen(Item);
 
   if (Flags & MATCH_TOKEN_PART)
   {
+  	if (tlen > ilen) continue;
     if (Flags & MATCH_TOKEN_CASE)
     {
-	    if (strncmp(Token,List[count],len)==0) return(count);
+	    if (strncmp(Token,*Item,ilen)==0) return(count);
     }
-    else if (strncasecmp(Token,List[count],len)==0) return(count);
+    else if (strncasecmp(Token,*Item,ilen)==0) return(count);
   }
   else 
   {
-  	if (StrLen(Token) != len) continue;
-	if (Flags & MATCH_TOKEN_CASE)
-	{
-		if(strcmp(Token,List[count])==0)  return(count);
-	}
+  	if (tlen != ilen) continue;
+		if (Flags & MATCH_TOKEN_CASE)
+		{
+			if(strcmp(Token,List[count])==0)  return(count);
+		}
   	else if (strcasecmp(Token,List[count])==0) return(count);
   }
+	}
 }
 return(-1);
 }
@@ -481,16 +499,22 @@ return(-1);
 
 int MatchLineStartFromList(const char *Token,char **List)
 {
-int count, len;
+int count;
+size_t len;
 
+if ((! Token) || (*Token=='\0')) return(-1); 
+if (! List) return(-1);
 for (count=0; List[count] !=NULL; count++)
 {
+	if (*Token==*List[count])
+	{
   len=StrLen(List[count]);
 
   if (
        (len >0) && 
        (strncasecmp(Token,List[count],len)==0) 
      ) return(count);
+	}
 }
 return(-1);
 }
@@ -612,7 +636,7 @@ return(FALSE);
 char *GetNextSeparator(char *Pattern, char **Sep, int Flags)
 {
 char *ptr;
-int len=0;
+size_t len=0;
 
 ptr=Pattern;
 if (*ptr=='\0') return(NULL);
@@ -690,7 +714,7 @@ char *GetToken(const char *SearchStr, const char *Separator, char **Token, int F
 char *Tempstr=NULL;
 const char *SepStart=NULL, *SepEnd=NULL;
 const char *ptr, *ssptr;
-int len=0;
+size_t len=0;
 
 
 /* this is a safety measure so that there is always something in Token*/
@@ -730,7 +754,7 @@ return((char *) SepEnd);
 char *DeQuoteStr(char *Buffer, const char *Line)
 {
 char *out, *in;
-int olen=0;
+size_t olen=0;
 char hex[3];
 
 if (Line==NULL) return(NULL);
@@ -796,30 +820,29 @@ return(out);
 
 char *QuoteCharsInStr(char *Buffer, const char *String, const char *QuoteChars)
 {
-char *Tempstr=NULL;
-int si, ci, slen, clen, olen=0;
+char *RetStr=NULL;
+char *sptr, *cptr;
+size_t olen=0;
 
-slen=StrLen(String);
-clen=StrLen(QuoteChars);
+RetStr=CopyStr(Buffer,"");
+if (! String) return(RetStr);
 
-Tempstr=CopyStr(Buffer,"");
-
-for (si=0; si < slen; si++)
+for (sptr=String; *sptr !='\0'; sptr++)
 {
-	for (ci=0; ci < clen; ci++)
+	for (cptr=QuoteChars; *cptr !='\0'; cptr++)
 	{
-  		if (String[si]==QuoteChars[ci])
+  	if (*sptr==*cptr)
 		{
-			Tempstr=AddCharToBuffer(Tempstr,olen, '\\');
+			RetStr=AddCharToBuffer(RetStr,olen, '\\');
 			olen++;
 			break;
 		}
 	}
-	Tempstr=AddCharToBuffer(Tempstr,olen,String[si]);
+	RetStr=AddCharToBuffer(RetStr,olen,*sptr);
 	olen++;
 }
 
-return(Tempstr);
+return(RetStr);
 }
 
 

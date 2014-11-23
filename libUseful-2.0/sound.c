@@ -180,6 +180,35 @@ return(AudioInfo);
 
 
 
+TAudioInfo *SoundOpenFile(char *FilePath)
+{
+TAudioInfo *AudioInfo=NULL;
+char *FourCharacter;
+STREAM *S;
+
+S=STREAMOpenFile(FilePath,O_RDONLY);
+if (! S) return(NULL);
+
+FourCharacter=calloc(4, sizeof(char));
+STREAMReadBytes(S,FourCharacter,4);
+STREAMSeek(S,0,SEEK_SET);
+if (strcmp(FourCharacter,".snd")==0) AudioInfo=SoundReadAU(S);
+else if (strcmp(FourCharacter,"RIFF")==0) AudioInfo=SoundReadWAV(S);
+
+free(FourCharacter);
+
+if (! AudioInfo)
+{
+	STREAMClose(S);
+	return(NULL);
+}
+AudioInfo->S=S;
+
+return(AudioInfo);
+}
+
+
+
 
 #ifdef HAVE_OSS
 
@@ -370,28 +399,17 @@ STREAM *S;
 char *Buffer=NULL, *Tempstr=NULL;
 int result, fd=-1, mixfd=-1;
 int Flags, val, oldvol;
-char FourCharacter[5];
 TAudioInfo *AudioInfo=NULL;
 
-S=STREAMOpenFile(FilePath,O_RDONLY);
-if (! S) return(FALSE);
-STREAMReadBytes(S,FourCharacter,4);
-FourCharacter[4]='\0';
-STREAMSeek(S,0,SEEK_SET);
-if (strcmp(FourCharacter,".snd")==0) AudioInfo=SoundReadAU(S);
-else if (strcmp(FourCharacter,"RIFF")==0) AudioInfo=SoundReadWAV(S);
-
-if (AudioInfo==NULL) 
-{
-	STREAMClose(S);
-	return(FALSE);
-}
+AudioInfo=SoundOpenFile(FilePath);
+if (AudioInfo==NULL) return(FALSE);
 
 //Must do all the above before we do open oss!
 fd=OpenOSSOutput(DevPath, AudioInfo);
 if (fd==-1)
 {
-	STREAMClose(S);
+	STREAMClose(AudioInfo->S);
+	free(AudioInfo);
 	return(FALSE);
 }
 
@@ -409,7 +427,7 @@ if (Vol != VOLUME_LEAVEALONE)
 }
 
 Buffer=SetStrLen(Buffer,1024);
-result=STREAMReadBytes(S,Buffer,1024);
+result=STREAMReadBytes(AudioInfo->S,Buffer,1024);
 
 /*
 if (AudioInfo->Channels==1)
@@ -426,7 +444,7 @@ while (result > 0)
 write(fd,Buffer,result);
 val+=result;
 if ((AudioInfo->DataSize > 0) && (val >= AudioInfo->DataSize)) break;
-result=STREAMReadBytes(S,Buffer,1024);
+result=STREAMReadBytes(AudioInfo->S,Buffer,1024);
 }
 
 close(fd);
@@ -439,7 +457,9 @@ close(mixfd);
 DestroyString(Buffer);
 DestroyString(Tempstr);
 
-STREAMClose(S);
+STREAMClose(AudioInfo->S);
+free(AudioInfo);
+
 return(TRUE);
 }
 

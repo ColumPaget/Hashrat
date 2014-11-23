@@ -171,3 +171,84 @@ if (stat(FileName,&StatData) == 0) return(1);
 else return(0);
 }
 
+
+#ifdef HAVE_FANOTIFY
+
+#include <linux/fanotify.h>
+#include <sys/fcntl.h>
+#include <sys/stat.h>
+
+
+/*
++  fd = fanotify_init (0, 0);
++  if (fd < 0 && 0)
++    {
++      if (errno == ENOSYS)
++	{
++	  puts ("SKIP: missing support for fanotify (check CONFIG_FANOTIFY=y)");
++	  return 0;
++	}
++
++      perror ("fanotify_init (0, 0) failed");
++      return 1;
++    }
++
++  ret = fanotify_mark (fd, FAN_MARK_ADD | FAN_MARK_MOUNT, FAN_ACCESS
++		       | FAN_MODIFY | FAN_OPEN | FAN_CLOSE | FAN_ONDIR
++		       | FAN_EVENT_ON_CHILD, AT_FDCWD, ".");
++  if (ret)
++    {
++      perror ("fanotify_mark (...) failed");
++      return 1;
++    }
++
++  puts ("All OK");
++  return 0;
++}
+*/
+
+
+int FileNotifyInit(char *Path, int Flags)
+{
+char *Token=NULL, *ptr;
+int fd;
+
+fd=fanotify_init(Flags, O_RDWR);
+if (fd==-1) return(fd);
+
+ptr=GetToken(Path,":",&Token,0);
+while (ptr)
+{
+	printf("FAM: [%s]\n",Token);
+	fanotify_mark(fd, FAN_MARK_ADD, FAN_CLOSE_WRITE, -1, NULL);
+
+	ptr=GetToken(ptr,":",&Token,0);
+}
+
+DestroyString(Token);
+
+return(fd);
+}
+
+
+int FileNotifyGetNext(int fd, char **Path)
+{
+struct fanotify_event_metadata metadata;
+char *Tempstr=NULL;
+int result;
+
+result=read(fd, &metadata, sizeof(struct fanotify_event_metadata));
+if (result < sizeof(struct fanotify_event_metadata)) return(-1);
+
+if (Path)
+{
+	Tempstr=FormatStr(Tempstr, "/proc/self/fd/%d", metadata.fd);
+	*Path=SetStrLen(*Path,PATH_MAX +1);
+	readlink(Tempstr,*Path,PATH_MAX +1);
+}
+
+DestroyString(Tempstr);
+return(metadata.fd);
+}
+
+#endif

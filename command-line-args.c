@@ -7,11 +7,11 @@
 //with the name supplied in 'VarName'. It blanks out anything it reads, so that only unrecognized 
 //arguments remain, which are treated as filenames for processing
 
-int CommandLineHandleArg(int argc, char *argv[], int pos, int SetFlags, char *VarName, char *VarValue, ListNode *Vars)
+int CommandLineHandleArg(int argc, char *argv[], int pos, int ParseFlags, int SetFlags, char *VarName, char *VarValue, ListNode *Vars)
 {
 	Flags |= SetFlags;
 	
-	if (SetFlags & FLAG_ARG_NAMEVALUE)
+	if (ParseFlags & CMDLINE_ARG_NAMEVALUE)
 	{
 	if (argv[pos + 1] ==NULL)
 	{
@@ -30,10 +30,43 @@ int CommandLineHandleArg(int argc, char *argv[], int pos, int SetFlags, char *Va
 	else if (StrLen(VarName)) SetVar(Vars,VarName,VarValue);
 
 	if (argc > 0) strcpy(argv[pos],"");
-return(pos);
+
+return(ParseFlags);
 }
 
 
+
+void CommandLineSetCtx(int argc, char *argv[], int i, HashratCtx *Ctx, int Flag)
+{
+Ctx->Flags |= Flag;
+strcpy(argv[i],"");
+}
+
+
+
+
+void CommandLineHandleUpdate(int argc, char *argv[], int i, HashratCtx *Ctx)
+{
+char *Token=NULL, *ptr;
+
+Flags |= FLAG_UPDATE;
+strcpy(argv[i],"");
+i++;
+ptr=GetToken(argv[i],",",&Token,0);
+while (ptr)
+{
+	if (strcasecmp(Token, "stderr")==0) Ctx->Aux=STREAMFromFD(2);
+	else if (strcasecmp(Token, "xattr")==0) Ctx->Flags |= CTX_STORE_XATTR;
+	else if (strcasecmp(Token, "memcached")==0) Ctx->Flags |= CTX_STORE_MEMCACHED;
+	else if (strcasecmp(Token, "mcd")==0) Ctx->Flags |= CTX_STORE_MEMCACHED;
+	else if (! Ctx->Aux) Ctx->Aux=STREAMOpenFile(Token,O_WRONLY | O_CREAT | O_TRUNC);
+
+ptr=GetToken(ptr,",",&Token,0);
+}
+strcpy(argv[i],"");
+
+DestroyString(Token);
+}
 
 //this is the main parsing function that goes through the command-line args
 HashratCtx *CommandLineParseArgs(int argc,char *argv[])
@@ -41,6 +74,7 @@ HashratCtx *CommandLineParseArgs(int argc,char *argv[])
 int i;
 char *ptr, *Tempstr=NULL;
 HashratCtx *Ctx;
+int ParseFlags=0;
 
 //You never know when you're going to be run with  no args at all (say, out of inetd)
 
@@ -68,19 +102,19 @@ else ptr++;
 //if the program name is something other than 'hashrat', then we're being used as a drop-in
 //replacement for another program. Change flags/behavior accordingly
 if (strcmp(ptr,"md5sum")==0) 
-CommandLineHandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "md5",Ctx->Vars);
+ParseFlags |= CommandLineHandleArg(0, argv, i, 0, FLAG_TRAD_OUTPUT, "HashType", "md5",Ctx->Vars);
 if (
 		(strcmp(ptr,"sha1sum")==0) ||
 		(strcmp(ptr,"shasum")==0) 
 	) 
-CommandLineHandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "sha1",Ctx->Vars);
-if (strcmp(ptr,"sha256sum")==0) CommandLineHandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "sha256",Ctx->Vars);
-if (strcmp(ptr,"sha512sum")==0) CommandLineHandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "sha512",Ctx->Vars);
-if (strcmp(ptr,"whirlpoolsum")==0) CommandLineHandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "whirlpool",Ctx->Vars);
-if (strcmp(ptr,"jh224sum")==0) CommandLineHandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "jh-224",Ctx->Vars);
-if (strcmp(ptr,"jh256sum")==0) CommandLineHandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "jh-256",Ctx->Vars);
-if (strcmp(ptr,"jh384sum")==0) CommandLineHandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "jh-385",Ctx->Vars);
-if (strcmp(ptr,"jh512sum")==0) CommandLineHandleArg(0, argv, i, FLAG_TRAD_OUTPUT, "HashType", "jh-512",Ctx->Vars);
+ParseFlags |= CommandLineHandleArg(0, argv, i, 0, FLAG_TRAD_OUTPUT, "HashType", "sha1",Ctx->Vars);
+if (strcmp(ptr,"sha256sum")==0) ParseFlags |= CommandLineHandleArg(0, argv, i, 0, FLAG_TRAD_OUTPUT, "HashType", "sha256",Ctx->Vars);
+if (strcmp(ptr,"sha512sum")==0) ParseFlags |= CommandLineHandleArg(0, argv, i, 0, FLAG_TRAD_OUTPUT, "HashType", "sha512",Ctx->Vars);
+if (strcmp(ptr,"whirlpoolsum")==0) ParseFlags |= CommandLineHandleArg(0, argv, i, 0, FLAG_TRAD_OUTPUT, "HashType", "whirlpool",Ctx->Vars);
+if (strcmp(ptr,"jh224sum")==0) ParseFlags |= CommandLineHandleArg(0, argv, i, 0, FLAG_TRAD_OUTPUT, "HashType", "jh-224",Ctx->Vars);
+if (strcmp(ptr,"jh256sum")==0) ParseFlags |= CommandLineHandleArg(0, argv, i, 0, FLAG_TRAD_OUTPUT, "HashType", "jh-256",Ctx->Vars);
+if (strcmp(ptr,"jh384sum")==0) ParseFlags |= CommandLineHandleArg(0, argv, i, 0, FLAG_TRAD_OUTPUT, "HashType", "jh-385",Ctx->Vars);
+if (strcmp(ptr,"jh512sum")==0) ParseFlags |= CommandLineHandleArg(0, argv, i, 0, FLAG_TRAD_OUTPUT, "HashType", "jh-512",Ctx->Vars);
 
 
 if (strcmp(ptr,"hashrat.cgi")==0) 
@@ -121,7 +155,32 @@ else if (strcmp(argv[i],"-c")==0)
 else if (strcmp(argv[i],"-cf")==0)
 {
 	Ctx->Action = ACT_CHECK;
-	CommandLineHandleArg(argc, argv, i, FLAG_OUTPUT_FAILS, "", "",Ctx->Vars);
+	ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_OUTPUT_FAILS, "", "",Ctx->Vars);
+}
+else if (strcmp(argv[i],"-s")==0)
+{
+	Ctx->Action = ACT_SIGN;
+	strcpy(argv[i],"");
+}
+else if (strcmp(argv[i],"-sign")==0)
+{
+	Ctx->Action = ACT_SIGN;
+	strcpy(argv[i],"");
+}
+else if (strcmp(argv[i],"-cs")==0)
+{
+	Ctx->Action = ACT_CHECKSIGN;
+	strcpy(argv[i],"");
+}
+else if (strcmp(argv[i],"-checksign")==0)
+{
+	Ctx->Action = ACT_CHECKSIGN;
+	strcpy(argv[i],"");
+}
+else if (strcmp(argv[i],"-m")==0)
+{
+	Ctx->Action = ACT_FINDMATCH;
+	strcpy(argv[i],"");
 }
 else if (strcmp(argv[i],"-diff-hook")==0) 
 {
@@ -135,52 +194,56 @@ else if (strcmp(argv[i],"-cgi")==0)
 	Ctx->Action = ACT_CGI;
 	strcpy(argv[i],"");
 }
-else if (strcmp(argv[i],"-md5")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "md5",Ctx->Vars);
-else if (strcmp(argv[i],"-sha")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "sha1",Ctx->Vars);
-else if (strcmp(argv[i],"-sha1")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "sha1",Ctx->Vars);
-else if (strcmp(argv[i],"-sha256")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "sha256",Ctx->Vars);
-else if (strcmp(argv[i],"-sha512")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "sha512",Ctx->Vars);
-else if (strcmp(argv[i],"-whirl")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "whirlpool",Ctx->Vars);
-else if (strcmp(argv[i],"-whirlpool")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "whirlpool",Ctx->Vars);
-else if (strcmp(argv[i],"-jh-224")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-224",Ctx->Vars);
-else if (strcmp(argv[i],"-jh-256")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-256",Ctx->Vars);
-else if (strcmp(argv[i],"-jh-384")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-384",Ctx->Vars);
-else if (strcmp(argv[i],"-jh-512")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-512",Ctx->Vars);
-else if (strcmp(argv[i],"-jh224")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-224",Ctx->Vars);
-else if (strcmp(argv[i],"-jh256")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-256",Ctx->Vars);
-else if (strcmp(argv[i],"-jh384")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-384",Ctx->Vars);
-else if (strcmp(argv[i],"-jh512")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-512",Ctx->Vars);
-else if (strcmp(argv[i],"-jh")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "jh-512",Ctx->Vars);
-//else if (strcmp(argv[i],"-crc32")==0) CommandLineHandleArg(argc, argv, i, 0, "HashType", "crc32",Ctx->Vars);
-else if (strcmp(argv[i],"-8")==0) Ctx->Flags |= CTX_BASE8;
-else if (strcmp(argv[i],"-10")==0) Ctx->Flags |= CTX_BASE10;
-else if (strcmp(argv[i],"-16")==0) Ctx->Flags |= CTX_HEX;
-else if (strcmp(argv[i],"-H")==0) Ctx->Flags |= CTX_HEXUPPER;
-else if (strcmp(argv[i],"-HEX")==0) Ctx->Flags |= CTX_HEXUPPER;
-else if (strcmp(argv[i],"-64")==0) Ctx->Flags |= CTX_BASE64;
-else if (strcmp(argv[i],"-base64")==0) Ctx->Flags |= CTX_BASE64;
-else if (strcmp(argv[i],"-hmac")==0) CommandLineHandleArg(argc, argv, i, FLAG_HMAC | FLAG_ARG_NAMEVALUE, "EncryptionKey", "",Ctx->Vars);
-else if (strcmp(argv[i],"-idfile")==0) CommandLineHandleArg(argc, argv, i, FLAG_ARG_NAMEVALUE, "SshIdFile", "",Ctx->Vars);
-else if (strcmp(argv[i],"-r")==0) CommandLineHandleArg(argc, argv, i, FLAG_RECURSE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-f")==0) CommandLineHandleArg(argc, argv, i, FLAG_FROM_LISTFILE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-i")==0) CommandLineHandleArg(argc, argv, i, FLAG_INCLUDE | FLAG_ARG_NAMEVALUE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-x")==0) CommandLineHandleArg(argc, argv, i, FLAG_EXCLUDE | FLAG_ARG_NAMEVALUE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-d")==0) CommandLineHandleArg(argc, argv, i, FLAG_DEREFERENCE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-dirmode")==0) CommandLineHandleArg(argc, argv, i, FLAG_DIRMODE | FLAG_RECURSE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-devmode")==0) CommandLineHandleArg(argc, argv, i, FLAG_DIRMODE | FLAG_DEVMODE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-lines")==0) CommandLineHandleArg(argc, argv, i, FLAG_LINEMODE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-fs")==0) CommandLineHandleArg(argc, argv, i, FLAG_ONE_FS, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-xattr")==0) CommandLineHandleArg(argc, argv, i, FLAG_XATTR, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-strict")==0) CommandLineHandleArg(argc, argv, i, FLAG_FULLCHECK, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-S")==0) CommandLineHandleArg(argc, argv, i, FLAG_FULLCHECK, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-net")==0) CommandLineHandleArg(argc, argv, i, FLAG_NET, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-rl")==0) CommandLineHandleArg(argc, argv, i, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-rawlines")==0) CommandLineHandleArg(argc, argv, i, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-md5")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "md5",Ctx->Vars);
+else if (strcmp(argv[i],"-sha")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "sha1",Ctx->Vars);
+else if (strcmp(argv[i],"-sha1")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "sha1",Ctx->Vars);
+else if (strcmp(argv[i],"-sha256")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "sha256",Ctx->Vars);
+else if (strcmp(argv[i],"-sha512")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "sha512",Ctx->Vars);
+else if (strcmp(argv[i],"-whirl")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "whirlpool",Ctx->Vars);
+else if (strcmp(argv[i],"-whirlpool")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "whirlpool",Ctx->Vars);
+else if (strcmp(argv[i],"-jh-224")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-224",Ctx->Vars);
+else if (strcmp(argv[i],"-jh-256")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-256",Ctx->Vars);
+else if (strcmp(argv[i],"-jh-384")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-384",Ctx->Vars);
+else if (strcmp(argv[i],"-jh-512")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-512",Ctx->Vars);
+else if (strcmp(argv[i],"-jh224")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-224",Ctx->Vars);
+else if (strcmp(argv[i],"-jh256")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-256",Ctx->Vars);
+else if (strcmp(argv[i],"-jh384")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-384",Ctx->Vars);
+else if (strcmp(argv[i],"-jh512")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-512",Ctx->Vars);
+else if (strcmp(argv[i],"-jh")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-512",Ctx->Vars);
+//else if (strcmp(argv[i],"-crc32")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "crc32",Ctx->Vars);
+else if (strcmp(argv[i],"-8")==0)  CommandLineSetCtx(argc, argv, i, Ctx,  CTX_BASE8);
+else if (strcmp(argv[i],"-10")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_BASE10);
+else if (strcmp(argv[i],"-16")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_HEX);
+else if (strcmp(argv[i],"-H")==0)  CommandLineSetCtx(argc, argv, i, Ctx,  CTX_HEXUPPER);
+else if (strcmp(argv[i],"-HEX")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_HEXUPPER);
+else if (strcmp(argv[i],"-64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_BASE64);
+else if (strcmp(argv[i],"-base64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_BASE64);
+else if (strcmp(argv[i],"-d")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_DEREFERENCE);
+else if (strcmp(argv[i],"-n")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, 0, "Output:Length", "",Ctx->Vars);
+else if (strcmp(argv[i],"-hmac")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_HMAC, "EncryptionKey", "",Ctx->Vars);
+else if (strcmp(argv[i],"-idfile")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, 0,  "SshIdFile", "",Ctx->Vars);
+else if (strcmp(argv[i],"-r")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RECURSE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-f")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, CMDLINE_FROM_LISTFILE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-i")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_INCLUDE , "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-x")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_EXCLUDE , "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-dirmode")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_DIRMODE | FLAG_RECURSE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-devmode")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_DIRMODE | FLAG_DEVMODE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-lines")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_LINEMODE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-rawlines")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-rl")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-fs")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_ONE_FS, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-xattr")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_XATTR, 0, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-strict")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_FULLCHECK, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-color")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_COLOR, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-S")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_FULLCHECK, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-net")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_NET, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-memcached")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_MEMCACHED, "Memcached:Server", "",Ctx->Vars);
+else if (strcmp(argv[i],"-mcd")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_MEMCACHED, "Memcached:Server", "",Ctx->Vars);
 else if (
 					(strcmp(argv[i],"-t")==0) ||
 					(strcmp(argv[i],"-trad")==0)
-				) CommandLineHandleArg(argc, argv, i, FLAG_TRAD_OUTPUT, "", "",Ctx->Vars);
-
+				) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_TRAD_OUTPUT, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-u")==0) CommandLineHandleUpdate(argc, argv, i, Ctx);
 else if (strcmp(argv[i],"-attrs")==0) 
 {
 	strcpy(argv[i],"");
@@ -196,7 +259,7 @@ else if (strcmp(argv[i],"-attrs")==0)
 
 
 //if we're reading from a list file, then...
-if ((Flags & FLAG_FROM_LISTFILE))
+if ((ParseFlags & CMDLINE_FROM_LISTFILE))
 {
 	//... set appropriate action type
 	if (Ctx->Action==ACT_HASH) Ctx->Action=ACT_HASH_LISTFILE;
@@ -216,6 +279,7 @@ if ((Flags & FLAG_FROM_LISTFILE))
 
 
 
+
 //if -hmac set, then upgrade hash type to the hmac version
 if (Flags & FLAG_HMAC)
 {
@@ -224,11 +288,22 @@ if (Flags & FLAG_HMAC)
 }
 else Ctx->HashType=CopyStr(Ctx->HashType,GetVar(Ctx->Vars,"HashType"));
 
+switch (Ctx->Action)
+{
+case ACT_CHECK:
+	if (ParseFlags & CMDLINE_XATTR) Ctx->Action=ACT_CHECK_XATTR;
+break;
+
+case ACT_HASH:
+case ACT_HASH_LISTFILE:
+	if (ParseFlags & CMDLINE_XATTR) Ctx->Flags |= CTX_STORE_XATTR;
+break;
+
+}
 
 //if no path given, then force to '-' for 'standard in'
 ptr=GetVar(Ctx->Vars,"Path");
 if (! StrLen(ptr)) SetVar(Ctx->Vars,"Path","-");
-
 
 DestroyString(Tempstr);
 return(Ctx);
@@ -279,6 +354,7 @@ printf("  %-15s %s\n","-i <pattern>", "Only hash items matching <pattern>");
 printf("  %-15s %s\n","-x <pattern>", "Exclude items matching <pattern>");
 printf("  %-15s %s\n","-c", "Check hashes against list from file (or stdin)");
 printf("  %-15s %s\n","-cf", "Check hashes but only show failures");
+printf("  %-15s %s\n","-color", "Use ANSI color codes on output when checking hashes.");
 printf("  %-15s %s\n","-strict", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
 printf("  %-15s %s\n","-S", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
 printf("  %-15s %s\n","-d","dereference (follow) symlinks"); 

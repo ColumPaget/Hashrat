@@ -17,6 +17,11 @@ char *FindFileInPath(char *InBuff, char *File, char *Path);
 int ChangeFileExtension(char *FilePath, char *NewExt);
 int FindFilesInPath(char *File, char *Path, ListNode *Files);
 
+
+int FileNotifyInit(char *Path, int Flags);
+int FileNotifyGetNext(int fd, char **Path);
+
+
 #ifdef __cplusplus
 }
 #endif

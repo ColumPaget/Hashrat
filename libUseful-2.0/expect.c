@@ -96,7 +96,11 @@ while (inchar !=EOF)
     match++;
     if (match==len)
     {
-      if (Reply) STREAMWriteLine(Reply,S);
+      if (Reply) 
+			{
+				STREAMWriteLine(Reply,S);
+				STREAMFlush(S);
+			}
       return(TRUE);
     }
   }

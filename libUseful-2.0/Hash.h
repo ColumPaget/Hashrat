@@ -12,6 +12,7 @@ extern "C" {
 typedef struct t_hash THash;
 
 typedef void (*HASH_UPDATE)(THash *Hash, char *Data, int DataLen);
+typedef THash *(*HASH_CLONE)(THash *Hash);
 typedef int (*HASH_FINISH)(THash *Hash, int Encoding, char **RetStr);
 
 struct t_hash
@@ -24,6 +25,7 @@ unsigned int Key2Len;
 void *Ctx;
 HASH_UPDATE Update;
 HASH_FINISH Finish;
+HASH_CLONE Clone;
 };
 
 void HashAvailableTypes(ListNode *Vars);

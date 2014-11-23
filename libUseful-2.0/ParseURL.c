@@ -13,12 +13,13 @@ if (Password) *Password=CopyStr(*Password,"");
 ptr=strrchr(Data,'@');
 if (ptr)
 {
-	ptr=GetToken(Data,"@",&Token,0);
+	Token=CopyStrLen(Token,Data,ptr-Data);
 	if (User)
 	{
 	tptr=GetToken(Token,":",User,0);
 	if (StrLen(tptr)) *Password=CopyStr(*Password,tptr);
 	}
+	ptr++;
 }
 else ptr=Data;
 

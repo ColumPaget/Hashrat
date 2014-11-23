@@ -45,3 +45,52 @@ ANSI=CatStr(ANSI,"m");
 
 return(ANSI);
 }
+
+
+char *TerminalReadText(char *RetStr, int Flags, STREAM *S)
+{
+int inchar, len=0;
+char outchar;
+
+inchar=STREAMReadChar(S);
+while (inchar != EOF)
+{
+	if (Flags & TERM_SHOWTEXT) outchar=inchar & 0xFF;
+	if (Flags & TERM_SHOWSTARS) 
+	{
+		if ((outchar & 0xFF) =='\n') outchar=inchar & 0xFF;
+		else if ((outchar & 0xFF) =='\b') outchar=inchar & 0xFF;
+		else outchar='*';
+	}
+
+
+	if (Flags & TERM_SHOWTEXTSTARS) 
+	{
+		switch (inchar)
+		{
+
+		case '\n':
+		case '\r':
+		case 0x08:
+		break;
+
+		default:
+		if (len > 0) STREAMWriteString("\x08*",S);
+		break;
+		}
+
+		outchar=inchar & 0xFF;
+	}
+
+
+	STREAMWriteBytes(S, &outchar,1);
+	STREAMFlush(S);
+	if (inchar == '\n') break;
+	if (inchar == '\r') break;
+
+	RetStr=AddCharToBuffer(RetStr,len++, inchar & 0xFF);
+	inchar=STREAMReadChar(S);
+}
+
+return(RetStr);
+}

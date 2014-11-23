@@ -3,6 +3,8 @@
 
 #define LIST_FLAG_DELETE 1
 #define LIST_FLAG_CASE 2
+#define LIST_FLAG_SELFORG 4
+#define LIST_FLAG_DEBUG 8
 
 typedef struct lnode
 {
@@ -21,10 +23,14 @@ struct lnode *Next;
 extern "C" {
 #endif
 
+
 typedef void (*LIST_ITEM_DESTROY_FUNC)(void *);
 typedef void *(*LIST_ITEM_CLONE_FUNC)(void *);
 
+
 ListNode *ListCreate();
+void ListSetFlags(ListNode *List, int Flags);
+
 void *IndexArrayOnList(ListNode *);
 void *AddItemToArray(void *Array,int size, void *Item);
 void *DeleteItemFromArray(void *Array,int size, int ItemNo);

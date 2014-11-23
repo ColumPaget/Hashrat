@@ -117,7 +117,7 @@ Ctx->NetCon=STREAMSpawnCommand(Tempstr,COMMS_BY_PTY|TTYFLAG_CRLF|TTYFLAG_IGNSIG)
 if ((! StrLen(ptr)) && (! StrLen(Passwd)))  Flags |= SSH_ASK_PASSWD;
 SSHFinalizeConnection(Ctx, Flags, &Passwd);
 
-STREAMSetTimeout(Ctx->NetCon,1);
+STREAMSetTimeout(Ctx->NetCon,10);
 
 /*
 StripTrailingWhitespace(Tempstr);
@@ -147,6 +147,7 @@ STREAM *SSHGet(HashratCtx *Ctx, char *URL)
 {
 char *Tempstr=NULL, *Path=NULL, *ptr;
 STREAM *S;
+struct timeval tv;
 
 //collect any previous ssh's
 while (waitpid(-1,NULL,WNOHANG) > 0);
@@ -158,9 +159,12 @@ if (S)
 {
 	ptr=Path;
 	if (*ptr=='/') ptr++;
-	Tempstr=MCopyStr(Tempstr,"cat '",ptr,"'\n",NULL);
+	Tempstr=MCopyStr(Tempstr,"cat '",ptr,"' 2>/dev/null \n",NULL);
 	STREAMWriteLine(Tempstr,S); 
 	STREAMFlush(S);
+	tv.tv_usec=0;
+	tv.tv_sec=2;
+	FDSelect(S->in_fd, SELECT_READ, &tv);
 }
 
 DestroyString(Path);
@@ -273,7 +277,7 @@ if (S)
 	if (*ptr == '/') ptr++;
 	
 	Path=QuoteCharsInStr(Path,ptr," 	;&'`\"");
-	Tempstr=MCopyStr(Tempstr,"ls -lidn ",Path,"\n",NULL);
+	Tempstr=MCopyStr(Tempstr,"ls -lidn ",Path," 2> /dev/null\n",NULL);
 	STREAMWriteLine(Tempstr,S); STREAMFlush(S);
 
 	Tempstr=STREAMReadLine(Tempstr,S);

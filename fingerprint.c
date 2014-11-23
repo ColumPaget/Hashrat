@@ -1,16 +1,18 @@
 #include "fingerprint.h"
 
-int FingerprintRead(STREAM *S, TFingerprint *FP)
+TFingerprint *FingerprintRead(STREAM *S)
 {
 char *Tempstr=NULL, *Name=NULL, *Value=NULL, *ptr;
+TFingerprint *FP;
 
+FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
 FP->Path=CopyStr(FP->Path,"");
 FP->Hash=CopyStr(FP->Hash,"");
 FP->Flags=0;
 memset(&FP->FStat,0,sizeof(struct stat));
 
 Tempstr=STREAMReadLine(Tempstr,S);
-if (! Tempstr) return(FALSE);
+if (! Tempstr) return(NULL);
 
 StripTrailingWhitespace(Tempstr);
 if (strncmp(Tempstr,"hash=",5) ==0)
@@ -73,7 +75,7 @@ DestroyString(Tempstr);
 DestroyString(Name);
 DestroyString(Value);
 
-return(TRUE);
+return(FP);
 }
 
 

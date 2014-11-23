@@ -163,6 +163,8 @@ char *User=NULL, *Host=NULL,*Pass=NULL, *KeyFile=NULL;
 int Port=0;
 
 ParseConnectDetails(HopURL, &Token, &Host, &Token2, &User, &Pass, NULL);
+
+printf("PCH: [%s] [%s] [%s] [%s] [%s] %s\n",Token,Host,Token2,User,Pass,HopURL);
 Port=atoi(Token2);
 
 val=MatchTokenFromList(Token,HopTypes,0);

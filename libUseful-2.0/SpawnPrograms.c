@@ -8,7 +8,7 @@
 char *MakeShellSafeString(char *RetStr, const char *String, int SafeLevel)
 {
 char *Tempstr=NULL;
-char *BadChars=";|$`";
+char *BadChars=";|&`";
 
 if (SafeLevel==SHELLSAFE_BLANK) 
 {
@@ -28,11 +28,12 @@ return(Tempstr);
 void SwitchProgram(char *CommandLine, char *User, char *Group, char *Dir)
 {
 char **argv, *ptr;
-char *Token=NULL;
+char *Token=NULL, *SafeStr=NULL;
 int i;
 
+SafeStr=MakeShellSafeString(SafeStr,CommandLine,0);
 argv=(char **) calloc(101,sizeof(char *));
-ptr=CommandLine;
+ptr=SafeStr;
 for (i=0; i < 100; i++)
 {
 	ptr=GetToken(ptr,"\\S",&Token,GETTOKEN_QUOTES);
@@ -44,6 +45,8 @@ if (StrLen(Dir)) chdir(Dir);
 if (StrLen(User)) SwitchUser(User);
 if (StrLen(Group)) SwitchGroup(Group);
 
+DestroyString(Token);
+DestroyString(SafeStr);
 
 /* we are the child so we continue */
 execv(argv[0],argv);
@@ -157,12 +160,16 @@ if (pid==0)
 		}
 	}
 }
+
+
+/* WTF?! Why do this in the parent? 
 else
 {
 	fd=open("/dev/null",O_WRONLY);
 	dup(fd);
 	close(fd);
 }
+*/
 
 return(pid);
 }
@@ -267,9 +274,16 @@ return(pid);
 }
 
 
-int BASIC_FUNC_EXEC_COMMAND(void *Data)
+int BASIC_FUNC_EXEC_COMMAND(void *Command)
 {
-return(execl("/bin/sh","/bin/sh","-c",(char *) Data,NULL));
+char *SafeStr=NULL;
+int result;
+
+SafeStr=MakeShellSafeString(SafeStr,Command,0);
+result=execl("/bin/sh","/bin/sh","-c",(char *) SafeStr,NULL);
+
+DestroyString(SafeStr);
+return(result);
 }
 
 

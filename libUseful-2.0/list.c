@@ -25,6 +25,14 @@ return(*intptr);
 }
 
 
+void ListSetFlags(ListNode *List, int Flags)
+{
+ListNode *Head;
+
+Head=ListGetHead(List);
+Head->Flags=Flags;
+}
+
 
 int ListSetNoOfItems(ListNode *LastItem, int val)
 {
@@ -477,6 +485,8 @@ if (! Item2) return;
 Prev=Item1->Prev;
 Next=Item2->Next;
 Head=ListGetHead(Item1);
+if (Head==Item1) return;
+if (Head==Item2) return;
 
 if (Head->Next==Item1) Head->Next=Item2;
 if (Prev) Prev->Next=Item2;
@@ -566,9 +576,17 @@ while (Curr)
 	{
   	if (Head->Flags & LIST_FLAG_CASE)
 		{
-			if (strcmp(Curr->Tag,Name)==0) return(Curr);
+			if (strcmp(Curr->Tag,Name)==0) 
+			{
+				if (Head->Flags & LIST_FLAG_SELFORG) ListSwapItems(Curr->Prev, Curr);
+				return(Curr);
+			}
 		}
-  	else if (strcasecmp(Curr->Tag,Name)==0) return(Curr);
+  	else if (strcasecmp(Curr->Tag,Name)==0) 
+		{
+				if (Head->Flags & LIST_FLAG_SELFORG) ListSwapItems(Curr->Prev, Curr);
+			return(Curr);
+		}
 	}
 
   Curr=ListGetNext(Curr);
@@ -587,8 +605,12 @@ if (! Item) return(NULL);
 Curr=ListGetNext(Head);
 while (Curr)
 {
-   if (Curr->Item==Item) return(Curr);
-   Curr=ListGetNext(Curr);
+	if (Curr->Item==Item) 
+	{
+		if (Head->Flags & LIST_FLAG_SELFORG) ListSwapItems(Curr->Prev, Curr);
+		return(Curr);
+	}
+	Curr=ListGetNext(Curr);
 }
 return(Curr);
 }

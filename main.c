@@ -1,39 +1,9 @@
 #include "common.h"
 #include "ssh.h"
 #include "fingerprint.h"
-
-
-int CheckHashesFromList(HashratCtx *Ctx)
-{
-int result=0;
-int Checked=0, Errors=0;
-STREAM *ListStream;
-TFingerprint *FP;
-char *ptr;
-
-
-ptr=GetVar(Ctx->Vars,"Path");
-if (strcmp(ptr,"-")==0) 
-{
-	ListStream=STREAMFromFD(0);
-	STREAMSetTimeout(ListStream,0);
-}
-else ListStream=STREAMOpenFile(ptr, O_RDONLY);
-
-FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
-while (FingerprintRead(ListStream, FP))
-{
-	if (! StrLen(FP->HashType)) FP->HashType=CopyStr(FP->HashType, Ctx->HashType);
-	result=HashratCheckFile(Ctx, FP);
-	Checked++;
-}
-
-fprintf(stderr,"\nChecked %d files. %d Failures\n",Checked,Errors);
-
-FingerprintDestroy(FP);
-
-return(result); 
-}
+#include "find.h"
+#include "memcached.h"
+#include "check.h"
 
 
 
@@ -49,9 +19,10 @@ Tempstr=STREAMReadLine(Tempstr, S);
 while (Tempstr)
 {
 	StripTrailingWhitespace(Tempstr);
-	if (StatFile(Tempstr,&Stat)==0) HashItem(NULL, Tempstr, &Stat, Ctx->HashType, &HashStr);
+	if (StatFile(Ctx,Tempstr,&Stat)==0) HashItem(NULL, Tempstr, &Stat, Ctx->HashType, &HashStr);
 
-	HashratAction(Ctx, Tempstr, &Stat, HashStr);
+	HashratOutputInfo(Ctx, Ctx->Out, Tempstr, &Stat, HashStr);
+	HashratStoreHash(Ctx, Tempstr, &Stat, HashStr);
 	Tempstr=STREAMReadLine(Tempstr, S);
 }
 
@@ -108,14 +79,15 @@ if (Flags & FLAG_LINEMODE)
 	{
 		if (! (Flags & FLAG_RAW)) StripTrailingWhitespace(Tempstr);
 		Hash=CopyStr(Hash,"");
-		Hash=ProcessData(Hash, Ctx, Tempstr, StrLen(Tempstr));
+		ProcessData(&Hash, Ctx, Tempstr, StrLen(Tempstr));
+		printf("PD: [%s]\n",Hash);
 		STREAMWriteString(Hash,Ctx->Out); STREAMWriteString("\n",Ctx->Out);
 		Tempstr=STREAMReadLine(Tempstr,In);
 	}
 }
 else
 {
-	Hash=HashratHashSingleFile(Hash, Ctx, Ctx->HashType, 0, "-");
+	HashratHashSingleFile(& Hash, Ctx, Ctx->HashType, 0, "-");
 	STREAMWriteString(Hash,Ctx->Out); STREAMWriteString("\n",Ctx->Out);
 }
 STREAMDisassociateFromFD(In);
@@ -124,6 +96,29 @@ DestroyString(Tempstr);
 DestroyString(Hash);
 }
 
+
+
+int ProcessCommandLine(HashratCtx *Ctx, int argc, char *argv[])
+{
+struct stat Stat;
+int i, count=0;
+
+	for (i=1; i < argc; i++)
+	{
+	if (StrLen(argv[i]))
+	{
+			if (StatFile(Ctx, argv[i],&Stat)==0)
+			{
+				if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
+				ProcessItem(Ctx, argv[i], &Stat);
+			}
+			else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
+			count++;
+	}
+	}
+
+return(count);
+}
 
 
 
@@ -139,12 +134,16 @@ memset(&Stat,0,sizeof(struct stat)); //to keep valgrind happy
 Ctx=CommandLineParseArgs(argc,argv);
 if (Ctx)
 {
+MemcachedConnect(GetVar(Ctx->Vars, "Memcached:Server"));
+
 switch (Ctx->Action)
 {
 	case ACT_CHECK:
-		Flags |= FLAG_CHECK;	
-		if (Flags & FLAG_XATTR) result=CheckHashesFromXAttr(Ctx);
-		else result=CheckHashesFromList(Ctx);
+		result=CheckHashesFromList(Ctx);
+	break;
+
+	case ACT_CHECK_XATTR:
+		ProcessCommandLine(Ctx, argc, argv);
 	break;
 
 	case ACT_CGI:
@@ -156,24 +155,9 @@ switch (Ctx->Action)
 	break;
 
 	case ACT_HASH:
-	for (i=1; i < argc; i++)
-	{
-	Tempstr=CopyStr(Tempstr,"");
-	if (StrLen(argv[i]))
-	{
-			if (StatFile(argv[i],&Stat)==0)
-			{
-				if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
-				ProcessItem(Ctx, argv[i], &Stat);
-			}
-			else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
-			count++;
-	}
-	}
-
+	count=ProcessCommandLine(Ctx, argc, argv);
 	//if we didn't find anything on the command-line then read from stdin
 	if (count==0) HashStdIn(Ctx);
-
 	break;
 
 
@@ -181,10 +165,49 @@ switch (Ctx->Action)
 		HashFromListFile(Ctx);
 	break;
 
+
+	case ACT_SIGN:
+	Ctx->Flags |= CTX_BASE64;
+	for (i=1; i < argc; i++)
+	{
+	if (StrLen(argv[i]))
+	{
+			if (StatFile(Ctx, argv[i],&Stat)==0)
+			{
+				if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
+				else HashratSignFile(argv[i],Ctx);
+			}
+			else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
+			count++;
+	}
+	}
+	break;
+
+	case ACT_CHECKSIGN:
+	Ctx->Flags |= CTX_BASE64;
+	for (i=1; i < argc; i++)
+	{
+	if (StrLen(argv[i]))
+	{
+			if (StatFile(Ctx, argv[i],&Stat)==0)
+			{
+				if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
+				else HashratCheckSignedFile(argv[i], Ctx);
+			}
+			else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
+			count++;
+	}
+	}
+	break;
+
+	case ACT_FINDMATCH:
+	FindMatches(Ctx, argc, argv);	
+	break;
 }
 
 fflush(NULL);
-STREAMClose(Ctx->Out);
+if (Ctx->Out) STREAMClose(Ctx->Out);
+if (Ctx->Aux) STREAMClose(Ctx->Aux);
 }
 
 DestroyString(Tempstr);

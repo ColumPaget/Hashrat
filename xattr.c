@@ -76,32 +76,25 @@ DestroyString(Attr);
 }
 
 
-int XAttrGetHash(HashratCtx *Ctx, char *Path, struct stat *FStat, char **Hash)
+int XAttrGetHash(HashratCtx *Ctx, char *XattrType, char *HashType, char *Path, struct stat *FStat, char **Hash)
 {
 char *Tempstr=NULL, *ptr;
 int result=FALSE, len;
 
 #ifdef USE_XATTR
-*Hash=SetStrLen(*Hash,1024);
 
-Tempstr=MCopyStr(Tempstr,"user.hashrat:",Ctx->HashType,NULL);
+Tempstr=MCopyStr(Tempstr,XattrType, ".hashrat:",HashType,NULL);
 len=getxattr(Path, Tempstr, *Hash, 1024); 
 if (len > 0)
 {
 	ptr=*Hash;
-	if (strtol(ptr,&ptr,10) > FStat->st_mtime)
-	{
-		if (*ptr==':') ptr++;
-		if (strtol(ptr,&ptr,10) == FStat->st_size)
-		{
-			if (*ptr==':') ptr++;
-			memmove(*Hash,ptr,StrLen(ptr)+1);
-			result=TRUE;
-		}
-	}
+	FStat->st_mtime=(time_t) strtol(ptr,&ptr,10);
+	if (*ptr==':') ptr++;
+	FStat->st_size=(off_t) strtol(ptr,&ptr,10);
+	if (*ptr==':') ptr++;
+	memmove(*Hash,ptr,StrLen(ptr)+1);
+	result=TRUE;
 }
-
-if (! result) printf("XATTR LOAD: [%s] [%s]\n", Path, *Hash);
 
 #endif
 
@@ -111,23 +104,24 @@ return(result);
 
 
 
-void XAttrLoadHash(TFingerprint *FP)
+TFingerprint *XAttrLoadHash(HashratCtx *Ctx, char *Path)
 {
 char *HashTypes[]={"md5","sha","sha1","sha256","sha512","whirl","whirlpool",NULL};
 char *XattrTypes[]={"trusted","user",NULL};
+TFingerprint *FP=NULL;
 char *Tempstr=NULL;
-int i, j, len;
+int i, j, found=FALSE;
 
+
+FP=(TFingerprint *) calloc(1, sizeof(TFingerprint));
+FP->Path=CopyStr(FP->Path, Path);
 FP->Hash=SetStrLen(FP->Hash,1024);
-
 for (j=0; XattrTypes[j]; j++)
 {
 	for (i=0; HashTypes[i] != NULL; i++)
 	{
-		Tempstr=MCopyStr(Tempstr,XattrTypes[j],".hashrat:",HashTypes[i],NULL);
-		len=getxattr(FP->Hash, Tempstr, FP->Hash, 1024); 
-		printf("XATTR LOAD: %s %s\n",Tempstr,FP->Hash);
-		if (len > 0)
+		found=XAttrGetHash(Ctx, XattrTypes[j], HashTypes[i], Path, &FP->FStat, &FP->Hash);
+		if (found > 0)
 		{
 			FP->HashType=CopyStr(FP->HashType,HashTypes[i]);
 			break;
@@ -136,12 +130,14 @@ for (j=0; XattrTypes[j]; j++)
 }
 
 DestroyString(Tempstr);
-}
 
-
-int CheckHashesFromXAttr(ListNode *Vars,char *HashType)
+if (! found)
 {
-int result;
-
-return(result);
+	FingerprintDestroy(FP);
+	return(NULL);
 }
+
+return(FP);
+}
+
+

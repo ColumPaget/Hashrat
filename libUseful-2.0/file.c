@@ -307,7 +307,7 @@ int STREAMReadThroughProcessors(STREAM *S, char *Bytes, int InLen)
 TProcessingModule *Mod;
 ListNode *Curr;
 char *InBuff=NULL, *OutputBuff=NULL;
-int len=0, olen=0, state=STREAM_CLOSED;
+int len=0, olen=0, state=STREAM_CLOSED, Flush;
 
 
 len=InLen;
@@ -329,7 +329,9 @@ while (Curr)
 
 	if (Mod->Read) 
 	{
-		len=Mod->Read(Mod,InBuff,len,&OutputBuff,&olen,FALSE);
+		if (len < 0) Flush=TRUE;
+		else Flush=FALSE;
+		len=Mod->Read(Mod,InBuff,len,&OutputBuff,&olen, Flush);
 
 		if (len != EOF) state=0;
 
@@ -365,7 +367,7 @@ len=S->InEnd - S->InStart;
 
 if (len==0) 
 {
-	if (state ==STREAM_CLOSED) return(STREAM_CLOSED);
+	if (state ==STREAM_CLOSED) return(STREAM_TIMEOUT);
 	if (S->State & SS_DATA_ERROR) return(STREAM_DATA_ERROR);
 }
 return(len);
@@ -643,16 +645,19 @@ if (read_result==0)
 	}
 	else
 	{
-		if ((read_result == -1) && (errno==EAGAIN)) read_result=STREAM_NODATA;
-		else read_result=STREAM_CLOSED;
-		result=0;
+		if ((read_result == -1) && (errno==EAGAIN)) result=STREAM_NODATA;
+		else result=STREAM_CLOSED;
 	}
 }
 
-if (result !=0) read_result=result;
-if (result < 0) result=0;
-read_result=STREAMReadThroughProcessors(S, tmpBuff, result);
-if (read_result==0) read_result=STREAM_NODATA;
+if (result < 0) read_result=STREAMReadThroughProcessors(S, tmpBuff, 0);
+else read_result=STREAMReadThroughProcessors(S, tmpBuff, result);
+
+if (read_result < 1) 
+{
+	if (result < 0) read_result=result;
+	else read_result=STREAM_NODATA;
+}
 
 //if (result==STREAM_DATA_ERROR) read_result=STREAM_DATA_ERROR;
 
@@ -1018,7 +1023,7 @@ int result, len=0, bytes_read=0;
 char *RetStr=NULL, *end, *ptr;
 
 
-RetStr=Buffer;
+RetStr=CopyStr(Buffer,"");
 while (1)
 {
 	if (S->InEnd > S->InStart)
@@ -1041,6 +1046,11 @@ while (1)
 	result=STREAMReadCharsToBuffer(S);
 	if ((result != STREAM_NODATA) && (S->InStart >= S->InEnd))
 	{
+		if (result==STREAM_TIMEOUT) 
+		{
+			return(RetStr);
+		}
+
 		if (bytes_read==0)
 		{
 			DestroyString(RetStr);
@@ -1166,7 +1176,17 @@ off_t STREAMSendFile(STREAM *In, STREAM *Out, off_t Max)
 {
 char *Buffer=NULL;
 int BuffSize=BUFSIZ;
-off_t val, result=SENDFILE_FAILED;
+off_t bytes_read=0, result=SENDFILE_FAILED;
+
+//val has to be as long as possible, because it will hold the difference
+//between two off_t values. However, use of 'long long' resulted in an
+//unsigned value, which caused all manner of problems, so a long is the
+//best we can manage
+long val; 
+
+
+BuffSize=BUFSIZ;
+if (BuffSize > Max) BuffSize=Max;
 
 #ifdef USE_SENDFILE
 
@@ -1178,33 +1198,52 @@ off_t val, result=SENDFILE_FAILED;
 val=In->Flags | Out->Flags;
 if ((! (val & SF_SSL)) && (ListSize(In->ProcessingModules)==0) && (ListSize(Out->ProcessingModules)==0))
 {
-	val=0;
 	STREAMFlush(Out);
-	result=sendfile(Out->out_fd, In->in_fd,0,BUFSIZ);
+
+	result=sendfile(Out->out_fd, In->in_fd,0,BuffSize);
 	while (result > 0)
 	{
-		val+=result;
-		if ((Max > 0) && (val >= Max)) break;
-		result=sendfile(Out->out_fd, In->in_fd,0,BUFSIZ);
+		bytes_read+=result;
+		BuffSize=BUFSIZ;
+
+		if (Max > 0)
+		{
+			val=Max-bytes_read;
+			if (val < 1) break;
+			if (BuffSize > val) BuffSize=val;
+		}
+
+
+		result=sendfile(Out->out_fd, In->in_fd,0,BuffSize);
 	}
+
 }
 
 #endif
 
 if (result==SENDFILE_FAILED)
 {
-	val=0;
 	Buffer=SetStrLen(Buffer,BuffSize);
 	result=STREAMReadBytes(In,Buffer,BuffSize);
 	while (result >=0)
 	{
-		val+=STREAMWriteBytes(Out,Buffer,result);
-		if ((Max > 0) && (val >= Max)) break;
+		bytes_read+=STREAMWriteBytes(Out,Buffer,result);
+		BuffSize=BUFSIZ;
+
+		if (Max > 0) 
+		{
+			val=Max-bytes_read;
+
+			printf("val: %d\n",val);
+			if (val < 1) break;
+			if (BuffSize > val) BuffSize=val;
+		}
+
 		result=STREAMReadBytes(In,Buffer,BuffSize);
 	}
 }
 
 DestroyString(Buffer);
 
-return(val);
+return(bytes_read);
 }

@@ -678,7 +678,7 @@ enable_sendfile
 enable_largefiles
 enable_ip6
 enable_ssl
-enable_z
+enable_zlib
 enable_oss
 '
       ac_precious_vars='build_alias
@@ -3532,9 +3532,9 @@ cf_use_zlib=yes
 fi
 
 
-# Check whether --enable-z was given.
-if test "${enable_z+set}" = set; then :
-  enableval=$enable_z; cf_use_zlib=$enableval
+# Check whether --enable-zlib was given.
+if test "${enable_zlib+set}" = set; then :
+  enableval=$enable_zlib; cf_use_zlib=$enableval
 fi
 
 
