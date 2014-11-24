@@ -1,7 +1,5 @@
 #include "xattr.h"
 
-#define USE_XATTR 1
-
 #ifdef USE_XATTR
  #include <sys/types.h>
  #include <sys/xattr.h>

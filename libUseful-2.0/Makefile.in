@@ -2,7 +2,7 @@ CC = @CC@
 VERSION = @VERSION@
 CFLAGS = @CFLAGS@
 LIBS = @LIBS@
-FLAGS=$(CFLAGS) -fPIC @DEFS@ 
+FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -fPIC @DEFS@ 
 prefix=@prefix@
 OBJ=string.o list.o socket.o unix_socket.o file.o tar.o ansi.o FileSystem.o GeneralFunctions.o DataProcessing.o EncryptedFiles.o ConnectManager.o sound.o pty.o Log.o http.o inet.o expect.o base64.o  crc32.o md5c.o sha1.o sha2.o whirlpool.o jh_ref.o Hash.o Compression.o oauth.o libsettings.o Vars.o MathExpr.o Time.o Markup.o SpawnPrograms.o PatternMatch.o ParseURL.o ConnectionChain.o openssl.o
 
@@ -129,7 +129,9 @@ libsettings.o: libsettings.h libsettings.c
 	$(CC) $(FLAGS) -c libsettings.c
 
 clean:
-	@rm -f *.o *.so *.a
+	-rm -f *.o *.so *.a
+	-rm config.log config.status
+	-rm -r autom4te.cache
 
 install:
 	@ln -s libUseful-2.0.so libUseful.so

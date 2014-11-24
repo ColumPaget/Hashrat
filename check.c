@@ -100,11 +100,10 @@ int enc;
     else if (Ctx->Flags & CTX_BASE64) enc = ENCODE_BASE64;
     else enc= ENCODE_HEX;
 
-
 		if (access(Path,F_OK)!=0) fprintf(stderr,"\rERROR: No such file '%s'\n",Path);
 		else
 		{
-		StatFile(Path,&Stat);
+		StatFile(Ctx,Path,&Stat);
 		if (Flags & FP_HASSTAT)
 		{
 				if (CheckStat(Path, ExpectedStat, &Stat)) result=CheckFileHash(Ctx, Path, &Stat, ExpectedHash); 
@@ -114,6 +113,7 @@ int enc;
 
 return(result);
 }
+
 
 int CheckHashesFromList(HashratCtx *Ctx)
 {

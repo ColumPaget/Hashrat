@@ -21,21 +21,24 @@ return(MCS);
 } 
 
 
-void MemcachedSet(const char *Key, int TTL, const char *Value)
+int MemcachedSet(const char *Key, int TTL, const char *Value)
 {
 char *Tempstr=NULL;
-
+int result=FALSE;
 
 if (STREAMIsConnected(MCS))
 {
-Tempstr=FormatStr(Tempstr,"set %s 0 %d %d\r\n%s\r\n",Key,TTL,StrLen(Value),Value);
-STREAMWriteLine(Tempstr,MCS);
+	Tempstr=FormatStr(Tempstr,"set %s 0 %d %d\r\n%s\r\n",Key,TTL,StrLen(Value),Value);
+	STREAMWriteLine(Tempstr,MCS);
 
-Tempstr=STREAMReadLine(Tempstr,MCS);
+	Tempstr=STREAMReadLine(Tempstr,MCS);
+	StripTrailingWhitespace(Tempstr);
+	if (StrLen(Tempstr) && (strcmp(Tempstr,"STORED")==0)) result=TRUE;
 }
 
-
 DestroyString(Tempstr);
+
+return(result);
 }
 
 

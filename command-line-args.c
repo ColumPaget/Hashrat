@@ -179,10 +179,22 @@ else if (strcmp(argv[i],"-checksign")==0)
 }
 else if (strcmp(argv[i],"-m")==0)
 {
-	Ctx->Action = ACT_FINDMATCH;
+	Ctx->Action = ACT_FINDMATCHES;
+	strcpy(argv[i],"");
+}
+else if (strcmp(argv[i],"-lm")==0)
+{
+	Ctx->Action = ACT_LOADMATCHES;
 	strcpy(argv[i],"");
 }
 else if (strcmp(argv[i],"-diff-hook")==0) 
+{
+	strcpy(argv[i],"");
+	i++;
+	DiffHook=CopyStr(DiffHook,argv[i]);
+	strcpy(argv[i],"");
+}
+else if (strcmp(argv[i],"-dh")==0) 
 {
 	strcpy(argv[i],"");
 	i++;
@@ -354,13 +366,19 @@ printf("  %-15s %s\n","-i <pattern>", "Only hash items matching <pattern>");
 printf("  %-15s %s\n","-x <pattern>", "Exclude items matching <pattern>");
 printf("  %-15s %s\n","-c", "Check hashes against list from file (or stdin)");
 printf("  %-15s %s\n","-cf", "Check hashes but only show failures");
+printf("  %-15s %s\n","-dh <script>", "Script to run when a file fails checking mode");
+printf("  %-15s %s\n","-diff-hook <script>", "Script to run when a file fails checking mode");
+printf("  %-15s %s\n","-m", "Read hashes from stdin, and search for files matching those hashes.");
+printf("  %-15s %s\n","-lm", "Read hashes from stdin, upload them to a memcached server (requires the -memcached option).");
+printf("  %-15s %s\n","-memcached <server>", "Specify memcached server.");
+printf("  %-15s %s\n","-mcd <server>", "Specify memcached server.");
 printf("  %-15s %s\n","-color", "Use ANSI color codes on output when checking hashes.");
 printf("  %-15s %s\n","-strict", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
 printf("  %-15s %s\n","-S", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
 printf("  %-15s %s\n","-d","dereference (follow) symlinks"); 
+printf("  %-15s %s\n","-fs", "Stay one one file system");
 printf("  %-15s %s\n","-dirmode", "DirMode: Read all files in directory and create one hash for them!");
 printf("  %-15s %s\n","-devmode", "DevMode: read from a file EVEN OF IT'S A DEVNODE");
-printf("  %-15s %s\n","-fs", "Stay one one file system");
 printf("  %-15s %s\n","-lines", "Read lines from stdin and hash each line independantly.");
 printf("  %-15s %s\n","-rawlines", "Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')");
 printf("  %-15s %s\n","-rl", "Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')");
@@ -368,6 +386,8 @@ printf("  %-15s %s\n","-cgi", "Run in HTTP CGI mode");
 printf("  %-15s %s\n","-net", "Treat 'file' arguments as either ssh or http URLs, and pull files over the network and then hash them (Allows hashing of files on remote machines).");
 printf("  %-15s %s\n","", "URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..");
 printf("  %-15s %s\n","-idfile <path>", "Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.");
+printf("  %-15s %s\n","-xattr", "Use eXtended file ATTRibutes. In hash mode, store hashes in the file attributes, in check mode compare against hashes stored in file attributes.");
+printf("  %-15s %s\n","-u <types>", "Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.");
 
 
 /*

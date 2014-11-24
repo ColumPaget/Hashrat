@@ -13,11 +13,17 @@ AC_HEADER_STDC
 
 
 AC_ARG_ENABLE(largefiles, [  --enable-largefiles       enable largefile support], cf_use_largefiles=$enableval )
+AC_ARG_ENABLE(xattr, [  --enable-xattr       enable extended file attributes support], cf_use_xattr=$enableval )
 
 if test "$cf_use_largefiles" = "yes"
 then
 AC_DEFINE([_LARGEFILE64_SOURCE])
 AC_DEFINE([_FILE_OFFSET_BITS],[64])
+fi
+
+if test "$cf_use_xattr" = "yes"
+then
+AC_DEFINE([USE_XATTR])
 fi
 
 

@@ -5,5 +5,7 @@
 #include "common.h"
 
 void FindMatches(HashratCtx *Ctx, int argc, char *argv[]);
+void LoadMatchesToMemcache();
+
 
 #endif

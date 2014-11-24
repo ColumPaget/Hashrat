@@ -380,7 +380,6 @@ switch (Ctx->Action)
 {
 case ACT_HASH:
 	HashItem(Ctx, Path, Stat, &HashStr);
-	printf("CAT\n");
 	HashratOutputInfo(Ctx, Ctx->Out, Path, Stat, HashStr);
 	HashratStoreHash(Ctx, Path, Stat, HashStr);
 break;
@@ -394,7 +393,7 @@ case ACT_CHECK_XATTR:
 	}
 break;
 
-case ACT_FINDMATCH:
+case ACT_FINDMATCHES:
 	CheckForMatch(Ctx, Path, Stat);
 break;
 }

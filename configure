@@ -644,6 +644,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_largefiles
+enable_xattr
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1262,6 +1263,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-largefiles       enable largefile support
+  --enable-xattr       enable extended file attributes support
 
 Some influential environment variables:
   CC          C compiler command
@@ -1822,7 +1824,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-VERSION="0.1"
 
 
 ac_aux_dir=
@@ -3166,12 +3167,23 @@ if test "${enable_largefiles+set}" = set; then :
   enableval=$enable_largefiles; cf_use_largefiles=$enableval
 fi
 
+# Check whether --enable-xattr was given.
+if test "${enable_xattr+set}" = set; then :
+  enableval=$enable_xattr; cf_use_xattr=$enableval
+fi
+
 
 if test "$cf_use_largefiles" = "yes"
 then
 $as_echo "#define _LARGEFILE64_SOURCE 1" >>confdefs.h
 
 $as_echo "#define _FILE_OFFSET_BITS 64" >>confdefs.h
+
+fi
+
+if test "$cf_use_xattr" = "yes"
+then
+$as_echo "#define USE_XATTR 1" >>confdefs.h
 
 fi
 

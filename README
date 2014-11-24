@@ -169,6 +169,28 @@ This reads lines from stdin, so type into hashrat and then press 'enter', and yo
 
 	Like md5sum/shasum etc, hashrat can be used to detect changes in files that might indicate malicious activity. For instance, in order to get early warning of malware like 'cryptolocker' (that encrypts files on a users disk, or on network shares, and then demands a ransom for file recovery) I scatter about the disk a number of 'Canary files' that should not change. I record their hashes and regularly check them. If they change, I know something is going on.
 
-	3) CGI Mode
+
+	3) Finding files that match hashes.
+
+	Using the -m flag hashrat can be told to read a range of hashes from stdin, and then search for files matching those hashes. For Example:
+
+		cat APT1-AppendixE-MD5s.txt	| hashrat -r -m /usr
+
+	Will search recursively under /usr for files with hashes matching those in APT1-AppendixE-MD5s.txt. The input on stdin must begin with a hash, anything written after the hash will be treated as a comment to be displayed if a file matching the hash is found.
+
+	Hashtypes other than md5 can be used thusly:
+
+		cat sha1-list.lst | hashrat -r -sha1 -m /usr
+
+	Hashes can also be loaded into a memcached server, so that the same file list can be checked on a number of machines, without needing to store the hashlist on those machines. First we load the hashes:
+
+		cat APT1-AppendixE-MD5s.txt	| hashrat -lm -memcached 192.168.1.5 
+
+	Loads the hashes to a memcached server at 192.168.1.5. We can then search against the memcached server by:
+
+		hashrat -r -m -memcached 192.168.1.5 /usr 
+
+
+	4) CGI Mode
 
 	If hashrat is run with the -cgi flag, or if it's run with a name of 'hashrat.cgi' (either by renaming the 'hashrat' executable, or via a symbolic link) it will output a webpage that allows users to look up hashes over the web. This allows me to look-up my strong passwords even if I don't have access to a local version of hashrat.

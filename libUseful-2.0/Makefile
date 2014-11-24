@@ -2,7 +2,7 @@ CC = gcc
 VERSION = 0.0.1
 CFLAGS = -g -O2
 LIBS = 
-FLAGS=$(CFLAGS) -fPIC -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DUSE_SENDFILE=1 -DHAVE_OSS=1 
+FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -fPIC -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DUSE_SENDFILE=1 -DHAVE_OSS=1 
 prefix=/usr/local
 OBJ=string.o list.o socket.o unix_socket.o file.o tar.o ansi.o FileSystem.o GeneralFunctions.o DataProcessing.o EncryptedFiles.o ConnectManager.o sound.o pty.o Log.o http.o inet.o expect.o base64.o  crc32.o md5c.o sha1.o sha2.o whirlpool.o jh_ref.o Hash.o Compression.o oauth.o libsettings.o Vars.o MathExpr.o Time.o Markup.o SpawnPrograms.o PatternMatch.o ParseURL.o ConnectionChain.o openssl.o
 
@@ -129,7 +129,9 @@ libsettings.o: libsettings.h libsettings.c
 	$(CC) $(FLAGS) -c libsettings.c
 
 clean:
-	@rm -f *.o *.so *.a
+	-rm -f *.o *.so *.a
+	-rm config.log config.status
+	-rm -r autom4te.cache
 
 install:
 	@ln -s libUseful-2.0.so libUseful.so
