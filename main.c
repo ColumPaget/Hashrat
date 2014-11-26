@@ -80,7 +80,6 @@ if (Flags & FLAG_LINEMODE)
 		if (! (Flags & FLAG_RAW)) StripTrailingWhitespace(Tempstr);
 		Hash=CopyStr(Hash,"");
 		ProcessData(&Hash, Ctx, Tempstr, StrLen(Tempstr));
-		printf("PD: [%s]\n",Hash);
 		STREAMWriteString(Hash,Ctx->Out); STREAMWriteString("\n",Ctx->Out);
 		Tempstr=STREAMReadLine(Tempstr,In);
 	}
@@ -129,6 +128,13 @@ int i, result=FALSE, count=0;
 struct stat Stat;
 HashratCtx *Ctx;	
 
+Tempstr=SetStrLen(Tempstr, HOST_NAME_MAX);
+gethostname(Tempstr, HOST_NAME_MAX);
+LocalHost=CopyStr(LocalHost, Tempstr);
+Tempstr=SetStrLen(Tempstr, HOST_NAME_MAX);
+getdomainname(Tempstr, HOST_NAME_MAX);
+LocalHost=MCatStr(LocalHost, ".", Tempstr, NULL);
+
 memset(&Stat,0,sizeof(struct stat)); //to keep valgrind happy
 
 Ctx=CommandLineParseArgs(argc,argv);
@@ -138,11 +144,21 @@ MemcachedConnect(GetVar(Ctx->Vars, "Memcached:Server"));
 
 switch (Ctx->Action)
 {
+	case ACT_HASH:
+	count=ProcessCommandLine(Ctx, argc, argv);
+	//if we didn't find anything on the command-line then read from stdin
+	if (count==0) HashStdIn(Ctx);
+	break;
+
 	case ACT_CHECK:
 		result=CheckHashesFromList(Ctx);
 	break;
 
 	case ACT_CHECK_XATTR:
+		ProcessCommandLine(Ctx, argc, argv);
+	break;
+
+	case ACT_CHECK_MEMCACHED:
 		ProcessCommandLine(Ctx, argc, argv);
 	break;
 
@@ -152,12 +168,6 @@ switch (Ctx->Action)
 
 	case ACT_PRINTUSAGE:
 		CommandLinePrintUsage();
-	break;
-
-	case ACT_HASH:
-	count=ProcessCommandLine(Ctx, argc, argv);
-	//if we didn't find anything on the command-line then read from stdin
-	if (count==0) HashStdIn(Ctx);
 	break;
 
 
@@ -201,18 +211,19 @@ switch (Ctx->Action)
 	break;
 
 	case ACT_FINDMATCHES:
-//	FindMatches(Ctx, argc, argv);	
-	if (! (Flags & FLAG_MEMCACHED)) 
+	if (! MatchesLoad())
 	{
-		if (! MatchesLoad())
-		{
-			printf("No hashes supplied on stdin.\n");
-			exit(1);
-		}
+		printf("No hashes supplied on stdin.\n");
+		exit(1);
 	}
 	ProcessCommandLine(Ctx, argc, argv);
 	break;
 
+	case ACT_FINDMATCHES_MEMCACHED:
+	ProcessCommandLine(Ctx, argc, argv);
+	break;
+
+	
 
 	case ACT_LOADMATCHES:
 	ptr=GetVar(Ctx->Vars, "Memcached:Server");

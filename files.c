@@ -1,7 +1,9 @@
 #include "files.h"
 #include "ssh.h"
 #include "memcached.h"
+#include "fingerprint.h"
 #include <string.h>
+
 
 dev_t StartingFS=0;
 ListNode *IncludeExclude=NULL;
@@ -393,7 +395,22 @@ case ACT_CHECK_XATTR:
 	}
 break;
 
+case ACT_CHECK_MEMCACHED:
+	if (S_ISREG(Stat->st_mode))
+	{
+		FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
+    if (Flags & FLAG_NET) FP->Path=MCopyStr(FP->Path, Path);
+    else FP->Path=MCopyStr(FP->Path,"hashrat://",LocalHost,Path,NULL);
+    FP->Hash=MemcachedGet(FP->Hash, FP->Path);
+
+		if (FP) HashratCheckFile(Ctx, Path, FP->Hash, NULL);
+		else printf("ERROR: No stored hash for '%s'\n",Path);
+		FingerprintDestroy(FP);
+	}
+break;
+
 case ACT_FINDMATCHES:
+case ACT_FINDMATCHES_MEMCACHED:
 	CheckForMatch(Ctx, Path, Stat);
 break;
 }

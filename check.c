@@ -103,12 +103,12 @@ int enc;
 		if (access(Path,F_OK)!=0) fprintf(stderr,"\rERROR: No such file '%s'\n",Path);
 		else
 		{
-		StatFile(Ctx,Path,&Stat);
-		if (Flags & FP_HASSTAT)
-		{
+			StatFile(Ctx,Path,&Stat);
+			if ((Flags & FP_HASSTAT) && ExpectedStat)
+			{
 				if (CheckStat(Path, ExpectedStat, &Stat)) result=CheckFileHash(Ctx, Path, &Stat, ExpectedHash); 
-		}
-		else result=CheckFileHash(Ctx, Path, &Stat, ExpectedHash); 
+			}
+			else result=CheckFileHash(Ctx, Path, &Stat, ExpectedHash); 
 		}
 
 return(result);

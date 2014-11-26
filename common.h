@@ -8,19 +8,17 @@
 
 #define ACT_NONE 0
 #define ACT_HASH 1
-#define ACT_CHECK 2
 #define ACT_HASH_LISTFILE 3
 #define ACT_PRINTUSAGE 4
-#define ACT_CHECK_XATTR 5
 #define ACT_CGI 6
 #define ACT_SIGN 7
 #define ACT_CHECKSIGN 8
-#define ACT_FINDMATCHES 9
-#define ACT_LOADMATCHES 10
-
-#define CMDLINE_ARG_NAMEVALUE 1
-#define CMDLINE_FROM_LISTFILE 2
-#define CMDLINE_XATTR 4
+#define ACT_CHECK       10
+#define ACT_CHECK_XATTR 11
+#define ACT_CHECK_MEMCACHED 12
+#define ACT_LOADMATCHES 20
+#define ACT_FINDMATCHES 21
+#define ACT_FINDMATCHES_MEMCACHED 22
 
 #define FLAG_RECURSE 1
 //Two flags with the same values, but used in different contexts
@@ -91,6 +89,7 @@ ListNode *Vars;
 extern int Flags;
 extern char *DiffHook;
 extern char *Key;
+extern char *LocalHost;
 
 void HashratCtxDestroy(void *p_Ctx);
 int HashratCheckFile(HashratCtx *Ctx, char *Path, char *ExpectedHash, struct stat *FPStat);

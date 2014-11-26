@@ -67,7 +67,7 @@ if (S_ISREG(FStat->st_mode))
 	Lookup.Path=CopyStr(Lookup.Path,Path);
 	if  (HashratHashSingleFile(&Lookup.ID, Ctx, FT_FILE, Path, FStat))
 	{	
-		if (Flags & FLAG_MEMCACHED)
+		if (Ctx->Action==ACT_FINDMATCHES_MEMCACHED)
 		{
 		Tempstr=MemcachedGet(Tempstr, Lookup.ID);
 		if (StrLen(Tempstr)) printf("LOCATED: %s  %s  %s (memcached)\n",Lookup.ID,Lookup.Path,Tempstr);

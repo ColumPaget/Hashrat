@@ -4,6 +4,7 @@
 int Flags=0;
 char *DiffHook=NULL;
 char *Key=NULL;
+char *LocalHost=NULL;
 
 
 
@@ -68,6 +69,8 @@ DestroyString(Tempstr);
 
 void HashratStoreHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash)
 {
+char *Tempstr=NULL;
+
 	//if CTX_CACHED is set, then unset. Otherwise update XATTR for this item
 //	if (Ctx->Flags & CTX_CACHED) Ctx->Flags &= ~CTX_CACHED;
 //	else 
@@ -77,11 +80,14 @@ void HashratStoreHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash
 
 	if (Ctx->Flags & CTX_STORE_MEMCACHED)
 	{
-		MemcachedSet(Hash, 0, Path);
-		MemcachedSet(Path, 0, Hash);
+		if (Flags & FLAG_NET) Tempstr=MCopyStr(Tempstr, Path);
+		else Tempstr=MCopyStr(Tempstr,"hashrat://",LocalHost,Path,NULL);
+		MemcachedSet(Hash, 0, Tempstr);
+		MemcachedSet(Tempstr, 0, Hash);
 	}
 
 	if (Ctx->Aux) HashratOutputInfo(Ctx, Ctx->Aux, Path, Stat, Hash);
+	DestroyString(Tempstr);
 }
 
 

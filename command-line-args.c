@@ -1,6 +1,9 @@
 #include "command-line-args.h"
 
-
+#define CMDLINE_ARG_NAMEVALUE 1
+#define CMDLINE_FROM_LISTFILE 2
+#define CMDLINE_XATTR     4
+#define CMDLINE_MEMCACHED 8
 
 //this function is called when a command-line switch has been recognized. It's told which flags to set
 //and whether the switch takes a string argument, which it then reads and stores in the variable list
@@ -249,8 +252,8 @@ else if (strcmp(argv[i],"-strict")==0) ParseFlags |= CommandLineHandleArg(argc, 
 else if (strcmp(argv[i],"-color")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_COLOR, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-S")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_FULLCHECK, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-net")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_NET, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-memcached")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_MEMCACHED, "Memcached:Server", "",Ctx->Vars);
-else if (strcmp(argv[i],"-mcd")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_MEMCACHED, "Memcached:Server", "",Ctx->Vars);
+else if (strcmp(argv[i],"-memcached")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE|CMDLINE_MEMCACHED, 0, "Memcached:Server", "",Ctx->Vars);
+else if (strcmp(argv[i],"-mcd")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE| CMDLINE_MEMCACHED, 0, "Memcached:Server", "",Ctx->Vars);
 else if (
 					(strcmp(argv[i],"-t")==0) ||
 					(strcmp(argv[i],"-trad")==0)
@@ -304,12 +307,19 @@ switch (Ctx->Action)
 {
 case ACT_CHECK:
 	if (ParseFlags & CMDLINE_XATTR) Ctx->Action=ACT_CHECK_XATTR;
+	if (ParseFlags & CMDLINE_MEMCACHED) Ctx->Action=ACT_CHECK_MEMCACHED;
 break;
 
 case ACT_HASH:
 case ACT_HASH_LISTFILE:
 	if (ParseFlags & CMDLINE_XATTR) Ctx->Flags |= CTX_STORE_XATTR;
+	if (ParseFlags & CMDLINE_MEMCACHED) Ctx->Flags |= CTX_STORE_MEMCACHED;
 break;
+
+case ACT_FINDMATCHES:
+	if (ParseFlags & CMDLINE_MEMCACHED) Ctx->Action=ACT_FINDMATCHES_MEMCACHED;
+break;
+
 
 }
 
