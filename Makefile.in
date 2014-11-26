@@ -52,6 +52,12 @@ clean:
 	-rm config.log config.status */config.log */config.status
 	-rm -r autom4te.cache */autom4te.cache
 
+distclean:
+	-rm -f *.o */*.o */*.a */*.so $(EXE)
+	-rm config.log config.status */config.log */config.status Makefile */Makefile
+	-rm -r autom4te.cache */autom4te.cache
+
+
 install:
 	-mkdir -p $(DESTDIR)$(prefix)/bin
 	cp -f $(EXE) $(DESTDIR)$(prefix)/bin
