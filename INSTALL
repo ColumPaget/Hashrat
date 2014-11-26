@@ -4,10 +4,15 @@ Installation should be as easy as:
 make
 make install 
 
-On systems with largefile support:
+There's two arguments to ./configure to turn on optional features that might not be available on all systems:
 
-./configure --largefiles
+	 --enable-largefiles  Support for files larget than 2GB
+	 --enable-xattr       Support for storing hashes in extended file attributes, and checking against those.
+
+So, to turn both on:
+
+./configure --enable-largefiles --enable-xattr
 make
-make install
+make install 
 
 

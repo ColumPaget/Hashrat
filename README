@@ -23,15 +23,15 @@ CREDITS:
 		Special thanks to Professor Hongjun Wu for taking the time to confirm that the JH algorithm is free for use in GPL programs.
 		
 
-Usage:
+USAGE:
     hashrat [options] [path to hash]...
 
     hashrat -c [options] [input file of hashes]...
 
-Options:
-  --help          Print this help
-  -help           Print this help
-  -?              Print this help
+OPTIONS:
+  --help          Print help
+  -help           Print help
+  -?              Print help
   --version       Print program version
   -version        Print program version
   -md5            Use md5 hash algorithmn
@@ -57,14 +57,22 @@ Options:
   -f <listfile>   Hash files listed in <listfile>
   -i <pattern>    Only hash items matching <pattern>
   -x <pattern>    Exclude items matching <pattern>
-  -c              Check hashes against list from file (or stdin)
-  -cf             Check hashes but only show failures
+  -n <length>     Truncate hashes to <length> bytes
+  -c              CHECK hashes against list from file (or stdin)
+  -cf             CHECK hashes but only show failures
+  -m              MATCH files from a list read from stdin.
+  -lm             Read hashes from stdin, upload them to a memcached server (requires the -memcached option).
+  -memcached <server> Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
+  -mcd <server>   Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
+  -h <script>     Script to run when a file fails CHECK mode, or is found in MATCH mode.
+  -hook <script>  Script to run when a file fails CHECK mode, or is found in FIND mode
+  -color          Use ANSI color codes on output when checking hashes.
   -strict         Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
   -S              Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
   -d              dereference (follow) symlinks
+  -fs             Stay one one file system
   -dirmode        DirMode: Read all files in directory and create one hash for them!
   -devmode        DevMode: read from a file EVEN OF IT'S A DEVNODE
-  -fs             Stay one one file system
   -lines          Read lines from stdin and hash each line independantly.
   -rawlines       Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
   -rl             Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
@@ -72,6 +80,8 @@ Options:
   -net            Treat 'file' arguments as either ssh or http URLs, and pull files over the network and then hash them (Allows hashing of files on remote machines).
                   URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..
   -idfile <path>  Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.
+  -xattr          Use eXtended file ATTRibutes. In hash mode, store hashes in the file attributes, in check mode compare against hashes stored in file attributes.
+  -u <types>      Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.
 
 
 Hashrat can also detect if it's being run under any of the following names (e.g., via symlinks)
@@ -131,9 +141,21 @@ USE EXAMPLES:
 
 		Check hashes listed in 'hashes.sha1' but only output failures
 
+	cat APT1.md5 | hashrat -m -r /
+
+		Read a list of hashes from stdin, and search recursively for files matching them.
+
+	cat APT1.md5 | hashrat -lm -memcached 127.0.0.1
+
+		Read a list of hashes from stdin, and register them in a memcached server.
+
+	hashrat -m -memcached 127.0.0.1 -r /
+
+		Search recursively for files whose hashes are stored in a memcached server.
+
 	hashrat -devmode -whirlpool -64 /dev/sda1
 
-		Generate a whirlpool hash of the entire device /dev/sda1. Output result in base 64
+		Generate a whirlpool hash of the entire device /dev/sda1. Output result in base 64.
 
 	hashrat -sha1 -net ssh:user:password@myhost/bin/*
 
@@ -150,24 +172,38 @@ USES FOR HASHRAT
 
 	I mostly use hashrat to generate strong passwords for websites. As I always have access to hashrat, I don't have to remember the strong password, as I can always regenerate them with hashrat. So, I remember a handful of moderately decent passwords (i.e. things that I can't find by grepping in the '10,000 most popular passwords' list https://github.com/discourse/discourse/blob/master/lib/common_passwords/10k-common-passwords.txt), and I also remember a 'personal pin'. I then combine the website name, one of my passwords, and my personal pin, into a string and feed them into hashrat:
 
-	echo "facebook.com password 1234" | hashrat -sha1 -64
+		echo "facebook.com password 1234" | hashrat -sha1 -64
 
-Obviously, my password isn't 'password' and my pin isn't '1234', but you get the idea. This gives me a 28-character string that should take "8.02 trillion trillion centuries" to crack with a "massive cracking array" according to Steve Gibson's 'Password haystacks' utility, https://www.grc.com/haystack.htm. This is what i then use as my password. Unfortunately some websites won't take a 28-character password, and for these I have to truncate to the appropriate length, but the results are still stronger than anything I could remember, and nothing needs storing on disk (as with password managers). 
+	Obviously, my password isn't 'password' and my pin isn't '1234', but you get the idea. This gives me a 28-character string that should take "8.02 trillion trillion centuries" to crack with a "massive cracking array" according to Steve Gibson's 'Password haystacks' utility, https://www.grc.com/haystack.htm. This is what I then use as my password. Unfortunately some websites won't take a 28-character password, and for these I have to truncate to the appropriate length (using the -n flag), but the results are still stronger than anything I could remember, and nothing needs storing on disk (as with password managers). 
 
-There are some dangers to using the 'echo' method shown above if you are on a shared machine, or if someone gets hold of your computer/harddrive. On a shared machine someone could type 'ps ax' to see all commands running, and if they time it right, they might see your command-line with your password in it. If you use a shell (like bash) that will record your typed commands so you can recall them later. Bash stores this information on disk in the file .bash_history, so if you use the 'echo' method shown above your password will be saved on disk. To combat this hashrat has 'line mode'
+	There are some dangers to using the 'echo' method shown above if you are on a shared machine, or if someone gets hold of your computer/harddrive. On a shared machine someone could type 'ps ax' to see all commands running, and if they time it right, they might see your command-line with your password in it. Another danger lies in using a shell (like bash) that will record your typed commands so you can recall them later. Bash stores this information on disk in the file .bash_history, so if you use the 'echo' method shown above your password will be saved on disk. To combat this hashrat has 'line mode'
 
-	hashrat -sha1 -64 -lines
+		hashrat -sha1 -64 -lines
 
-This reads lines from stdin, so type into hashrat and then press 'enter', and you'll be given the hash of the line you typed. By this method your password is neither visible in 'ps ax', nor is ever stored on disk.
+	This reads lines from stdin, so type into hashrat and then press 'enter', and you'll be given the hash of the line you typed. By this method your password is neither visible in 'ps ax', nor is ever stored on disk.
 
-'-lines' will produce a different hash  to the 'echo' method listed above, because it strips any trailing whiespace off the lines read. If you want strict compatiblity with 'echo' (by default echo adds a 'newline' to the end of the text to output) then use 'rawlines' mode:
+	'-lines' will produce a different hash  to the 'echo' method listed above, because it strips any trailing whiespace off the lines read. If you want strict compatiblity with 'echo' (by default echo adds a 'newline' to the end of the text to output) then use 'rawlines' mode:
 
-	hashrat -sha1 -64 -rawlines
+		hashrat -sha1 -64 -rawlines
 
 
 	2) Watching for file changes
 
 	Like md5sum/shasum etc, hashrat can be used to detect changes in files that might indicate malicious activity. For instance, in order to get early warning of malware like 'cryptolocker' (that encrypts files on a users disk, or on network shares, and then demands a ransom for file recovery) I scatter about the disk a number of 'Canary files' that should not change. I record their hashes and regularly check them. If they change, I know something is going on.
+
+	Hashes generated by hashrat can be output to a file, or stored in extended file attributes, or in a memcached server.
+
+		hashrat -sha256 -r . > /tmp/files.sha256
+		hashrat -sha256 -r . -xattr
+		hashrat -sha256 -r . -memcached
+
+	Similarly these can then be used to check files later
+
+		cat /tmp/files.sha256 | hashrat -sha256 
+		hashrat -c -sha256 -r . -xattr
+		hashrat -c -sha256 -r . -memcached
+
+	There is a slight difference between xattr/memcached checks and checks where a list is read from stdin. Currently when reading from stdin hashrat will ONLY check the files in the list. However, in -xattr and -memcached mode, it will check all files, outputting and error for those where no stored hash can be found. This is likely to change in the a future release, with the stdin method being brought into line with the others.
 
 
 	3) Finding files that match hashes.
@@ -194,3 +230,5 @@ This reads lines from stdin, so type into hashrat and then press 'enter', and yo
 	4) CGI Mode
 
 	If hashrat is run with the -cgi flag, or if it's run with a name of 'hashrat.cgi' (either by renaming the 'hashrat' executable, or via a symbolic link) it will output a webpage that allows users to look up hashes over the web. This allows me to look-up my strong passwords even if I don't have access to a local version of hashrat.
+
+
