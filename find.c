@@ -1,7 +1,7 @@
 #include "find.h"
 #include "files.h"
 #include "memcached.h"
-
+#include <search.h>
 
 
 typedef struct
@@ -14,7 +14,7 @@ char *Path;
 void *Tree;
 
 
-int MatchCompareFunc(void *i1, void *i2)
+int MatchCompareFunc(const void *i1, const void *i2)
 {
 TMatch *M1, *M2;
 
@@ -54,12 +54,13 @@ return(Tree);
 }
 
 
-void CheckForMatch(HashratCtx *Ctx, char *Path, struct stat *FStat)
+int CheckForMatch(HashratCtx *Ctx, char *Path, struct stat *FStat)
 {
 char *Tempstr=NULL;
 TMatch *Found;
 TMatch Lookup;
 void *ptr;
+int result=FALSE;
 
 memset(&Lookup, 0, sizeof(TMatch));
 if (S_ISREG(FStat->st_mode))
@@ -69,8 +70,9 @@ if (S_ISREG(FStat->st_mode))
 	{	
 		if (Ctx->Action==ACT_FINDMATCHES_MEMCACHED)
 		{
-		Tempstr=MemcachedGet(Tempstr, Lookup.ID);
-		if (StrLen(Tempstr)) printf("LOCATED: %s  %s  %s (memcached)\n",Lookup.ID,Lookup.Path,Tempstr);
+			Tempstr=MemcachedGet(Tempstr, Lookup.ID);
+			if (StrLen(Tempstr)) printf("LOCATED: %s  %s  %s (memcached)\n",Lookup.ID,Lookup.Path,Tempstr);
+			result=TRUE;
 		}
 		else
 		{
@@ -79,36 +81,20 @@ if (S_ISREG(FStat->st_mode))
 			{
 				Found=*(TMatch **) ptr;
 				printf("LOCATED: %s  %s  %s\n",Lookup.ID,Lookup.Path,Found->Data);
+				result=TRUE;
 			}
 		}
 	}
 }
 
 DestroyString(Tempstr);
+
+return(result);
 }
 
 
 
 
-void FindMatches(HashratCtx *Ctx, int argc, char *argv[])
-{
-ListNode *Node;
-struct stat FStat;
-int i, val;
-TMatch Item; 
-
-if (! (Flags & FLAG_MEMCACHED)) Tree=MatchesLoad();
-
-for (i=1; i < argc; i++)
-{
-	if (StrLen(argv[i]))
-	{
-		val=StatFile(Ctx, argv[i], &FStat);
-		CheckForMatch(Ctx, argv[i], &FStat);
-	}
-}
-
-}
 
 
 void LoadMatchesToMemcache()

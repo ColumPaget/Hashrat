@@ -55,7 +55,7 @@ int result;
   Dialog=ListCreate();
   ExpectDialogAdd(Dialog, "Are you sure you want to continue connecting (yes/no)?", "yes\n", DIALOG_OPTIONAL);
   ExpectDialogAdd(Dialog, "Permission denied", "", DIALOG_OPTIONAL | DIALOG_FAIL);
-	if (StrLen(Passwd))
+	if (StrLen(*Passwd))
 	{
   Tempstr=MCopyStr(Tempstr,*Passwd,"\n",NULL);
   ExpectDialogAdd(Dialog, "assword:", Tempstr, DIALOG_END);

@@ -1,5 +1,5 @@
 #include "check.h"
-
+#include "fingerprint.h"
 
 void HandleCheckFail(char *Path, char *ErrorMessage)
 {
@@ -79,7 +79,7 @@ int result=FALSE;
 		result=TRUE;
 	}
 
-	if (Flags & FLAG_UPDATE) HashratStoreHash(Ctx, Path, &Stat, HashStr);
+	if (Flags & FLAG_UPDATE) HashratStoreHash(Ctx, Path, Stat, HashStr);
 
 DestroyString(HashStr);
 return(result);

@@ -1,5 +1,4 @@
 #include "SpawnPrograms.h"
-#include "libsettings.h"
 #include "pty.h"
 #include "file.h"
 #include "string.h"

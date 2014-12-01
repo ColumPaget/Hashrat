@@ -32,8 +32,6 @@ void CloseOpenFiles();
 
 int BASIC_FUNC_EXEC_COMMAND(void *Data);
 
-
-char *GetNameValuePair(const char *Input, const char *PairDelim, const char *NameValueDelim, char **Name, char **Value);
 double ParseHumanReadableDataQty(char *Data, int Type);
 char *GetHumanReadableDataQty(double Size, int Type);
 

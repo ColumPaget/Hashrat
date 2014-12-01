@@ -57,8 +57,8 @@ if (AI->Channels==1)
 	*Out=SetStrLen(*Out, Len*2);
 	for (i=0; i < Len; i++)
 	{
-		Out[i*2]=In[i];
-		Out[i*2+1]=In[i];
+		(*Out)[i*2]=In[i];
+		(*Out)[i*2+1]=In[i];
 	}
 }
 

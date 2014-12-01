@@ -1,5 +1,6 @@
 #include "DataProcessing.h"
 #include "SpawnPrograms.h"
+#include "FileSystem.h"
 
 #ifdef HAVE_LIBSSL
 
@@ -726,7 +727,7 @@ ZData=(zlibData *) ProcMod->Data;
 
 
 	ZData->z_out.avail_in=InLen;
-	ZData->z_out.next_in=InData;
+	ZData->z_out.next_in=(char *) InData;
 	ZData->z_out.avail_out=*OutLen;
 	ZData->z_out.next_out=*OutData;
 
@@ -769,7 +770,7 @@ ZData=(zlibData *) ProcMod->Data;
 
 
 	ZData->z_in.avail_in=InLen;
-	ZData->z_in.next_in=InData;
+	ZData->z_in.next_in=(char *) InData;
 	ZData->z_in.avail_out=*OutLen;
 	ZData->z_in.next_out=*OutData;
 

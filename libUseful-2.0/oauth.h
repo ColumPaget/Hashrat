@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#include "includes.h"
+
 void OAuthDeviceLogin(char *LoginURL, char *ClientID, char *Scope, char **DeviceCode, char **UserCode, char **NextURL);
 void OAuthDeviceGetAccessToken(char *TokenURL, char *ClientID, char *ClientSecret, char *DeviceCode, char **AccessToken, char **RefreshToken);
 void OAuthDeviceRefreshToken(char *TokenURL, char *ClientID, char *ClientSecret, char *RequestRefreshToken, char **AccessToken, char **RefreshToken);

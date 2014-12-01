@@ -45,7 +45,7 @@ TTarHeader *Head;
 
 len=sizeof(TTarHeader);
 Head=(TTarHeader *) calloc(1,len);
-result=STREAMReadBytes(S,Head,len);
+result=STREAMReadBytes(S,(char *) Head,len);
 printf("HEAD: %d %s\n",result,(char *) Head);
 if (result == len)
 {

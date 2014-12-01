@@ -1,5 +1,6 @@
 #include "oauth.h"
 #include "http.h"
+#include "Markup.h"
 
 void ParseTagData(char *TagName,char *TagData,char **RType,char **RName,char **RValue)
 {

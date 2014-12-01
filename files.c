@@ -2,6 +2,7 @@
 #include "ssh.h"
 #include "memcached.h"
 #include "fingerprint.h"
+#include "xattr.h"
 #include <string.h>
 
 
@@ -76,8 +77,8 @@ mptr=(char *) Curr->Item;
 dptr=Path;
 if (*mptr!='/') 
 {
-mptr=basename(mptr);
-dptr=basename(Path);
+mptr=GetBasename(mptr);
+dptr=GetBasename(Path);
 }
 
 if (fnmatch(mptr,dptr,0)==0) 
@@ -245,7 +246,7 @@ char *ptr;
 		if (StrLen(ptr))
 		{
 			val=atoi(ptr);
-			if ((val > 0) && (StrLen(RetStr) > val)) RetStr[val]='\0';
+			if ((val > 0) && (StrLen(*RetStr) > val)) (*RetStr)[val]='\0';
 		}
 		HashDestroy(Hash);
 }
@@ -302,14 +303,14 @@ char *Tempstr=NULL;
 	switch (Type)
 	{
 			case FT_HTTP:
-				*HashStr=HashratHashSingleFile(*HashStr, Ctx, Type, Path, FStat);
+				HashratHashSingleFile(HashStr, Ctx, Type, Path, FStat);
 				return(0);
 			break;
 
 			case FT_SSH:
 				val=SSHGlob(Ctx, Path, NULL);
 				if (val > 1) return(FLAG_RECURSE);
-				*HashStr=HashratHashSingleFile(*HashStr, Ctx, Type, Path, FStat);
+				HashratHashSingleFile(HashStr, Ctx, Type, Path, FStat);
 			return(0);
 			break;
 	}
@@ -319,7 +320,7 @@ char *Tempstr=NULL;
 		if (StartingFS==0) StartingFS=FStat->st_dev;
 		else if (FStat->st_dev != StartingFS) return(FLAG_ONE_FS);
 	}
-
+	if ((Ctx->Flags & CTX_EXES) && (! (FStat->st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)))) return(FLAG_EXCLUDE);
 	if (! IsIncluded(Path, FStat)) return(FLAG_EXCLUDE);
 
 

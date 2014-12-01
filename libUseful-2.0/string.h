@@ -4,9 +4,6 @@
 #include <stdarg.h>
 #include <string.h> //for strlen, used below in StrLen
 
-#define GETTOKEN_QUOTES 1
-#define GETTOKEN_MULTI_SEPARATORS 2
-
 #define MATCH_TOKEN_PART 1
 #define MATCH_TOKEN_CASE 2
 
@@ -21,7 +18,7 @@ extern "C" {
 #define StrEnd(str) if ((! str) || (*str == '\0') || (str > __builtin_frame_address (0)) return(TRUE); return(FALSE);
 
 //size_t StrLen(const char *Str);
-char *DestroyString(char *);
+void DestroyString(void *);
 int CompareStr(const char *S1, const char *S2);
 char *CopyStrLen(char *,const char *,size_t);
 char *CopyStr(char *, const char *);
@@ -49,7 +46,6 @@ char *DeQuoteStr(char *Buffer, const char *Line);
 char *EnquoteStr(char *Out, const char *In);
 int MatchTokenFromList(const char *Token,char **List, int Flags);
 int MatchLineStartFromList(const char *Token,char **List);
-char *GetToken(const char *SearchStr, const char *Delim, char **Token, int Flags);
 
 #ifdef __cplusplus
 }

@@ -1,11 +1,17 @@
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <termios.h>
-#include <fcntl.h>
+#define _XOPEN_SOURCE
+#define _GNU_SOURCE
+
+#include "includes.h"
 #include "file.h"
 #include "GeneralFunctions.h"
 #include "string.h"
 #include "pty.h"
+
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <termios.h>
+#include <fcntl.h>
+#include <stdlib.h>
 
 ListNode *TTYAttribs=NULL;
 

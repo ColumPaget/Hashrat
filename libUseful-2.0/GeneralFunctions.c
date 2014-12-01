@@ -237,25 +237,6 @@ return(fd);
 
 
 
-char *GetNameValuePair(const char *Input, const char *PairDelim, const char *NameValueDelim, char **Name, char **Value)
-{
-char *ptr, *ptr2;
-char *Token=NULL;
-
-ptr=GetToken(Input,PairDelim,&Token,GETTOKEN_QUOTES);
-if (StrLen(Token))
-{
-ptr2=GetToken(Token,NameValueDelim,Name,GETTOKEN_QUOTES);
-ptr2=GetToken(ptr2,PairDelim,Value,GETTOKEN_QUOTES);
-}
-
-DestroyString(Token);
-return(ptr);
-}
-
-
-
-
 
 char *GetRandomData(char *RetBuff, int len, char *AllowedChars)
 {

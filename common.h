@@ -53,12 +53,20 @@
 #define CTX_STORE_XATTR 256
 #define CTX_STORE_MEMCACHED 512
 #define CTX_STORE_FILE 1024
+#define CTX_EXES 2048
+
+#define RESULT_PASS 1
+#define RESULT_FAIL 2
+#define RESULT_WARN 4
+#define RESULT_LOCATED 8
+#define FLAG_RESULT_MASK 15
+#define RESULT_RUNHOOK 8192
 
 #define FP_HASSTAT 1
 
 #define BLOCKSIZE 4096
 
-#define VERSION "1.2"
+#define VERSION "1.3"
 
 
 typedef struct
@@ -95,5 +103,6 @@ void HashratCtxDestroy(void *p_Ctx);
 int HashratCheckFile(HashratCtx *Ctx, char *Path, char *ExpectedHash, struct stat *FPStat);
 void HashratStoreHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash);
 int HashratOutputInfo(HashratCtx *Ctx, STREAM *S, char *Path, struct stat *Stat, char *Hash);
+int HandleCompareResult(char *Path, char *Status, int Flags, char *ErrorMessage);
 
 #endif

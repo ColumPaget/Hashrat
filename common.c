@@ -91,3 +91,30 @@ char *Tempstr=NULL;
 }
 
 
+int HandleCompareResult(char *Path, char *Status, int Flags, char *ErrorMessage)
+{
+char *Tempstr=NULL;
+int Color=0;
+
+  if (Flags & FLAG_COLOR) 
+	{
+		switch (Flags & FLAG_RESULT_MASK)
+		{
+			case RESULT_FAIL: Color=ANSI_RED; break;
+			case RESULT_PASS: Color=ANSI_GREEN; break;
+			case RESULT_WARN: Color=ANSI_YELLOW; break;
+		}
+	}
+
+	if (Color > 0) printf("%s%s: %s. '%s'.%s\n",ANSICode(ANSI_RED, 0, 0),Status, Path, ErrorMessage, ANSI_NORM);
+  else printf("%s: %s. %s.\n",Status, Path,ErrorMessage);
+
+  if ((Flags & RESULT_RUNHOOK) && StrLen(DiffHook))
+  {
+    Tempstr=MCopyStr(Tempstr,DiffHook," '",Path,"'",NULL);
+    system(Tempstr);
+  }
+
+  DestroyString(Tempstr);
+}
+

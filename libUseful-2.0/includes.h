@@ -21,11 +21,12 @@
 #include "defines.h"
 #include "string.h"
 #include "list.h"
-#include "GeneralFunctions.h"
 #include "file.h"
 #include "socket.h"
 #include "openssl.h"
 #include "Vars.h"
 #include "libsettings.h"
+#include "GeneralFunctions.h"
+#include "Tokenizer.h"
 
 #endif

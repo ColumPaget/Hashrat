@@ -190,14 +190,14 @@ else if (strcmp(argv[i],"-lm")==0)
 	Ctx->Action = ACT_LOADMATCHES;
 	strcpy(argv[i],"");
 }
-else if (strcmp(argv[i],"-diff-hook")==0) 
+else if (strcmp(argv[i],"-hook")==0) 
 {
 	strcpy(argv[i],"");
 	i++;
 	DiffHook=CopyStr(DiffHook,argv[i]);
 	strcpy(argv[i],"");
 }
-else if (strcmp(argv[i],"-dh")==0) 
+else if (strcmp(argv[i],"-h")==0) 
 {
 	strcpy(argv[i],"");
 	i++;
@@ -234,6 +234,8 @@ else if (strcmp(argv[i],"-HEX")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_H
 else if (strcmp(argv[i],"-64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_BASE64);
 else if (strcmp(argv[i],"-base64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_BASE64);
 else if (strcmp(argv[i],"-d")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_DEREFERENCE);
+else if (strcmp(argv[i],"-X")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_EXES);
+else if (strcmp(argv[i],"-exe")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_EXES);
 else if (strcmp(argv[i],"-n")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, 0, "Output:Length", "",Ctx->Vars);
 else if (strcmp(argv[i],"-hmac")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_HMAC, "EncryptionKey", "",Ctx->Vars);
 else if (strcmp(argv[i],"-idfile")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, 0,  "SshIdFile", "",Ctx->Vars);
@@ -379,6 +381,8 @@ printf("  %-15s %s\n","-c", "CHECK hashes against list from file (or stdin)");
 printf("  %-15s %s\n","-cf", "CHECK hashes but only show failures");
 printf("  %-15s %s\n","-m", "MATCH files from a list read from stdin.");
 printf("  %-15s %s\n","-lm", "Read hashes from stdin, upload them to a memcached server (requires the -memcached option).");
+printf("  %-15s %s\n","-X", "In CHECK or MATCH mode only examine executable files.");
+printf("  %-15s %s\n","-exec", "In CHECK or MATCH mode only examine executable files.");
 printf("  %-15s %s\n","-memcached <server>", "Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).");
 printf("  %-15s %s\n","-mcd <server>", "Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).");
 printf("  %-15s %s\n","-h <script>", "Script to run when a file fails CHECK mode, or is found in MATCH mode.");

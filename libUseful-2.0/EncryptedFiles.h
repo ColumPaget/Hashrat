@@ -9,7 +9,6 @@
 #define FLAG_HEXKEY    4
 #define FLAG_HEXIV     8
 #define FLAG_HEXSALT   16
-#define FLAG_VERBOSE   32
 #define FLAG_SPEED     64
 #define FLAG_NOPAD_DATA 128
 

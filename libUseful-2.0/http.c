@@ -2,6 +2,7 @@
 #include "DataProcessing.h"
 #include "Hash.h"
 #include "ParseURL.h"
+#include "Time.h"
 
 const char *HTTP_AUTH_BY_TOKEN="AuthTokenType";
 ListNode *Cookies=NULL;
@@ -65,7 +66,7 @@ Mod->Data=(THTTPChunk *) calloc(1, sizeof(THTTPChunk));
 return(TRUE);
 }
 
-int HTTPChunkedRead(TProcessingModule *Mod, const char *InBuff, int InLen, char **OutBuff, int *OutLen)
+int HTTPChunkedRead(TProcessingModule *Mod, const char *InBuff, int InLen, char **OutBuff, int *OutLen, int Flush)
 {
 int len=0, val=0;
 THTTPChunk *Chunk;

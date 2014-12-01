@@ -22,13 +22,9 @@ return(ptr-Str);
 
 
 
-char *DestroyString(char *Obj)
+void DestroyString(void *Obj)
 {
-size_t size;
-
-free(Obj);
-// we return a null to be put into the string ptr 
-return(0);
+if (Obj) free(Obj);
 }
 
 
@@ -477,9 +473,9 @@ for (count=0; List[count] !=NULL; count++)
   	if (tlen > ilen) continue;
     if (Flags & MATCH_TOKEN_CASE)
     {
-	    if (strncmp(Token,*Item,ilen)==0) return(count);
+	    if (strncmp(Token,Item,ilen)==0) return(count);
     }
-    else if (strncasecmp(Token,*Item,ilen)==0) return(count);
+    else if (strncasecmp(Token,Item,ilen)==0) return(count);
   }
   else 
   {
@@ -519,234 +515,9 @@ for (count=0; List[count] !=NULL; count++)
 return(-1);
 }
 
-#define SEP_CHAR_SPACE -1
-
-//Handle Quotes. If we start with a quote, sweep through to find the end of the quotes
-char *HandleQuotes(char *String)
-{
-char *ptr;
-char StartQuote='\0';
-
-ptr=String;
-if ((*ptr)=='\"') StartQuote=*ptr;
-if ((*ptr)=='\'') StartQuote=*ptr;
-if (StartQuote)
-{
-  ptr++;
-  while ((*ptr) != StartQuote) 
-  {
-	  if ((*ptr)=='\0') return(ptr);
-	  if ((*ptr)=='\\') ptr++;
-	  ptr++;
-  }
-  ptr++;
-}   
-return(ptr);
-}
 
 
 
-
-//This function searches for the separator. It uses 'strchr' rather 
-//than a naieve ptr++ approach, because strchr is impossibly fast.
-//No, really, if you've never tried to beat the performance of the
-//glibc strchr, with mmx or sse or something like that, then give it
-//a go. It's enlightening.
-int GetTokenSepMatch(char *Pattern, char **start, char **end, int Flags)
-{
-char *pptr, *eptr;
-int MatchChar, InQuotes=FALSE;
-
-
-
-//Handle any quotes around the string we are searching in
-if (Flags & GETTOKEN_QUOTES) *start=HandleQuotes(*start);
-if (*start==*end) return(FALSE);
-
-pptr=Pattern;
-if (*pptr !='\\')
-{
-	//strchr is insanely fast, so see if the first character of our separator
-	//is in the string!
-	eptr=strchr(*start,*pptr);
-	if (! eptr) return(FALSE);
-
-	//rewind in case we've found an
-	//escaped character
-	if (eptr > *start) eptr--;
-}
-else eptr=*start;
-
-
-while (1)
-{
-//if we run out of pattern, then we got a match
-if (*pptr=='\0') 
-{
-	*end=eptr;
-	return(TRUE);
-}
-
-//if ((*eptr=='"') && (Flags & GETTOKEN_QUOTES)) *eptr=HandleQuotes(*eptr);
-
-//if we run out of string, then we got a part match, but its not
-//a match, so we return fail
-if ((*eptr)=='\0')
-{
-	return(FALSE);
-}
-
-if (*eptr=='\\' )
-{
-	//if we got a quoted character we can't have found
-	//the separator, so return false
-	eptr++;
-	return(FALSE);
-}
-
-
-if (*pptr=='\\')
-{
-  pptr++;
-  if (*pptr=='S') MatchChar=SEP_CHAR_SPACE;
-  else MatchChar=*pptr;
-}
-else MatchChar=*pptr;
-
-
-if (MatchChar==SEP_CHAR_SPACE)  
-{
-   if (! isspace(*eptr)) return(FALSE);
-   while (isspace(*(eptr+1))) eptr++;
-}
-else if (*eptr != *pptr) return(FALSE);
-
-pptr++;
-eptr++;
-}
-
-return(FALSE);
-}
-
-
-
-
-//Get token allows multiple separators, so this breaks up the
-//separator string into individual separators
-char *GetNextSeparator(char *Pattern, char **Sep, int Flags)
-{
-char *ptr;
-size_t len=0;
-
-ptr=Pattern;
-if (*ptr=='\0') return(NULL);
-*Sep=CopyStr(*Sep,"");
-
-ptr=Pattern;
-while ((*ptr != '\0') && (*ptr !='|'))
-{
-	*Sep=AddCharToBuffer(*Sep,len,*ptr);
-	len++;
-	ptr++;
-}
-
-if (*ptr == '|') ptr++;
-
-return(ptr);
-}
-
-
-int GetTokenFindSeparator(char *Pattern, char *String, const char **SepStart, const char **SepEnd, int Flags)
-{
-char *start_ptr=NULL, *end_ptr=NULL;
-char *Sep=NULL, *SepPtr, *ptr;
-
-start_ptr=String;
-
-while (*start_ptr != '\0')
-{
-if (*start_ptr=='\\')
-{
-  start_ptr++;
-  start_ptr++;
-}
-
-if (Flags & GETTOKEN_MULTI_SEPARATORS)
-{
-ptr=GetNextSeparator(Pattern,&Sep,Flags);
-SepPtr=Sep;
-}
-else 
-{
-	SepPtr=Pattern;
-	ptr=Pattern+StrLen(Pattern);
-}
-
-while (ptr)
-{
-if (GetTokenSepMatch(SepPtr,&start_ptr, &end_ptr, Flags))
-{
-	*SepStart=start_ptr;
-	*SepEnd=end_ptr;
-	DestroyString(Sep);
-	return(TRUE);
-}
-
-if (Flags & GETTOKEN_MULTI_SEPARATORS)
-{
-ptr=GetNextSeparator(ptr,&Sep,Flags);
-SepPtr=Sep;
-}
-else ptr=NULL;
-
-}
-
-if ((*start_ptr) !='\0') start_ptr++;
-}
-
-DestroyString(Sep);
-return(FALSE);
-}
-
-
-char *GetToken(const char *SearchStr, const char *Separator, char **Token, int Flags)
-{
-char *Tempstr=NULL;
-const char *SepStart=NULL, *SepEnd=NULL;
-const char *ptr, *ssptr;
-size_t len=0;
-
-
-/* this is a safety measure so that there is always something in Token*/
-*Token=CopyStr(*Token,"");
-
-len=StrLen(SearchStr);
-if (len < 1) return(NULL);
-
-if (! GetTokenFindSeparator((char *) Separator,(char *) SearchStr,&SepStart,&SepEnd, Flags))
-{
-   SepStart=SearchStr+len;
-}
-
-
-//strip any leading quotes
-ptr=SearchStr;
-*Token=CopyStrLen(*Token,ptr,SepStart-ptr);
-
-if (Flags & GETTOKEN_QUOTES)
-{
-	StripQuotes(*Token);
-}
-
-
-//return empty string, but not null
-if (StrLen(SepEnd) < 1) 
-{
-  SepEnd=SearchStr+StrLen((char *) SearchStr);
-}
-
-return((char *) SepEnd);
-}
 
 
 #define ESC 0x1B
@@ -821,7 +592,7 @@ return(out);
 char *QuoteCharsInStr(char *Buffer, const char *String, const char *QuoteChars)
 {
 char *RetStr=NULL;
-char *sptr, *cptr;
+const char *sptr, *cptr;
 size_t olen=0;
 
 RetStr=CopyStr(Buffer,"");

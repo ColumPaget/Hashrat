@@ -15,15 +15,16 @@
 extern "C" {
 #endif
 
-int IsIP4Address(char *Str);
-int IsIP6Address(char *Str);
+int IsIP4Address(const char *Str);
+int IsIP6Address(const char *Str);
+int IsIPAddress(const char *);
 
 const char *GetInterfaceIP(const char *Interface);
 
 
 /* Server Socket Funcs*/
-int InitServerSock(char *Address, int Port);
-int InitUnixServerSock(char *Path);
+int InitServerSock(const char *Address, int Port);
+int InitUnixServerSock(const char *Path);
 int TCPServerSockAccept(int ServerSock,char **Addr);
 int UnixServerSockAccept(int ServerSock);
 
@@ -31,8 +32,8 @@ int GetSockDetails(int fd, char **LocalAddress, int *LocalPort, char **RemoteAdd
 
 /* Client Socket Funcs*/
 int IsSockConnected(int sock);
-int ReconnectSock(int sock, char *Host, int Port, int Flags);
-int ConnectToHost(char *Host, int Port, int Flags);
+int ReconnectSock(int sock, const char *Host, int Port, int Flags);
+int ConnectToHost(const char *Host, int Port, int Flags);
 /* int CheckForData(int sock); */
 int SendText(int sock, char *Text);
 int ReadText(int sock, char *Buffer, int MaxLen);
@@ -40,8 +41,8 @@ int ReadToCR(int fd, char *Buffer, int MaxLen);
 
 
 STREAM *STREAMOpenUDP(int Port,int NonBlock);
-int STREAMSendDgram(STREAM *S, char *Host, int Port, char *Bytes, int len);
-int STREAMConnectToHost(STREAM *S, char *Host, int Port, int Flags);
+int STREAMSendDgram(STREAM *S, const char *Host, int Port, char *Bytes, int len);
+int STREAMConnectToHost(STREAM *S, const char *Host, int Port, int Flags);
 int STREAMIsConnected(STREAM *S);
 int DoPostConnect(STREAM *S, int Flags);
 
@@ -58,16 +59,14 @@ int ProcessIncommingBytes(DownloadContext *);
 //int DownloadToDot(int sock, FILE *SaveFile);
 int DownloadToDot(STREAM *Connection, STREAM *SaveFile);
 int DownloadToTermStr(STREAM *Connection, STREAM *SaveFile, char *TermStr);
-void ParseConnectDetails(char *Str, char **Type, char **Host, char **Port, char **User, char **Pass, char **InitDir);
 
 
 /* IP Address and host lookup functions */
-char *LookupHostIP(char *Host);
 char *GetRemoteIP(int sock);
-char *IPStrToHostName(char *);
+char *LookupHostIP(const char *Host);
+char *IPStrToHostName(const char *);
 char *IPtoStr(unsigned long);
-unsigned long StrtoIP(char *);
-int IsIPAddress(char *);
+unsigned long StrtoIP(const char *);
 
 
 #ifdef __cplusplus

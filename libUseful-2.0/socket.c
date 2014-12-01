@@ -7,9 +7,9 @@
 
 
 
-int IsIP4Address(char *Str)
+int IsIP4Address(const char *Str)
 {
-char *ptr;
+const char *ptr;
 int dot_count=0;
 int AllowDot=FALSE;
 
@@ -36,9 +36,9 @@ return(TRUE);
 }
 
 
-int IsIP6Address(char *Str)
+int IsIP6Address(const char *Str)
 {
-char *ptr;
+const char *ptr;
 const char *IP6CHARS="0123456789abcdefABCDEF:%";
 
 if (!Str) return(FALSE);
@@ -51,6 +51,24 @@ for (ptr=Str; *ptr != '\0'; ptr++)
 
 return(TRUE);
 }
+
+
+
+
+/* This is a simple function to decide if a string is an IP address as   */
+/* opposed to a host/domain name.                                        */
+
+int IsIPAddress(const char *Str)
+{
+int len,count;
+len=strlen(Str);
+if (len <1) return(FALSE);
+for (count=0; count < len; count++)
+   if ((! isdigit(Str[count])) && (Str[count] !='.')) return(FALSE);
+ return(TRUE);
+}
+
+
 
 
 int IsSockConnected(int sock)
@@ -86,7 +104,7 @@ const char *GetInterfaceIP(const char *Interface)
 
 
 #ifdef USE_INET6
-int InitServerSock(char *Address, int Port)
+int InitServerSock(const char *Address, int Port)
 {
 int sock;
 struct sockaddr_storage sa;
@@ -171,11 +189,11 @@ return(-1);
 
 #else 
 
-int InitServerSock(char *Address, int Port)
+int InitServerSock(const char *Address, int Port)
 {
 struct sockaddr_in sa;
 int result;
-char *ptr;
+const char *ptr;
 int salen;
 int sock;
 
@@ -222,7 +240,7 @@ return(-1);
 #endif
 
 
-int InitUnixServerSock(char *Path)
+int InitUnixServerSock(const char *Path)
 {
 int sock;
 struct sockaddr_un sa;
@@ -379,7 +397,7 @@ return(FALSE);
 /* Users will probably only use this function if they want to reconnect   */
 /* a broken connection, or reuse a socket for multiple connections, hence */
 /* the name... */
-int ReconnectSock(int sock, char *Host, int Port, int Flags)
+int ReconnectSock(int sock, const char *Host, int Port, int Flags)
 {
 int salen, result;
 struct sockaddr_in sa;
@@ -416,7 +434,7 @@ return(result);
 }
 
 
-int ConnectToHost(char *Host, int Port,int Flags)
+int ConnectToHost(const char *Host, int Port,int Flags)
 {
 int sock, result;
 
@@ -522,7 +540,9 @@ while (Tempstr)
 return(TRUE);
 }
 
-char *LookupHostIP(char *Host)
+
+
+char *LookupHostIP(const char *Host)
 {
 struct hostent *hostdata;
 
@@ -536,6 +556,8 @@ struct hostent *hostdata;
 //without it
 return((char *) inet_ntoa(*(struct in_addr *) *hostdata->h_addr_list));
 }
+
+
 
 
 char *GetRemoteIP(int sock)
@@ -555,7 +577,7 @@ return((char *) inet_ntoa(sa.sin_addr));
 }
 
 
-char *IPStrToHostName(char *IPAddr)
+char *IPStrToHostName(const char *IPAddr)
 {
 struct sockaddr_in sa;
 struct hostent *hostdata=NULL;
@@ -577,7 +599,7 @@ return((char *) inet_ntoa(sa.sin_addr));
 
 }
 
-unsigned long StrtoIP(char *Str)
+unsigned long StrtoIP(const char *Str)
 {
 struct sockaddr_in sa;
 if (inet_aton(Str,&sa.sin_addr)) return(sa.sin_addr.s_addr);
@@ -642,7 +664,7 @@ return(result);
 
 
 
-int STREAMConnectToHost(STREAM *S, char *DesiredHost, int DesiredPort,int Flags)
+int STREAMConnectToHost(STREAM *S, const char *DesiredHost, int DesiredPort,int Flags)
 {
 ListNode *Curr;
 char *Token=NULL, *ptr;
@@ -733,7 +755,7 @@ int OpenUDPSock(int Port)
 }
 
 
-int STREAMSendDgram(STREAM *S, char *Host, int Port, char *Bytes, int len)
+int STREAMSendDgram(STREAM *S, const char *Host, int Port, char *Bytes, int len)
 {
 struct sockaddr_in sa;
 int salen;
@@ -777,19 +799,5 @@ Stream->Type=STREAM_TYPE_UDP;
 return(Stream);
 }
 
-
-
-/* This is a simple function to decide if a string is an IP address as   */
-/* opposed to a host/domain name.                                        */
-
-int IsIPAddress(char *Str)
-{
-int len,count;
-len=strlen(Str);
-if (len <1) return(FALSE);
-for (count=0; count < len; count++)
-   if ((! isdigit(Str[count])) && (Str[count] !='.')) return(FALSE);
- return(TRUE);
-}
 
 

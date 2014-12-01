@@ -1,9 +1,10 @@
 #include "ParseURL.h"
 
 
-void ParseHostDetails(char *Data,char **Host,char **Port,char **User, char **Password)
+void ParseHostDetails(const char *Data,char **Host,char **Port,char **User, char **Password)
 {
-char *Token=NULL, *ptr, *tptr;
+char *Token=NULL;
+const char *ptr, *tptr;
 
 if (Port) *Port=CopyStr(*Port,"");
 if (Host) *Host=CopyStr(*Host,"");
@@ -33,10 +34,10 @@ DestroyString(Token);
 
 
 
-void ParseURL(char *URL, char **Proto, char **Host, char **Port, char **User, char **Password, char **Path, char **Args)
+void ParseURL(const char *URL, char **Proto, char **Host, char **Port, char **User, char **Password, char **Path, char **Args)
 {
-char *ptr, *aptr;
-char *Token=NULL, *tProto=NULL;
+const char *ptr;
+char *Token=NULL, *tProto=NULL, *aptr;
 
 
 //Even if they pass NULL for protocol, we need to take a copy for use in
@@ -105,7 +106,7 @@ DestroyString(tProto);
 
 
 
-void ParseConnectDetails(char *Str, char **Type, char **Host, char **Port, char **User, char **Pass, char **Path)
+void ParseConnectDetails(const char *Str, char **Type, char **Host, char **Port, char **User, char **Pass, char **Path)
 {
 char *ptr, *Token=NULL, *Args=NULL;
 
