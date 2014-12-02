@@ -19,7 +19,7 @@ Tempstr=STREAMReadLine(Tempstr, S);
 while (Tempstr)
 {
 	StripTrailingWhitespace(Tempstr);
-	if (StatFile(Ctx,Tempstr,&Stat)==0) HashItem(NULL, Tempstr, &Stat, Ctx->HashType, &HashStr);
+	if (StatFile(Ctx,Tempstr,&Stat)==0) HashItem(NULL, Ctx->HashType, Tempstr, &Stat, NULL, &HashStr);
 
 	HashratOutputInfo(Ctx, Ctx->Out, Tempstr, &Stat, HashStr);
 	HashratStoreHash(Ctx, Tempstr, &Stat, HashStr);
@@ -86,7 +86,7 @@ if (Flags & FLAG_LINEMODE)
 }
 else
 {
-	HashratHashSingleFile(& Hash, Ctx, Ctx->HashType, 0, "-");
+	HashratHashSingleFile(Ctx, Ctx->HashType, 0, "-", NULL, &Hash);
 	STREAMWriteString(Hash,Ctx->Out); STREAMWriteString("\n",Ctx->Out);
 }
 STREAMDisassociateFromFD(In);

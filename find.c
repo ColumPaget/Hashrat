@@ -54,7 +54,7 @@ return(Tree);
 }
 
 
-int CheckForMatch(HashratCtx *Ctx, char *Path, struct stat *FStat)
+int CheckForMatch(HashratCtx *Ctx, char *Path, struct stat *FStat, char *HashStr)
 {
 char *Tempstr=NULL;
 TMatch *Found;
@@ -63,19 +63,16 @@ void *ptr;
 int result=FALSE;
 
 memset(&Lookup, 0, sizeof(TMatch));
-if (S_ISREG(FStat->st_mode))
-{
 	Lookup.Path=CopyStr(Lookup.Path,Path);
-	if  (HashratHashSingleFile(&Lookup.ID, Ctx, FT_FILE, Path, FStat))
-	{	
-		if (Ctx->Action==ACT_FINDMATCHES_MEMCACHED)
-		{
+	Lookup.ID=CopyStr(Lookup.ID,HashStr);
+	if (Ctx->Action==ACT_FINDMATCHES_MEMCACHED)
+	{
 			Tempstr=MemcachedGet(Tempstr, Lookup.ID);
 			if (StrLen(Tempstr)) printf("LOCATED: %s  %s  %s (memcached)\n",Lookup.ID,Lookup.Path,Tempstr);
 			result=TRUE;
-		}
-		else
-		{
+	}
+	else
+	{
 			ptr=tfind(&Lookup, &Tree, MatchCompareFunc);
 			if (ptr)
 			{
@@ -83,9 +80,7 @@ if (S_ISREG(FStat->st_mode))
 				printf("LOCATED: %s  %s  %s\n",Lookup.ID,Lookup.Path,Found->Data);
 				result=TRUE;
 			}
-		}
 	}
-}
 
 DestroyString(Tempstr);
 

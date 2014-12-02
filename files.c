@@ -147,7 +147,7 @@ for (i=0; i < Glob.gl_pathc; i++)
 			}
 			else 
 			{
-				printf("stat fail [%s] !\n",Glob.gl_pathv[i]);
+				fprintf(stderr,"ERROR: Cannot stat file %s\n",Glob.gl_pathv[i]);
 				free(Stat);
 			}
 		}
@@ -253,19 +253,19 @@ char *ptr;
 
 
 
-int HashratHashSingleFile(char **RetStr, HashratCtx *Ctx,int Type,char *Path, struct stat *FStat)
+int HashratHashSingleFile(HashratCtx *Ctx, char *HashType, int FileType, char *Path, struct stat *FStat, char **RetStr)
 {
 THash *Hash;
 char *ptr;
 
 		*RetStr=CopyStr(*RetStr,"");
-		Hash=HashInit(Ctx->HashType);
+		Hash=HashInit(HashType);
 
 		//If we're not doing HMAC then this doesn't do anything
 		ptr=GetVar(Ctx->Vars,"EncryptionKey");
 		if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
-		if (! HashratHashFile(Ctx,Hash,Type,Path, FStat->st_size)) return(FALSE);
+		if (! HashratHashFile(Ctx,Hash,FileType,Path, FStat->st_size)) return(FALSE);
 
 		HashratFinishHash(RetStr, Ctx, Hash);
 
@@ -293,26 +293,20 @@ THash *Hash;
 }
 
 
-int HashItem(HashratCtx *Ctx, char *Path, struct stat *FStat, char **HashStr)
+int ConsiderItem(HashratCtx *Ctx, char *Path, struct stat *FStat)
 {
-int result=TRUE, Type=FT_FILE, val;
-char *Tempstr=NULL;
+	int Type;
 
 	Type=FileType(Path, Flags, FStat);
-
 	switch (Type)
 	{
-			case FT_HTTP:
-				HashratHashSingleFile(HashStr, Ctx, Type, Path, FStat);
-				return(0);
-			break;
+		case FT_SSH:
+			if (SSHGlob(Ctx, Path, NULL) > 1) return(FLAG_RECURSE);
+		break;
 
-			case FT_SSH:
-				val=SSHGlob(Ctx, Path, NULL);
-				if (val > 1) return(FLAG_RECURSE);
-				HashratHashSingleFile(HashStr, Ctx, Type, Path, FStat);
-			return(0);
-			break;
+		case FT_DIR:
+		if (Flags & FLAG_RECURSE) return(FLAG_RECURSE);
+		break;
 	}
 
 	if (Flags & FLAG_ONE_FS)
@@ -324,8 +318,29 @@ char *Tempstr=NULL;
 	if (! IsIncluded(Path, FStat)) return(FLAG_EXCLUDE);
 
 
+	return(0);
+}
+
+
+int HashItem(HashratCtx *Ctx, char *HashType, char *Path, struct stat *FStat, char **HashStr)
+{
+int result=TRUE, Type=FT_FILE, val;
+char *Tempstr=NULL;
+
+	Type=FileType(Path, Flags, FStat);
+
 	switch (Type)
 	{
+		case FT_HTTP:
+			HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr);
+			return(0);
+		break;
+
+		case FT_SSH:
+			HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr);
+			return(0);
+		break;
+
 		case FT_DIR:
 		if (Flags & FLAG_RECURSE) return(FLAG_RECURSE);
 		else ProcessData(HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
@@ -360,7 +375,7 @@ char *Tempstr=NULL;
 		default:
 		if (! Ctx->Hash) 
 		{
-			if (! HashratHashSingleFile(HashStr, Ctx, Type, Path, FStat)) return(FLAG_ERROR);
+			if (! HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr)) return(FLAG_ERROR);
 		} else if (! HashratHashFile(Ctx, Ctx->Hash,Type,Path, FStat->st_size)) return(FLAG_ERROR);
 		break;
 	}
@@ -382,7 +397,7 @@ int FType;
 switch (Ctx->Action)
 {
 case ACT_HASH:
-	HashItem(Ctx, Path, Stat, &HashStr);
+	HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
 	HashratOutputInfo(Ctx, Ctx->Out, Path, Stat, HashStr);
 	HashratStoreHash(Ctx, Path, Stat, HashStr);
 break;
@@ -391,28 +406,37 @@ case ACT_CHECK_XATTR:
 	if (S_ISREG(Stat->st_mode))
 	{
 		FP=XAttrLoadHash(Ctx, Path);
-		if (FP) HashratCheckFile(Ctx, Path, FP->Hash, &FP->FStat);
-		else printf("ERROR: No stored hash for '%s'\n",Path);
+		if (FP) 
+		{
+			HashItem(Ctx, FP->HashType, Path, Stat, &HashStr);
+			HashratCheckFile(Ctx, Path, &FP->FStat, Stat, FP->Hash, HashStr);
+		}
+		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
 	}
 break;
 
 case ACT_CHECK_MEMCACHED:
 	if (S_ISREG(Stat->st_mode))
 	{
+		HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
 		FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
     if (Flags & FLAG_NET) FP->Path=MCopyStr(FP->Path, Path);
     else FP->Path=MCopyStr(FP->Path,"hashrat://",LocalHost,Path,NULL);
     FP->Hash=MemcachedGet(FP->Hash, FP->Path);
 
-		if (FP) HashratCheckFile(Ctx, Path, FP->Hash, NULL);
-		else printf("ERROR: No stored hash for '%s'\n",Path);
+		if (FP) HashratCheckFile(Ctx, Path, NULL, NULL, FP->Hash, HashStr);
+		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
 		FingerprintDestroy(FP);
 	}
 break;
 
 case ACT_FINDMATCHES:
 case ACT_FINDMATCHES_MEMCACHED:
-	CheckForMatch(Ctx, Path, Stat);
+	if (S_ISREG(Stat->st_mode))
+	{
+	HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
+	CheckForMatch(Ctx, Path, Stat, HashStr);
+	}
 break;
 }
 
@@ -439,7 +463,6 @@ int result=TRUE;
 		Curr=ListGetNext(FileList);
 		while (Curr)
 		{
-			//else fprintf(stderr,"\rERROR: Failed to open '%s'.\n",(char *) Curr->Item);
 			ProcessItem(Ctx, Curr->Tag, (struct stat *) Curr->Item);
 			Curr=ListGetNext(Curr);
 		}
@@ -481,9 +504,10 @@ void ProcessItem(HashratCtx *Ctx, char *Path, struct stat *Stat)
 {
 char *HashStr=NULL;
 
-				switch (HashItem(Ctx, Path, Stat, &HashStr))
+				switch (ConsiderItem(Ctx, Path, Stat))
 				{
 					case FLAG_EXCLUDE:
+					case FLAG_ONE_FS:
 					break;
 
 					case FLAG_RECURSE:

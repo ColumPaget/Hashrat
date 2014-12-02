@@ -6,6 +6,7 @@ char *DiffHook=NULL;
 char *Key=NULL;
 char *LocalHost=NULL;
 
+char *HashratHashTypes[]={"md5","sha1","sha256","sha512","whirl","whirlpool","jh-224","jh-256","jh-384","jh-512",NULL};
 
 
 
@@ -76,7 +77,7 @@ char *Tempstr=NULL;
 //	else 
 
 	
-	if (Ctx->Flags & CTX_STORE_XATTR) HashRatSetXAttr(Ctx->Out, Path, Stat, Ctx->HashType, Hash);
+	if (Ctx->Flags & CTX_STORE_XATTR) HashRatSetXAttr(Ctx, Path, Stat, Ctx->HashType, Hash);
 
 	if (Ctx->Flags & CTX_STORE_MEMCACHED)
 	{

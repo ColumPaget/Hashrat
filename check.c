@@ -61,14 +61,11 @@ int CheckStat(char *Path, struct stat *ExpectedStat, struct stat *Stat)
 }
 
 
-int CheckFileHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *ExpectedHash) 
+int CheckFileHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *ExpectedHash, char *ActualHash) 
 {
-char *HashStr=NULL;
 int result=FALSE;
 
-	HashStr=CopyStr(HashStr,"");
-	HashItem(Ctx, Path, Stat, &HashStr);
-	if (strcasecmp(ExpectedHash,HashStr)!=0) HandleCheckFail(Path, "Hash mismatch");
+	if (strcasecmp(ExpectedHash,ActualHash)!=0) HandleCheckFail(Path, "Hash mismatch");
 	else
 	{
 		if (! (Flags & FLAG_OUTPUT_FAILS))
@@ -79,17 +76,15 @@ int result=FALSE;
 		result=TRUE;
 	}
 
-	if (Flags & FLAG_UPDATE) HashratStoreHash(Ctx, Path, Stat, HashStr);
+	if (Flags & FLAG_UPDATE) HashratStoreHash(Ctx, Path, Stat, ActualHash);
 
-DestroyString(HashStr);
 return(result);
 }
 
 
-int HashratCheckFile(HashratCtx *Ctx, char *Path, char *ExpectedHash, struct stat *ExpectedStat)
+int HashratCheckFile(HashratCtx *Ctx, char *Path, struct stat *ExpectedStat, struct stat *ActualStat, char *ExpectedHash,  char *ActualHash)
 {
 int result=FALSE;
-struct stat Stat;
 int enc;
 
 
@@ -103,12 +98,11 @@ int enc;
 		if (access(Path,F_OK)!=0) fprintf(stderr,"\rERROR: No such file '%s'\n",Path);
 		else
 		{
-			StatFile(Ctx,Path,&Stat);
 			if ((Flags & FP_HASSTAT) && ExpectedStat)
 			{
-				if (CheckStat(Path, ExpectedStat, &Stat)) result=CheckFileHash(Ctx, Path, &Stat, ExpectedHash); 
+				if (CheckStat(Path, ExpectedStat, ActualStat)) result=CheckFileHash(Ctx, Path, ActualStat, ExpectedHash, ActualHash); 
 			}
-			else result=CheckFileHash(Ctx, Path, &Stat, ExpectedHash); 
+			else result=CheckFileHash(Ctx, Path, ActualStat, ExpectedHash, ActualHash); 
 		}
 
 return(result);
@@ -117,11 +111,12 @@ return(result);
 
 int CheckHashesFromList(HashratCtx *Ctx)
 {
-int result=0;
+char *HashStr=NULL, *ptr;
 int Checked=0, Errors=0;
 STREAM *ListStream;
 TFingerprint *FP;
-char *ptr;
+struct stat Stat;
+int result=0;
 
 
 ptr=GetVar(Ctx->Vars,"Path");
@@ -136,7 +131,9 @@ FP=FingerprintRead(ListStream);
 while (FP)
 {
   if (StrLen(FP->HashType)) Ctx->HashType=CopyStr(Ctx->HashType, FP->HashType);
-  if (! HashratCheckFile(Ctx, FP->Path, FP->Hash, &FP->FStat)) Errors++;
+
+	if (StatFile(Ctx,FP->Path,&Stat)==0) HashItem(Ctx, Ctx->HashType, FP->Path, &Stat, &HashStr);
+  if (! HashratCheckFile(Ctx, FP->Path, &FP->FStat, &Stat, FP->Hash, HashStr)) Errors++;
   FingerprintDestroy(FP);
   FP=FingerprintRead(ListStream);
   Checked++;
@@ -144,7 +141,7 @@ while (FP)
 
 fprintf(stderr,"\nChecked %d files. %d Failures\n",Checked,Errors);
 
-
+DestroyString(HashStr);
 return(result);
 }
 

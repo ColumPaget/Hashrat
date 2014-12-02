@@ -28,7 +28,6 @@
 #define FLAG_DEVMODE 8
 #define FLAG_ONE_FS  64
 #define FLAG_DIR_INFO 128
-#define FLAG_XATTR_ROOT 512
 #define FLAG_MEMCACHED  1024
 #define FLAG_OUTPUT_FAILS 2048 
 #define FLAG_TRAD_OUTPUT 4096 
@@ -53,7 +52,8 @@
 #define CTX_STORE_XATTR 256
 #define CTX_STORE_MEMCACHED 512
 #define CTX_STORE_FILE 1024
-#define CTX_EXES 2048
+#define CTX_XATTR_ROOT 2048
+#define CTX_EXES 4096
 
 #define RESULT_PASS 1
 #define RESULT_FAIL 2
@@ -98,9 +98,9 @@ extern int Flags;
 extern char *DiffHook;
 extern char *Key;
 extern char *LocalHost;
+extern char *HashratHashTypes[];
 
 void HashratCtxDestroy(void *p_Ctx);
-int HashratCheckFile(HashratCtx *Ctx, char *Path, char *ExpectedHash, struct stat *FPStat);
 void HashratStoreHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash);
 int HashratOutputInfo(HashratCtx *Ctx, STREAM *S, char *Path, struct stat *Stat, char *Hash);
 int HandleCompareResult(char *Path, char *Status, int Flags, char *ErrorMessage);

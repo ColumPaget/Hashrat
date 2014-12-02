@@ -23,7 +23,7 @@ void AddIncludeExclude(int Type, const char *Item);
 int StatFile(HashratCtx *Ctx, char *Path, struct stat *Stat);
 int HashSingleFile(char **RetStr, HashratCtx *Ctx, int Type,char *Path);
 void ProcessData(char **RetStr, HashratCtx *Ctx, char *Data, int DataLen);
-int HashItem(HashratCtx *Ctx, char *Path, struct stat *FStat, char **HashStr);
+int HashItem(HashratCtx *Ctx, char *HashType, char *Path, struct stat *FStat, char **HashStr);
 void ProcessItem(HashratCtx *Ctx, char *Path, struct stat *Stat);
 int ProcessDir(HashratCtx *Ctx, char *Dir, char *HashType);
 

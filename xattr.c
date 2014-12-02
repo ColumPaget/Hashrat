@@ -44,17 +44,19 @@ DestroyString(Token);
 }
 
 
-void HashRatSetXAttr(STREAM *Out, char *Path, struct stat *Stat, char *HashType, char *Hash)
+void HashRatSetXAttr(HashratCtx *Ctx, char *Path, struct stat *Stat, char *HashType, char *Hash)
 {
 char *Tempstr=NULL, *Attr=NULL;
 char **ptr;
 int result;
 
 #ifdef USE_XATTR
-	if ((Flags & FLAG_XATTR_ROOT) && (getuid()==0)) Attr=MCopyStr(Attr,"trusted.","hashrat:",HashType,NULL);
+	if ((Ctx->Flags & CTX_XATTR_ROOT) && (getuid()==0)) Attr=MCopyStr(Attr,"trusted.","hashrat:",HashType,NULL);
 	else Attr=MCopyStr(Attr,"user.","hashrat:",HashType,NULL);
 	Tempstr=FormatStr(Tempstr,"%lu:%llu:%s",(unsigned long) time(NULL),(unsigned long long) Stat->st_size,Hash);
 	result=setxattr(Path, Attr, Tempstr, StrLen(Tempstr), 0);
+
+	if (result != 0) fprintf(stderr,"ERROR: Failed to store hash in extended attributes for %s\n", Path);
 
 	if (XAttrList)
 	{
@@ -64,7 +66,7 @@ int result;
 		}
 	}
 #else
-printf("XATTR Support not compiled in.\n");
+fprintf(stderr,"XATTR Support not compiled in.\n");
 exit(1);
 
 #endif
@@ -104,7 +106,6 @@ return(result);
 
 TFingerprint *XAttrLoadHash(HashratCtx *Ctx, char *Path)
 {
-char *HashTypes[]={"md5","sha","sha1","sha256","sha512","whirl","whirlpool",NULL};
 char *XattrTypes[]={"trusted","user",NULL};
 TFingerprint *FP=NULL;
 char *Tempstr=NULL;
@@ -116,15 +117,21 @@ FP->Path=CopyStr(FP->Path, Path);
 FP->Hash=SetStrLen(FP->Hash,1024);
 for (j=0; XattrTypes[j]; j++)
 {
-	for (i=0; HashTypes[i] != NULL; i++)
+	if (StrLen(Ctx->HashType)) 
 	{
-		found=XAttrGetHash(Ctx, XattrTypes[j], HashTypes[i], Path, &FP->FStat, &FP->Hash);
+		found=XAttrGetHash(Ctx, XattrTypes[j], Ctx->HashType, Path, &FP->FStat, &FP->Hash);
+		FP->HashType=CopyStr(FP->HashType,Ctx->HashType);
+	}
+	else for (i=0; HashratHashTypes[i] != NULL; i++)
+	{
+		found=XAttrGetHash(Ctx, XattrTypes[j], HashratHashTypes[i], Path, &FP->FStat, &FP->Hash);
 		if (found > 0)
 		{
-			FP->HashType=CopyStr(FP->HashType,HashTypes[i]);
+			FP->HashType=CopyStr(FP->HashType,HashratHashTypes[i]);
 			break;
 		}
 	}
+	if (found) break;
 }
 
 DestroyString(Tempstr);

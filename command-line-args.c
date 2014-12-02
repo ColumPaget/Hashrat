@@ -3,7 +3,8 @@
 #define CMDLINE_ARG_NAMEVALUE 1
 #define CMDLINE_FROM_LISTFILE 2
 #define CMDLINE_XATTR     4
-#define CMDLINE_MEMCACHED 8
+#define CMDLINE_TXATTR     8
+#define CMDLINE_MEMCACHED 64
 
 //this function is called when a command-line switch has been recognized. It's told which flags to set
 //and whether the switch takes a string argument, which it then reads and stores in the variable list
@@ -60,6 +61,7 @@ while (ptr)
 {
 	if (strcasecmp(Token, "stderr")==0) Ctx->Aux=STREAMFromFD(2);
 	else if (strcasecmp(Token, "xattr")==0) Ctx->Flags |= CTX_STORE_XATTR;
+	else if (strcasecmp(Token, "txattr")==0) Ctx->Flags |= CTX_STORE_XATTR | CTX_XATTR_ROOT;
 	else if (strcasecmp(Token, "memcached")==0) Ctx->Flags |= CTX_STORE_MEMCACHED;
 	else if (strcasecmp(Token, "mcd")==0) Ctx->Flags |= CTX_STORE_MEMCACHED;
 	else if (! Ctx->Aux) Ctx->Aux=STREAMOpenFile(Token,O_WRONLY | O_CREAT | O_TRUNC);
@@ -250,6 +252,7 @@ else if (strcmp(argv[i],"-rawlines")==0) ParseFlags |= CommandLineHandleArg(argc
 else if (strcmp(argv[i],"-rl")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-fs")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_ONE_FS, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-xattr")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_XATTR, 0, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-txattr")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_TXATTR, 0, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-strict")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_FULLCHECK, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-color")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_COLOR, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-S")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_FULLCHECK, "", "",Ctx->Vars);
@@ -315,6 +318,7 @@ break;
 case ACT_HASH:
 case ACT_HASH_LISTFILE:
 	if (ParseFlags & CMDLINE_XATTR) Ctx->Flags |= CTX_STORE_XATTR;
+	if (ParseFlags & CMDLINE_TXATTR) Ctx->Flags |= CTX_STORE_XATTR | CTX_XATTR_ROOT;
 	if (ParseFlags & CMDLINE_MEMCACHED) Ctx->Flags |= CTX_STORE_MEMCACHED;
 break;
 
