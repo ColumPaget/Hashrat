@@ -24,14 +24,17 @@ CREDITS:
 		
 
 USAGE:
-    hashrat [options] [path to hash]...
+    hashrat [options] [paths]...
 
-    hashrat -c [options] [input file of hashes]...
 
-OPTIONS:
-  --help          Print help
-  -help           Print help
-  -?              Print help
+		Hash things:		hashrat [options] [paths to hash]
+		Check hashes:		hashrat -c [options] [paths to hash]
+
+
+Options:
+  --help          Print this help
+  -help           Print this help
+  -?              Print this help
   --version       Print program version
   -version        Print program version
   -md5            Use md5 hash algorithmn
@@ -62,6 +65,8 @@ OPTIONS:
   -cf             CHECK hashes but only show failures
   -m              MATCH files from a list read from stdin.
   -lm             Read hashes from stdin, upload them to a memcached server (requires the -memcached option).
+  -X              In CHECK or MATCH mode only examine executable files.
+  -exec           In CHECK or MATCH mode only examine executable files.
   -memcached <server> Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
   -mcd <server>   Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
   -h <script>     Script to run when a file fails CHECK mode, or is found in MATCH mode.
