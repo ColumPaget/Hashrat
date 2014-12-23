@@ -4,30 +4,34 @@
 #include <search.h>
 
 
-typedef struct
-{
-char *ID;
-char *Data;
-char *Path;
-} TMatch;
-
 void *Tree;
+
 
 
 int MatchCompareFunc(const void *i1, const void *i2)
 {
-TMatch *M1, *M2;
+TFingerprint *M1, *M2;
 
-M1=(TMatch *) i1;
-M2=(TMatch *) i2;
+M1=(TFingerprint *) i1;
+M2=(TFingerprint *) i2;
 
-return(strcmp(M1->ID, M2->ID));
+return(strcmp(M1->Hash, M2->Hash));
 }
+
+
+void MatchAdd(const char *ID, const char *HashType, const char *Data, const char *Path)
+{
+TFingerprint *Item;
+
+	Item=TFingerprintCreate(ID, HashType, Data, Path);
+	tsearch(Item, &Tree, MatchCompareFunc);
+}
+	
 
 void *MatchesLoad()
 {
 char *Tempstr=NULL, *Token=NULL, *ptr;
-TMatch *Item;
+TFingerprint *Item;
 STREAM *S;
 
 
@@ -38,12 +42,8 @@ if (! StrLen(Tempstr)) return(NULL);
 while (Tempstr)
 {
 	StripTrailingWhitespace(Tempstr);
-	strlwr(Tempstr);
-	Item=(TMatch *) calloc(1,sizeof(TMatch));
-	ptr=GetToken(Tempstr,"\\S",&Item->ID,0);
-	Item->Data=CopyStr(Item->Data, ptr);
-	tsearch(Item, &Tree, MatchCompareFunc);
-	
+	ptr=GetToken(Tempstr,"\\S",&Token,0);
+	MatchAdd(Token,"", ptr,"");
 	Tempstr=STREAMReadLine(Tempstr, S);
 }
 
@@ -54,37 +54,31 @@ return(Tree);
 }
 
 
-int CheckForMatch(HashratCtx *Ctx, char *Path, struct stat *FStat, char *HashStr)
+TFingerprint *CheckForMatch(HashratCtx *Ctx, char *Path, struct stat *FStat, char *HashStr)
 {
-char *Tempstr=NULL;
-TMatch *Found;
-TMatch Lookup;
+TFingerprint *Lookup, *Found, *Result=NULL;
 void *ptr;
-int result=FALSE;
 
-memset(&Lookup, 0, sizeof(TMatch));
-	Lookup.Path=CopyStr(Lookup.Path,Path);
-	Lookup.ID=CopyStr(Lookup.ID,HashStr);
-	if (Ctx->Action==ACT_FINDMATCHES_MEMCACHED)
-	{
-			Tempstr=MemcachedGet(Tempstr, Lookup.ID);
-			if (StrLen(Tempstr)) printf("LOCATED: %s  %s  %s (memcached)\n",Lookup.ID,Lookup.Path,Tempstr);
-			result=TRUE;
-	}
-	else
-	{
-			ptr=tfind(&Lookup, &Tree, MatchCompareFunc);
-			if (ptr)
-			{
-				Found=*(TMatch **) ptr;
-				printf("LOCATED: %s  %s  %s\n",Lookup.ID,Lookup.Path,Found->Data);
-				result=TRUE;
-			}
-	}
 
-DestroyString(Tempstr);
+Lookup=TFingerprintCreate(HashStr,"",Path);
+if (Ctx->Action==ACT_FINDMATCHES_MEMCACHED)
+{
+		Lookup->Data=MemcachedGet(Lookup->Data, Lookup->Hash);
+		if (StrLen(Lookup->Data)) Result=TFingerprintCreate(Lookup->Hash, Lookup->HashType, Lookup->Data, Lookup->Path);
+}
+else
+{
+		ptr=tfind(Lookup, &Tree, MatchCompareFunc);
+		if (ptr)
+		{
+			Found=*(TFingerprint **) ptr;
+			Result=TFingerprintCreate(Found->Hash, Found->HashType, Found->Data, Found->Path);
+		}
+}
 
-return(result);
+TFingerprintDestroy(Lookup);
+
+return(Result);
 }
 
 

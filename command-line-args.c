@@ -136,6 +136,7 @@ if (strcmp(ptr,"hashrat.cgi")==0)
 for (i=1; i < argc; i++)
 {
 if (
+		(strcmp(argv[i],"-V")==0) ||
 		(strcmp(argv[i],"--version")==0) ||
 		(strcmp(argv[i],"-version")==0)
 	)
@@ -190,6 +191,11 @@ else if (strcmp(argv[i],"-m")==0)
 else if (strcmp(argv[i],"-lm")==0)
 {
 	Ctx->Action = ACT_LOADMATCHES;
+	strcpy(argv[i],"");
+}
+else if (strcmp(argv[i],"-dups")==0)
+{
+	Ctx->Action = ACT_FINDDUPLICATES;
 	strcpy(argv[i],"");
 }
 else if (strcmp(argv[i],"-hook")==0) 
@@ -259,6 +265,7 @@ else if (strcmp(argv[i],"-S")==0) ParseFlags |= CommandLineHandleArg(argc, argv,
 else if (strcmp(argv[i],"-net")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_NET, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-memcached")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE|CMDLINE_MEMCACHED, 0, "Memcached:Server", "",Ctx->Vars);
 else if (strcmp(argv[i],"-mcd")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE| CMDLINE_MEMCACHED, 0, "Memcached:Server", "",Ctx->Vars);
+else if (strcmp(argv[i],"-v")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_VERBOSE, "", "",Ctx->Vars);
 else if (
 					(strcmp(argv[i],"-t")==0) ||
 					(strcmp(argv[i],"-trad")==0)
@@ -387,6 +394,7 @@ printf("  %-15s %s\n","-m", "MATCH files from a list read from stdin.");
 printf("  %-15s %s\n","-lm", "Read hashes from stdin, upload them to a memcached server (requires the -memcached option).");
 printf("  %-15s %s\n","-X", "In CHECK or MATCH mode only examine executable files.");
 printf("  %-15s %s\n","-exec", "In CHECK or MATCH mode only examine executable files.");
+printf("  %-15s %s\n","-dups", "Search for duplicate files.");
 printf("  %-15s %s\n","-memcached <server>", "Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).");
 printf("  %-15s %s\n","-mcd <server>", "Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).");
 printf("  %-15s %s\n","-h <script>", "Script to run when a file fails CHECK mode, or is found in MATCH mode.");

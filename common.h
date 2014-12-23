@@ -19,6 +19,7 @@
 #define ACT_LOADMATCHES 20
 #define ACT_FINDMATCHES 21
 #define ACT_FINDMATCHES_MEMCACHED 22
+#define ACT_FINDDUPLICATES 23
 
 #define FLAG_RECURSE 1
 //Two flags with the same values, but used in different contexts
@@ -75,6 +76,7 @@ int Flags;
 char *Path;
 char *Hash;
 char *HashType;
+char *Data;
 struct stat FStat;
 } TFingerprint;
 

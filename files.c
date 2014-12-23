@@ -418,6 +418,8 @@ break;
 case ACT_CHECK_MEMCACHED:
 	if (S_ISREG(Stat->st_mode))
 	{
+		if (Stat->st_size > 0)
+		{
 		HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
 		FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
     if (Flags & FLAG_NET) FP->Path=MCopyStr(FP->Path, Path);
@@ -427,6 +429,8 @@ case ACT_CHECK_MEMCACHED:
 		if (FP) HashratCheckFile(Ctx, Path, NULL, NULL, FP->Hash, HashStr);
 		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
 		FingerprintDestroy(FP);
+		}
+		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
 	}
 break;
 
@@ -434,8 +438,31 @@ case ACT_FINDMATCHES:
 case ACT_FINDMATCHES_MEMCACHED:
 	if (S_ISREG(Stat->st_mode))
 	{
-	HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
-	CheckForMatch(Ctx, Path, Stat, HashStr);
+		if (Stat->st_size > 0)
+		{
+		HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
+		FP=CheckForMatch(Ctx, Path, Stat, HashStr);
+		if (FP) printf("LOCATED: %s %s %s\n",FP->Hash,FP->Path,FP->Data);
+		TFingerprintDestroy(FP);	
+		}
+		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
+	}
+break;
+
+case ACT_FINDDUPLICATES:
+	if (S_ISREG(Stat->st_mode))
+	{
+	if (Stat->st_size > 0)
+	{
+		if (HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr) != FLAG_ERROR)
+		{
+			FP=CheckForMatch(Ctx, Path, Stat, HashStr);
+			if (FP) printf("DUPLICATE: %s of %s %s\n",Path,FP->Path,FP->Data);
+			else MatchAdd(HashStr,Ctx->HashType,"", Path);
+			TFingerprintDestroy(FP);	
+		}
+	}
+	else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
 	}
 break;
 }

@@ -10,6 +10,37 @@ char *HashratHashTypes[]={"md5","sha1","sha256","sha512","whirl","whirlpool","jh
 
 
 
+void TFingerprintDestroy(void *p_Fingerprint)
+{
+  TFingerprint *Fingerprint;
+
+	if (! p_Fingerprint) return;
+  Fingerprint=(TFingerprint *) p_Fingerprint;
+  DestroyString(Fingerprint->Hash);
+  DestroyString(Fingerprint->Data);
+  DestroyString(Fingerprint->Path);
+  DestroyString(Fingerprint->HashType);
+
+  free(Fingerprint);
+}
+
+
+
+TFingerprint *TFingerprintCreate(const char *Hash, const char *HashType, const char *Data, const char *Path)
+{
+TFingerprint *Item;
+
+  Item=(TFingerprint *) calloc(1,sizeof(TFingerprint));
+  Item->Hash=CopyStr(Item->Hash, Hash);
+ 	strlwr(Item->Hash);
+  Item->HashType=CopyStr(Item->HashType, HashType);
+  Item->Data=CopyStr(Item->Data, Data);
+  Item->Path=CopyStr(Item->Path, Path);
+
+  return(Item);
+}
+
+
 
 void HashratCtxDestroy(void *p_Ctx)
 {
@@ -25,11 +56,10 @@ free(Ctx);
 }
 
 
+
 int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, char *Path, struct stat *Stat, char *Hash)
 {
 char *Tempstr=NULL; 
-
-
 
 if (Flags & FLAG_TRAD_OUTPUT) Tempstr=MCopyStr(Tempstr,Hash, "  ", Path,NULL);
 else
