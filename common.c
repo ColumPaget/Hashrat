@@ -81,7 +81,7 @@ else
     time_t    st_ctime;   // time of last status change 
 	*/
 
-#ifdef _LARGEFILE64_SOURCE
+#if _FILE_OFFSET_BITS == 64
 	Tempstr=FormatStr(Tempstr,"hash='%s:%s' mode='%o' uid='%lu' gid='%lu' size='%llu' mtime='%lu' inode='%llu' path='%s'",Ctx->HashType,Hash,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
 #else
 	Tempstr=FormatStr(Tempstr,"hash='%s:%s' mode='%o' uid='%lu' gid='%lu' size='%lu' mtime='%lu' inode='%lu' path='%s'",Ctx->HashType,Hash,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
