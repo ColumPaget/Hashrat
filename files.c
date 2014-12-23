@@ -409,7 +409,8 @@ case ACT_CHECK_XATTR:
 		if (FP) 
 		{
 			HashItem(Ctx, FP->HashType, Path, Stat, &HashStr);
-			HashratCheckFile(Ctx, Path, &FP->FStat, Stat, FP->Hash, HashStr);
+			if (FP->Flags & FP_HASSTAT) HashratCheckFile(Ctx, Path, &FP->FStat, Stat, FP->Hash, HashStr);
+			else HashratCheckFile(Ctx, Path, NULL, Stat, FP->Hash, HashStr);
 		}
 		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
 	}

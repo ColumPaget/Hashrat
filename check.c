@@ -21,6 +21,7 @@ char *Tempstr=NULL;
 
 int CheckStat(char *Path, struct stat *ExpectedStat, struct stat *Stat)
 {
+
 	if ((ExpectedStat->st_size > 0) && ((size_t) Stat->st_size != (size_t) ExpectedStat->st_size)) 
 	{
 		HandleCheckFail(Path, "Filesize changed");
@@ -98,9 +99,10 @@ int enc;
 		if (access(Path,F_OK)!=0) fprintf(stderr,"\rERROR: No such file '%s'\n",Path);
 		else
 		{
-			if ((Flags & FP_HASSTAT) && ExpectedStat)
+			if (ExpectedStat)
 			{
-				if (CheckStat(Path, ExpectedStat, ActualStat)) result=CheckFileHash(Ctx, Path, ActualStat, ExpectedHash, ActualHash); 
+				result=CheckStat(Path, ExpectedStat, ActualStat);
+				if (result) result=CheckFileHash(Ctx, Path, ActualStat, ExpectedHash, ActualHash); 
 			}
 			else result=CheckFileHash(Ctx, Path, ActualStat, ExpectedHash, ActualHash); 
 		}
@@ -115,7 +117,7 @@ char *HashStr=NULL, *ptr;
 int Checked=0, Errors=0;
 STREAM *ListStream;
 TFingerprint *FP;
-struct stat Stat;
+struct stat Stat, *ExpectedStat;
 int result=0;
 
 
@@ -131,9 +133,12 @@ FP=FingerprintRead(ListStream);
 while (FP)
 {
   if (StrLen(FP->HashType)) Ctx->HashType=CopyStr(Ctx->HashType, FP->HashType);
-
 	if (StatFile(Ctx,FP->Path,&Stat)==0) HashItem(Ctx, Ctx->HashType, FP->Path, &Stat, &HashStr);
-  if (! HashratCheckFile(Ctx, FP->Path, &FP->FStat, &Stat, FP->Hash, HashStr)) Errors++;
+
+	if (FP->Flags & FP_HASSTAT) ExpectedStat=&FP->FStat;
+	else ExpectedStat=NULL;
+
+  if (! HashratCheckFile(Ctx, FP->Path, ExpectedStat, &Stat, FP->Hash, HashStr)) Errors++;
   FingerprintDestroy(FP);
   FP=FingerprintRead(ListStream);
   Checked++;
