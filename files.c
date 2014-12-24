@@ -73,21 +73,22 @@ if (S_ISDIR(FStat->st_mode)) result=TRUE;
 Curr=ListGetNext(IncludeExclude);
 while (Curr)
 {
-mptr=(char *) Curr->Item;
-dptr=Path;
-if (*mptr!='/') 
-{
-mptr=GetBasename(mptr);
-dptr=GetBasename(Path);
-}
+	mptr=(char *) Curr->Item;
+	dptr=Path;
 
-if (fnmatch(mptr,dptr,0)==0) 
-{
-	if (Curr->ItemType==FLAG_INCLUDE) result=TRUE;
-	else result=FALSE;
-}
-
-Curr=ListGetNext(Curr);
+	if (*mptr!='/') 
+	{
+		mptr=GetBasename(mptr);
+		dptr=GetBasename(Path);
+	}
+	
+	if (fnmatch(mptr,dptr,0)==0) 
+	{
+		if (Curr->ItemType==FLAG_INCLUDE) result=TRUE;
+		else result=FALSE;
+	}
+	
+	Curr=ListGetNext(Curr);
 }
 
 

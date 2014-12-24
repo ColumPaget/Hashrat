@@ -13,7 +13,7 @@
 
 int CommandLineHandleArg(int argc, char *argv[], int pos, int ParseFlags, int SetFlags, char *VarName, char *VarValue, ListNode *Vars)
 {
-	Flags |= SetFlags;
+	Flags |= (SetFlags & ~(FLAG_INCLUDE | FLAG_EXCLUDE));
 	
 	if (ParseFlags & CMDLINE_ARG_NAMEVALUE)
 	{
