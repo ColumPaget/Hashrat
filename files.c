@@ -196,10 +196,10 @@ switch (Type)
 
 if (S) 
 {
-Tempstr=SetStrLen(Tempstr,4096);
+Tempstr=SetStrLen(Tempstr,BUFSIZ);
 
 val=FileSize;
-if (val > 4096) val=4096;
+if ((val==0) || ( val > BUFSIZ)) val=BUFSIZ;
 result=STREAMReadBytes(S,Tempstr,val);
 while (result > 0)
 {
@@ -207,10 +207,13 @@ while (result > 0)
 
 	if (result > 0) Hash->Update(Hash ,Tempstr, result);
 	bytes_read+=result;
-	if ((Type != FT_HTTP) && (bytes_read >= FileSize)) break;
 
+	if (FileSize > 0)
+	{
+	if ((Type != FT_HTTP) && (bytes_read >= FileSize)) break;
 	val=FileSize - bytes_read;
-	if (val > 4096) val=4096;
+	if (val > BUFSIZ) val=BUFSIZ;
+	}
 	result=STREAMReadBytes(S,Tempstr,val);
 }
 
@@ -259,6 +262,7 @@ int HashratHashSingleFile(HashratCtx *Ctx, char *HashType, int FileType, char *P
 {
 THash *Hash;
 char *ptr;
+int size=0;
 
 		*RetStr=CopyStr(*RetStr,"");
 		Hash=HashInit(HashType);
@@ -267,7 +271,8 @@ char *ptr;
 		ptr=GetVar(Ctx->Vars,"EncryptionKey");
 		if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
-		if (! HashratHashFile(Ctx,Hash,FileType,Path, FStat->st_size)) return(FALSE);
+		if (FStat) size=FStat->st_size;
+		if (! HashratHashFile(Ctx,Hash,FileType,Path, size)) return(FALSE);
 
 		HashratFinishHash(RetStr, Ctx, Hash);
 
