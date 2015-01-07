@@ -2,6 +2,7 @@
 #include "DataProcessing.h"
 #include "pty.h"
 #include "expect.h"
+#include <sys/mman.h>
 
 #ifdef HAVE_LIBSSL
 #include <openssl/crypto.h>
@@ -109,14 +110,26 @@ S->BlockSize=val;
 
 /* This reads chunks from a file and when if finds a newline it resets */
 /* the file pointer to that position */
-void STREAMResizeBuffer(STREAM *Stream, int size)
+void STREAMResizeBuffer(STREAM *S, int size)
 {
-   Stream->InputBuff=(char *) realloc(Stream->InputBuff,size);
-   Stream->OutputBuff=(char *) realloc(Stream->OutputBuff,size);
-   Stream->BuffSize=size;
-   if (Stream->InStart > Stream->BuffSize) Stream->InStart=0;
-   if (Stream->InEnd > Stream->BuffSize) Stream->InEnd=0;
-   if (Stream->OutEnd > Stream->BuffSize) Stream->OutEnd=0;
+	int PageSize;
+
+	PageSize=getpagesize();
+	if (S->Flags & SF_SECURE) S->BuffSize=(size / PageSize + 1) * PageSize;
+  else S->BuffSize=size;
+
+	S->InputBuff =(char *) realloc(S->InputBuff,S->BuffSize);
+	S->OutputBuff=(char *) realloc(S->OutputBuff,S->BuffSize);
+
+	if (S->InStart > S->BuffSize) S->InStart=0;
+	if (S->InEnd > S->BuffSize) S->InEnd=0;
+	if (S->OutEnd > S->BuffSize) S->OutEnd=0;
+
+	if (S->Flags & SF_SECURE) 
+	{
+		mlock(S->InputBuff, S->BuffSize);
+		mlock(S->OutputBuff, S->BuffSize);
+	}
 }
 
 
@@ -413,6 +426,7 @@ Stream->out_fd=fd;
 return(Stream);
 }
 
+
 STREAM *STREAMFromDualFD(int in_fd, int out_fd)
 {
 STREAM *Stream;
@@ -511,6 +525,13 @@ if (strncmp(Curr->Tag,"HelperPID",9)==0) kill(atoi(Curr->Item),SIGKILL);
 Curr=ListGetNext(Curr);
 }
 
+if (S->Flags & SF_SECURE) 
+{
+	munlock(S->InputBuff, S->BuffSize);
+	munlock(S->OutputBuff, S->BuffSize);
+	xmemset(S->InputBuff,0,S->BuffSize);
+	xmemset(S->OutputBuff,0,S->BuffSize);
+}
 
 ListDestroy(S->Values,(LIST_ITEM_DESTROY_FUNC)DestroyString);
 ListDestroy(S->ProcessingModules,DataProcessorDestroy);
@@ -583,7 +604,6 @@ if (S->Flags & SF_SSL)
 {
 if (SSL_pending((SSL *) SSL_CTX) > 0) WaitForBytes=FALSE;
 }
-//else
 #endif
 
 
@@ -659,7 +679,6 @@ if (read_result < 1)
 	else read_result=STREAM_NODATA;
 }
 
-//if (result==STREAM_DATA_ERROR) read_result=STREAM_DATA_ERROR;
 
 //We are not returning number of bytes read. We only return something if
 //there is a condition (like socket close) where the thing we are waiting for 
@@ -1044,12 +1063,9 @@ while (1)
 	}
 	
 	result=STREAMReadCharsToBuffer(S);
-	if ((result != STREAM_NODATA) && (S->InStart >= S->InEnd))
+	if (S->InStart >= S->InEnd)
 	{
-		if (result==STREAM_TIMEOUT) 
-		{
-			return(RetStr);
-		}
+		if (result==STREAM_TIMEOUT) return(RetStr);
 
 		if (bytes_read==0)
 		{
@@ -1171,77 +1187,64 @@ else ListAddNamedItem(S->Items,Name,Value);
 }
 
 
-#define SENDFILE_FAILED -1
 off_t STREAMSendFile(STREAM *In, STREAM *Out, off_t Max)
 {
 char *Buffer=NULL;
-int BuffSize=BUFSIZ;
-off_t bytes_read=0, result=SENDFILE_FAILED;
+off_t bytes_read=0, result=0;
+int UseSendFile=FALSE;
 
 //val has to be as long as possible, because it will hold the difference
 //between two off_t values. However, use of 'long long' resulted in an
 //unsigned value, which caused all manner of problems, so a long is the
 //best we can manage
-long val; 
+long val, len; 
 
-
-BuffSize=BUFSIZ;
-if (BuffSize > Max) BuffSize=Max;
 
 #ifdef USE_SENDFILE
+#include <sys/sendfile.h>
 
 //if we are not using ssl and not using processor modules, we can use 
 //kernel-level copy!
-
-#include <sys/sendfile.h>
-
-val=In->Flags | Out->Flags;
-if ((! (val & SF_SSL)) && (ListSize(In->ProcessingModules)==0) && (ListSize(Out->ProcessingModules)==0))
-{
-	STREAMFlush(Out);
-
-	result=sendfile(Out->out_fd, In->in_fd,0,BuffSize);
-	while (result > 0)
-	{
-		bytes_read+=result;
-		BuffSize=BUFSIZ;
-
-		if (Max > 0)
-		{
-			val=Max-bytes_read;
-			if (val < 1) break;
-			if (BuffSize > val) BuffSize=val;
-		}
-
-
-		result=sendfile(Out->out_fd, In->in_fd,0,BuffSize);
-	}
-
-}
-
+if (
+			(! (In->Flags & SF_SSL)) && 
+			(! (Out->Flags & SF_SSL)) && 
+			(ListSize(In->ProcessingModules)==0) && 
+			(ListSize(Out->ProcessingModules)==0)
+	) UseSendFile=TRUE;
 #endif
 
-if (result==SENDFILE_FAILED)
+Buffer=SetStrLen(Buffer,BUFSIZ);
+STREAMFlush(Out);
+while (1)
 {
-	Buffer=SetStrLen(Buffer,BuffSize);
-	result=STREAMReadBytes(In,Buffer,BuffSize);
-	while (result >=0)
+	len=BUFSIZ;
+	if (Max > 0)
 	{
-		bytes_read+=STREAMWriteBytes(Out,Buffer,result);
-		BuffSize=BUFSIZ;
-
-		if (Max > 0) 
-		{
-			val=Max-bytes_read;
-
-			printf("val: %d\n",val);
-			if (val < 1) break;
-			if (BuffSize > val) BuffSize=val;
-		}
-
-		result=STREAMReadBytes(In,Buffer,BuffSize);
+		val=Max-bytes_read;
+		if (len > val) len=val;
 	}
-}
+
+  if (len < 1) break;
+
+#ifdef USE_SENDFILE
+	if (UseSendFile)
+	{
+		result=sendfile(Out->out_fd, In->in_fd,0,len);
+		if ((result < 1) && (bytes_read==0)) UseSendFile=FALSE;
+	}
+#endif
+
+	if (! UseSendFile)
+	{
+		result=STREAMReadBytes(In,Buffer,len);
+		if (result > 0) result=STREAMWriteBytes(Out,Buffer,result);
+	}
+
+	if (result < 1) break;
+
+	bytes_read+=result;
+} 
+
 
 DestroyString(Buffer);
 

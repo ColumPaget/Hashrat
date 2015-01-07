@@ -4,7 +4,9 @@
 #define LIST_FLAG_DELETE 1
 #define LIST_FLAG_CASE 2
 #define LIST_FLAG_SELFORG 4
-#define LIST_FLAG_DEBUG 8
+#define LIST_FLAG_ORDERED 8
+#define LIST_FLAG_CACHE 16
+#define LIST_FLAG_DEBUG 256
 
 typedef struct lnode
 {
@@ -48,6 +50,7 @@ ListNode *ListGetPrev(ListNode *);
 ListNode *ListGetHead(ListNode *);
 ListNode *ListGetLast(ListNode *);
 ListNode *ListGetNth(ListNode *Head, int n);
+ListNode *ListFindNamedItemInsert(ListNode *Head, const char *Name);
 ListNode *ListFindNamedItem(ListNode *Head, const char *Name);
 ListNode *ListFindItem(ListNode *Head, void *Item);
 ListNode *ListJoin(ListNode *, ListNode *);

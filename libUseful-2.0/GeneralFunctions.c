@@ -3,6 +3,16 @@
 #include "Hash.h"
 #include <sys/utsname.h>
 
+
+//xmemset uses a 'volatile' pointer so that it won't be optimized out
+void xmemset(char *Str, char fill, off_t size)
+{
+volatile char *p;
+
+for (p=Str; p < (Str+size); p++) *p=fill;
+}
+
+
 int WritePidFile(char *ProgName)
 {
 char *Tempstr=NULL;

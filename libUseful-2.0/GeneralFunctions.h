@@ -10,6 +10,7 @@
 extern "C" {
 #endif
 
+void xmemset(char *Str, char fill, off_t size);
 int WritePidFile(char *ProgName);
 int HexStrToBytes(char **Buffer, char *HexStr);
 char *BytesToHexStr(char *Buffer, char *Bytes, int len);

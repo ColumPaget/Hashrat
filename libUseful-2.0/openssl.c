@@ -422,17 +422,20 @@ if (S)
 		if (ptr) SSL_set_cipher_list(ssl, ptr);
 	  SSL_set_accept_state(ssl);
 	  result=SSL_accept(ssl);
-	  if (result != TRUE)
-	  {
-			result=SSL_get_error(ssl,result);
-			result=ERR_get_error();
-			fprintf(stderr,"error: %s\n",ERR_error_string(result,NULL));
-		 	result=FALSE;
-	  }
-	
+		if (result == TRUE)
+		{
 	  S->Flags|=SF_SSL;
 		OpenSSLQueryCipher(S);
 		if (Flags & SSL_VERIFY_PEER) OpenSSLVerifyCertificate(S);
+		}
+		else
+	  {
+			result=SSL_get_error(ssl,result);
+			result=ERR_get_error();
+			STREAMSetValue(S, "SSL-Error", ERR_error_string(result,NULL));
+		 	result=FALSE;
+	  }
+	
 	}
   }
 }

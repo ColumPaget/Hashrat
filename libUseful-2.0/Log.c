@@ -56,7 +56,6 @@ TLogFile *LogFileGetEntry(char *FileName)
 		else
 		{
 			S=STREAMOpenFile(FileName,O_CREAT | O_APPEND | O_WRONLY);
-			if (S) S->Flags &= ~FLUSH_ALWAYS;
 		}
 
 		if (S)

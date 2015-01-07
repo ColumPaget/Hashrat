@@ -32,8 +32,6 @@ void HashAvailableTypes(ListNode *Vars);
 THash *HashInit(char *Type);
 void HMACSetKey(THash *HMAC, char *Key, int Len);
 void HashDestroy(THash *Hash);
-char *EncodeBase64(char *Return, char *Text, int len);
-char *DecodeBase64(char *Return, int *len, char *Text);
 int HashBytes(char **Return, char *Type, char *text, int len, int Encoding);
 int HashFile(char **Return, char *Type, char *Path, int Encoding);
 

@@ -88,11 +88,13 @@ switch (*eptr)
 		{
 			while (isspace(*eptr)) eptr++;
 			eptr--;
+			MatchType=0;
 		}
 		else if (*eptr != *pptr) return(FALSE);
 	break;
 
 	default:
+		if (MatchType != 0) return(FALSE);
 		if (*eptr != *pptr) return(FALSE);
 	break;
 }

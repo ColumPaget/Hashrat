@@ -226,74 +226,152 @@ return(NewItem);
 void OrderedListAddJump(ListNode *From, ListNode *To)
 {
 int result;
+static int depth=0;
 
 if (! From) return;
 if (! To) return;
 
+depth++;
+if (depth > 100) 
+{
+	printf("ERROR: OLJ DEEEP\n");
+	exit(1);
+}
+
 if (From->Jump)
 {
 	result=strcmp(From->Jump->Tag, To->Tag);
-	if (result > 0)  OrderedListAddJump(From->Next,To);
-	else if (result==0)
-	{
-		 return;
-	}
-	else
+//	if (result > 0)  OrderedListAddJump(From->Next,To);
+//	else
+	if (result < 0)
 	{
 	OrderedListAddJump(From->Next,From->Jump);
 	From->Jump=To;
 	}
 }
 else From->Jump=To;
+
+depth--;
+}
+
+
+
+ListNode *ListFindNamedItemInsert(ListNode *Head, const char *Name)
+{
+ListNode *Prev, *Curr, *Start=NULL;
+int result, count=0, addjump=0;
+int hops=0, jumps=0, miss=0, ls;
+
+if (! StrLen(Name)) return(Head);
+Curr=ListGetNext(Head);
+if (! Curr) return(Head);
+
+Prev=ListGetLast(Head);
+if (Prev && Prev->Tag)
+{
+	if (Head->Flags & LIST_FLAG_CASE) result=strcmp(Prev->Tag,Name);
+	else result=strcasecmp(Prev->Tag,Name);
+}
+
+if ((Head->Flags & LIST_FLAG_ORDERED) && (result < 1)) return(Prev);
+
+if ((Head->Flags & LIST_FLAG_CACHE) && (Head->Jump))
+{
+	Prev=Head->Jump;
+	if (Prev->Tag)
+	{
+	if (Head->Flags & LIST_FLAG_CASE) result=strcmp(Prev->Tag,Name);
+	else result=strcasecmp(Prev->Tag,Name);
+	if (result < 1) Curr=Prev;
+	}
+}
+
+ls=ListSize(Head);
+addjump=100;
+
+Prev=Head;
+while (Curr)
+{
+	if (Curr->Jump && Curr->Jump->Tag)
+	{
+		if (Head->Flags & LIST_FLAG_CASE) result=strcmp(Curr->Jump->Tag,Name);
+		else result=strcasecmp(Curr->Jump->Tag,Name);
+		if (result < 1) 
+		{
+			if ((result < 0) && Curr->Jump->Next) Curr->Jump=Curr->Jump->Next;
+			Curr=Curr->Jump;
+			jumps++;
+ 			count=0;
+		}
+		else miss++;
+	} else if (! Start) Start=Curr;
+
+	if (Curr->Tag)
+	{
+  	if (Head->Flags & LIST_FLAG_CASE) result=strcmp(Curr->Tag,Name);
+		else result=strcasecmp(Curr->Tag,Name);
+
+		if (result==0)
+		{
+			if (Head->Flags & LIST_FLAG_SELFORG) ListSwapItems(Curr->Prev, Curr);
+			if (Head->Flags & LIST_FLAG_CACHE) Head->Jump=Curr;
+				//printf("FOUND: h=%d j=%d m=%d ls=%d\n",hops,jumps,miss,ls);
+			return(Curr);
+		}
+		if ((result > 0) && (Head->Flags & LIST_FLAG_ORDERED)) 
+		{
+				//printf("MISS: h=%d j=%d m=%d ls=%d\n",hops,jumps,miss,ls);
+			return(Prev);
+		}
+	}
+
+hops++;
+count++;
+
+/*
+if (Start->Jump && (! Curr->Jump)) 
+{
+Start=Curr;
+count=200;
+}
+
+
+if (count % addjump)
+{
+ if (Start) OrderedListAddJump(Start, Curr);
+ Start=NULL;
+}
+*/
+
+	Prev=Curr;
+  Curr=ListGetNext(Curr);
+}
+
+return(Prev);
+}
+
+
+
+ListNode *ListFindNamedItem(ListNode *Head, const char *Name)
+{
+	ListNode *Node;
+	int result;
+
+	Node=ListFindNamedItemInsert(Head, Name);
+	if ((! Node) || (Node==Head) || (! Node->Tag)) return(NULL);
+ 	if (Head->Flags & LIST_FLAG_CASE) result=strcmp(Node->Tag,Name);
+	else result=strcasecmp(Node->Tag,Name);
+
+	if (result==0) return(Node);
+	return(NULL);
 }
 
 
 ListNode *OrderedListAddNamedItem(ListNode *Head, const char *Name, void *Item)
 {
-ListNode *NewItem, *Prev, *Curr, *Start;
-int count=0, jcount=0, result=-1;
+ListNode *NewItem, *Prev;
 
-
-if (! Head) return(NULL);
-Prev=Head;
-Curr=Head->Next;
-Start=Curr;
-
-while (Curr)
-{
-if (Curr->Jump)
-{
-	count=0;
-	result=strcmp(Curr->Jump->Tag,Name);
-	if (result < 0)
-	{
-		 Curr=Curr->Jump;
-		 Prev=Curr->Prev;
-		 jcount++;
-		if (jcount > 5)
-		{
-		 OrderedListAddJump(Head->Next, Curr);
-		 jcount=0;
-		}
-	Start=Curr->Next;
-	}
-}
-
-if (Curr->Tag) result=strcmp(Curr->Tag,Name);
-if (result > -1) break;
-
-count++;
-if (count > 100)
-{
- OrderedListAddJump(Start, Curr);
- count=0;
- Start=Curr->Next;
-}
-
-Prev=Curr;
-Curr=Curr->Next;
-}
-
+Prev=ListFindNamedItemInsert(Head, Name);
 NewItem=(ListNode *) calloc(1,sizeof(ListNode)); 
 NewItem->Item=Item;
 NewItem->Prev=Prev;
@@ -303,16 +381,6 @@ NewItem->Head=Prev->Head;
 if (NewItem->Next) NewItem->Next->Prev=NewItem; /* Next might be NULL! */
 ListIncrNoOfItems(NewItem);
 if (StrLen(Name)) NewItem->Tag=CopyStr(NewItem->Tag,Name);
-
-
-result=ListSize(NewItem);
-
-if ((result % 2000)==0)
-{
-Curr=ListGetNth(Head,result / 2);
-OrderedListAddJump(Head->Next, Curr);
-}
-
 
 return(NewItem);
 }
@@ -367,10 +435,12 @@ ListNode *Head;
 
 
 Head=ListGetHead(CurrItem);
-if (! Head) return(NULL);
+if (! Head) return(CurrItem);
 /* the dummy header has a 'Prev' entry that points to the last item! */
 return(Head->Prev);
 }
+
+
 
 ListNode *ListGetNth(ListNode *Head, int n)
 {
@@ -556,44 +626,6 @@ while (! sorted)
 }
 
 
-ListNode *ListFindNamedItem(ListNode *Head, const char *Name)
-{
-ListNode *Curr;
-int result;
-
-if (! StrLen(Name)) return(NULL);
-Curr=ListGetNext(Head);
-while (Curr)
-{
-   if (Curr->Jump)
-   {
-		if (Head->Flags & LIST_FLAG_CASE) result=strcmp(Curr->Jump->Tag,Name);
-		else result=strcasecmp(Curr->Jump->Tag,Name);
-		if (result < 0) Curr=Curr->Jump;
-   }
-
-	if (Curr->Tag)
-	{
-  	if (Head->Flags & LIST_FLAG_CASE)
-		{
-			if (strcmp(Curr->Tag,Name)==0) 
-			{
-				if (Head->Flags & LIST_FLAG_SELFORG) ListSwapItems(Curr->Prev, Curr);
-				return(Curr);
-			}
-		}
-  	else if (strcasecmp(Curr->Tag,Name)==0) 
-		{
-				if (Head->Flags & LIST_FLAG_SELFORG) ListSwapItems(Curr->Prev, Curr);
-			return(Curr);
-		}
-	}
-
-  Curr=ListGetNext(Curr);
-}
-return(Curr);
-}
-
 
 
 
@@ -627,17 +659,14 @@ if (Node==NULL)
  return(NULL);
 }
 
+/*
 Curr=Node->Head;
-if (Curr) Curr=Curr->Next;
 while (Curr)
 {
-if (Curr->Jump)
-{
 	if (Curr->Jump==Node) Curr->Jump=NULL;
+	Curr=ListGetNext(Curr);
 }
-
-Curr=ListGetNext(Curr);
-}
+*/
 
 Prev=Node->Prev;
 Next=Node->Next;

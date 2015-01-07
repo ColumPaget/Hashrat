@@ -47,6 +47,7 @@
 #define SF_WRLOCK 1024
 #define SF_RDLOCK 2048
 #define SF_FOLLOW 4096
+#define SF_SECURE 8192
 
 //Stream state values
 #define SS_CONNECTING 1

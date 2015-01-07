@@ -118,7 +118,6 @@ int Checked=0, Errors=0;
 STREAM *ListStream;
 TFingerprint *FP;
 struct stat Stat, *ExpectedStat;
-int result=0;
 
 
 ptr=GetVar(Ctx->Vars,"Path");
@@ -147,6 +146,7 @@ while (FP)
 fprintf(stderr,"\nChecked %d files. %d Failures\n",Checked,Errors);
 
 DestroyString(HashStr);
-return(result);
+if (Errors) return(FALSE);
+return(TRUE);
 }
 
