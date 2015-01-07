@@ -4,6 +4,7 @@
 #include "fingerprint.h"
 #include "xattr.h"
 #include <string.h>
+#include "find.h"
 
 
 dev_t StartingFS=0;

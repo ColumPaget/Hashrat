@@ -60,7 +60,7 @@ TFingerprint *Lookup, *Found, *Result=NULL;
 void *ptr;
 
 
-Lookup=TFingerprintCreate(HashStr,"",Path);
+Lookup=TFingerprintCreate(HashStr,"","",Path);
 if (Ctx->Action==ACT_FINDMATCHES_MEMCACHED)
 {
 		Lookup->Data=MemcachedGet(Lookup->Data, Lookup->Hash);

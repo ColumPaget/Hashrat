@@ -172,8 +172,8 @@ Head=(TTarHeader *) calloc(1,sizeof(TTarHeader));
 
 	memset(Head->chksum,' ',8);
 
-	strcpy(Head->magic,"ustar  ");
-	//memcpy(Head->version,"00",2);
+	strcpy(Head->magic,"ustar ");
+	memcpy(Head->version," \0",2);
 
 	pwd=getpwuid(FStat->st_uid);
 	if (pwd) strcpy(Head->uname,pwd->pw_name);

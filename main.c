@@ -4,7 +4,7 @@
 #include "find.h"
 #include "memcached.h"
 #include "check.h"
-
+#include "command-line-args.h"
 
 
 void HashFromListFile(HashratCtx *Ctx)
