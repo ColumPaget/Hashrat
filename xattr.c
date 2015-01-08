@@ -46,11 +46,11 @@ DestroyString(Token);
 
 void HashRatSetXAttr(HashratCtx *Ctx, char *Path, struct stat *Stat, char *HashType, char *Hash)
 {
+#ifdef USE_XATTR
 char *Tempstr=NULL, *Attr=NULL;
 char **ptr;
 int result;
 
-#ifdef USE_XATTR
 	if ((Ctx->Flags & CTX_XATTR_ROOT) && (getuid()==0)) Attr=MCopyStr(Attr,"trusted.","hashrat:",HashType,NULL);
 	else Attr=MCopyStr(Attr,"user.","hashrat:",HashType,NULL);
 	Tempstr=FormatStr(Tempstr,"%lu:%llu:%s",(unsigned long) time(NULL),(unsigned long long) Stat->st_size,Hash);
@@ -65,23 +65,26 @@ int result;
 		setxattr(Path, *ptr, Hash, StrLen(Hash), 0);
 		}
 	}
+
+DestroyString(Tempstr);
+DestroyString(Attr);
+
 #else
 fprintf(stderr,"XATTR Support not compiled in.\n");
 exit(1);
 
 #endif
-
-DestroyString(Tempstr);
-DestroyString(Attr);
 }
 
 
 int XAttrGetHash(HashratCtx *Ctx, char *XattrType, char *HashType, char *Path, struct stat *FStat, char **Hash)
 {
-char *Tempstr=NULL, *ptr;
-int result=FALSE, len;
+int result=FALSE;
 
 #ifdef USE_XATTR
+char *Tempstr=NULL, *ptr;
+int len;
+
 
 Tempstr=MCopyStr(Tempstr,XattrType, ".hashrat:",HashType,NULL);
 len=getxattr(Path, Tempstr, *Hash, 1024); 
@@ -96,9 +99,9 @@ if (len > 0)
 	result=TRUE;
 }
 
+DestroyString(Tempstr);
 #endif
 
-DestroyString(Tempstr);
 return(result);
 }
 
@@ -138,7 +141,7 @@ DestroyString(Tempstr);
 
 if (! found)
 {
-	FingerprintDestroy(FP);
+	TFingerprintDestroy(FP);
 	return(NULL);
 }
 

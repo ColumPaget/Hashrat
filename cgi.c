@@ -1,4 +1,5 @@
 #include "cgi.h"
+#include "files.h"
 
 //This file provides an HTTP Common Gateway Interface for Hashrat
 

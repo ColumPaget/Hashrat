@@ -87,7 +87,7 @@ THash *Hash, *tmpHash;
 int LineCount=0;
 
 S=STREAMOpenFile(Path, O_RDWR);
-if (! S) return;
+if (! S) return(FALSE);
 
 Hash=HashInit(Ctx->HashType);
 Tempstr=STREAMReadLine(Tempstr, S);
@@ -112,6 +112,8 @@ while (Tempstr)
 
 DestroyString(Tempstr);
 DestroyString(HashStr);
+
+return(TRUE);
 }
 
 

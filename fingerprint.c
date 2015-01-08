@@ -1,4 +1,40 @@
 #include "fingerprint.h"
+#include <ctype.h>
+
+
+
+
+void TFingerprintDestroy(void *p_Fingerprint)
+{
+  TFingerprint *Fingerprint;
+
+	if (! p_Fingerprint) return;
+  Fingerprint=(TFingerprint *) p_Fingerprint;
+  DestroyString(Fingerprint->Hash);
+  DestroyString(Fingerprint->Data);
+  DestroyString(Fingerprint->Path);
+  DestroyString(Fingerprint->HashType);
+
+  free(Fingerprint);
+}
+
+
+
+TFingerprint *TFingerprintCreate(const char *Hash, const char *HashType, const char *Data, const char *Path)
+{
+TFingerprint *Item;
+
+  Item=(TFingerprint *) calloc(1,sizeof(TFingerprint));
+  Item->Hash=CopyStr(Item->Hash, Hash);
+ 	strlwr(Item->Hash);
+  Item->HashType=CopyStr(Item->HashType, HashType);
+  Item->Data=CopyStr(Item->Data, Data);
+  Item->Path=CopyStr(Item->Path, Path);
+
+  return(Item);
+}
+
+
 
 TFingerprint *FingerprintRead(STREAM *S)
 {
@@ -81,16 +117,6 @@ return(FP);
 
 
 
-void FingerprintDestroy(void *p_FP)
-{
-TFingerprint *FP;
-
-FP=(TFingerprint *) p_FP;
-DestroyString(FP->Path);
-DestroyString(FP->Hash);
-DestroyString(FP->HashType);
-free(FP);
-}
 
 
 

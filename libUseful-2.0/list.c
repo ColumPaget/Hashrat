@@ -113,8 +113,6 @@ ListSetNoOfItems(ListStart,0);
 
 void ListDestroy(ListNode *ListStart, LIST_ITEM_DESTROY_FUNC ItemDestroyer)
 {
-  ListNode *Curr,*Next;
-
   if (! ListStart) return; 
   ListClear(ListStart, ItemDestroyer);
   free(ListStart->Item);
@@ -166,7 +164,7 @@ return(Curr);
 
 ListNode *ListAddNamedItem(ListNode *ListStart,const char *Name,void *Item)
 {
-ListNode *Head, *Curr;
+ListNode *Curr;
 
 Curr=ListGetLast(ListStart);
 if (Curr==NULL) return(Curr);
@@ -192,7 +190,7 @@ if (Next) Next->Prev=Prev;
 
 void ListThreadNode(ListNode *Prev, ListNode *Node)
 {
-ListNode *NewItem, *Next;
+ListNode *Next;
 
 //Never thread something to itself!
 if (Prev==Node) return;
@@ -650,9 +648,8 @@ return(Curr);
 
 void *ListDeleteNode(ListNode *Node)
 {
-ListNode *Prev, *Next, *Curr;
+ListNode *Prev, *Next;
 void *Contents;
-int result;
 
 if (Node==NULL)
 {
@@ -689,6 +686,8 @@ ListNode *Node;
 
 Node=ListFindItem(Head, Item);
 if (Node) ListDeleteNode(Node);
+
+return(NULL);
 }
 
 

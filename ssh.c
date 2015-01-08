@@ -1,6 +1,7 @@
 #include "ssh.h"
-
-
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <ctype.h>
 
 #define SSH_LOGON_DONE 1
 #define SSH_ASK_PASSWD 2
@@ -37,7 +38,7 @@ int SSHFinalizeConnection(HashratCtx *Ctx, int Flags, char **Passwd)
 {
 char *Tempstr=NULL, *Line=NULL;
 ListNode *Dialog=NULL;
-int result;
+int result=TRUE;
 
 
 	STREAMSetFlushType(Ctx->NetCon,FLUSH_ALWAYS,0);

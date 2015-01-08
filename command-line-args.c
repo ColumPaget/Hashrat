@@ -1,10 +1,30 @@
 #include "command-line-args.h"
+#include "xattr.h"
 
 #define CMDLINE_ARG_NAMEVALUE 1
 #define CMDLINE_FROM_LISTFILE 2
 #define CMDLINE_XATTR     4
 #define CMDLINE_TXATTR     8
 #define CMDLINE_MEMCACHED 64
+
+
+
+//if first item added to Include/Exclude is an include
+//then the program will exclude by default
+void AddIncludeExclude(int Type, const char *Item)
+{
+ListNode *Node;
+
+if (! IncludeExclude)
+{
+  IncludeExclude=ListCreate();
+  if (Type==FLAG_INCLUDE) Flags |= FLAG_EXCLUDE;
+}
+
+Node=ListAddItem(IncludeExclude, CopyStr(NULL, Item));
+Node->ItemType=Type;
+}
+
 
 //this function is called when a command-line switch has been recognized. It's told which flags to set
 //and whether the switch takes a string argument, which it then reads and stores in the variable list
@@ -76,7 +96,7 @@ DestroyString(Token);
 //this is the main parsing function that goes through the command-line args
 HashratCtx *CommandLineParseArgs(int argc,char *argv[])
 {
-int i;
+int i=0;
 char *ptr, *Tempstr=NULL;
 HashratCtx *Ctx;
 int ParseFlags=0;

@@ -101,11 +101,13 @@ extern char *DiffHook;
 extern char *Key;
 extern char *LocalHost;
 extern char *HashratHashTypes[];
+extern ListNode *IncludeExclude;
+
 
 TFingerprint *TFingerprintCreate(const char *Hash, const char *HashType, const char *Data, const char *Path);
 void HashratCtxDestroy(void *p_Ctx);
 void HashratStoreHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash);
 int HashratOutputInfo(HashratCtx *Ctx, STREAM *S, char *Path, struct stat *Stat, char *Hash);
-int HandleCompareResult(char *Path, char *Status, int Flags, char *ErrorMessage);
+void HandleCompareResult(char *Path, char *Status, int Flags, char *ErrorMessage);
 
 #endif

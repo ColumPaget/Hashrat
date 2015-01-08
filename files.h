@@ -17,9 +17,6 @@
 
 
 
-//if first item added to Include/Exclude is an include
-//then the program will exclude by default
-void AddIncludeExclude(int Type, const char *Item);
 int StatFile(HashratCtx *Ctx, char *Path, struct stat *Stat);
 int HashSingleFile(char **RetStr, HashratCtx *Ctx, int Type,char *Path);
 void ProcessData(char **RetStr, HashratCtx *Ctx, char *Data, int DataLen);

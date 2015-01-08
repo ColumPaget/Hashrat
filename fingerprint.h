@@ -3,7 +3,10 @@
 
 #include "common.h"
 
-void FingerprintDestroy(void *p_FP);
+
+
+void TFingerprintDestroy(void *p_Fingerprint);
+TFingerprint *TFingerprintCreate(const char *Hash, const char *HashType, const char *Data, const char *Path);
 TFingerprint *FingerprintRead(STREAM *S);
 int FingerprintCompare(const void *v1, const void *v2);
 

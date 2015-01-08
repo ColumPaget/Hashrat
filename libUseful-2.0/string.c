@@ -1,4 +1,5 @@
 #include "includes.h"
+#include <ctype.h>
 
 #ifndef va_copy
 #define va_copy(dest, src) (dest) = (src) 

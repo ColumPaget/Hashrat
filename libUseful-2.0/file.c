@@ -3,6 +3,7 @@
 #include "pty.h"
 #include "expect.h"
 #include <sys/mman.h>
+#include <sys/file.h>
 
 #ifdef HAVE_LIBSSL
 #include <openssl/crypto.h>
@@ -12,6 +13,9 @@
 #include <openssl/err.h>
 #endif
 
+
+//A difficult function to fit in order
+int STREAMReadCharsToBuffer(STREAM *S);
 
 
 int FDSelect(int fd, int Flags, struct timeval *tv)
@@ -221,7 +225,7 @@ STREAM *STREAMSelect(ListNode *Streams, struct timeval *tv)
 
 int STREAMCheckForWaitingChar(STREAM *S,unsigned char check_char)
 {
-int read_result=0, result, trash;
+int read_result=0, result;
 char *found_char;
 
 if (! S) return(0);
@@ -247,7 +251,7 @@ return(FALSE);
 int STREAMInternalFinalWriteBytes(STREAM *S, const char *Data, int DataLen)
 {
 fd_set selectset;
-int result, count=0;
+int result=0, count=0;
 struct timeval tv;
 
 if (! S) return(STREAM_CLOSED);
@@ -259,7 +263,6 @@ while (count < DataLen)
 if (S->Flags & SF_SSL)
 {
 #ifdef HAVE_LIBSSL
-
 result=SSL_write((SSL *) STREAMGetItem(S,"LIBUSEFUL-SSL-CTX"), Data + count, DataLen - count);
 #endif
 }
@@ -302,7 +305,7 @@ return(count);
 
 int STREAMFlush(STREAM *S)
 {
-	STREAMWriteBytes(S,NULL,0);
+	return(STREAMWriteBytes(S,NULL,0));
 }
 
 void STREAMClear(STREAM *S)
@@ -501,10 +504,8 @@ return(Stream);
 STREAM *STREAMClose(STREAM *S)
 {
 ListNode *Curr;
-int len;
 
 if (! S) return(NULL);
-len=S->OutEnd; 
 
 STREAMReadThroughProcessors(S, NULL, 0);
 STREAMFlush(S);
@@ -567,14 +568,14 @@ fd_set selectset;
 int result=0, diff, read_result=0, WaitForBytes=TRUE;
 struct timeval tv;
 char *tmpBuff=NULL;
-int v1, v2,v3;
+#ifdef HAVE_LIBSSL
 void *SSL_CTX=NULL;
+#endif
 
 if (! S) return(0);
 
 if (S->State & SS_EMBARGOED) return(0);
 
-SSL_CTX=STREAMGetItem(S,"LIBUSEFUL-SSL-CTX");
 
 if (S->InStart >= S->InEnd)
 {
@@ -591,11 +592,14 @@ if (S->InStart > (S->BuffSize / 2))
   S->InEnd=diff;
 }
 
-v1=S->InStart; v2=S->InEnd; v3=S->BuffSize;
-
 //if no room in buffer, we can't read in more bytes
 if (S->InEnd >= S->BuffSize) return(1);
 
+
+//This is used in multiple places below, do don't just move it to within the first place
+#ifdef HAVE_LIBSSL
+SSL_CTX=STREAMGetItem(S,"LIBUSEFUL-SSL-CTX");
+#endif
 
 //if there are bytes available in the internal OpenSSL buffers, when we don't have to 
 //wait on a select, we can just go straight through to SSL_read
@@ -707,10 +711,8 @@ int bytes;
 
 int STREAMReadBytes(STREAM *S, char *Buffer, int Buffsize)
 {
-char *ptr=NULL;
 int bytes=0, result=0, total=0;
 
-ptr=Buffer;
 
 if (S->InStart >= S->InEnd) 
 {
@@ -1036,10 +1038,10 @@ return(pos);
 }
 
 
-char *STREAMReadToTerminator(char *Buffer, STREAM *S,unsigned char Term)
+char *STREAMReadToTerminator(char *Buffer, STREAM *S, unsigned char Term)
 {
 int result, len=0, bytes_read=0;
-char *RetStr=NULL, *end, *ptr;
+char *RetStr=NULL, *ptr;
 
 
 RetStr=CopyStr(Buffer,"");

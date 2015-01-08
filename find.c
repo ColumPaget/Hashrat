@@ -1,6 +1,7 @@
 #include "find.h"
 #include "files.h"
 #include "memcached.h"
+#include "fingerprint.h"
 #include <search.h>
 
 
@@ -31,7 +32,6 @@ TFingerprint *Item;
 void *MatchesLoad()
 {
 char *Tempstr=NULL, *Token=NULL, *ptr;
-TFingerprint *Item;
 STREAM *S;
 
 

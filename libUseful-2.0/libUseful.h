@@ -41,6 +41,7 @@
 #include "MathExpr.h"
 #include "PatternMatch.h"
 #include "SpawnPrograms.h"
+#include "ParseURL.h"
 #include "sound.h"
 #include "pty.h"
 #include "Log.h"

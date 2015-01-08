@@ -3,31 +3,15 @@
 #include "memcached.h"
 #include "fingerprint.h"
 #include "xattr.h"
-#include <string.h>
+#include "check.h"
 #include "find.h"
+#include <string.h>
+#include <fnmatch.h>
 
 
 dev_t StartingFS=0;
-ListNode *IncludeExclude=NULL;
 
 
-
-
-//if first item added to Include/Exclude is an include
-//then the program will exclude by default
-void AddIncludeExclude(int Type, const char *Item)
-{
-ListNode *Node;
-
-if (! IncludeExclude)
-{
-  IncludeExclude=ListCreate();
-  if (Type==FLAG_INCLUDE) Flags |= FLAG_EXCLUDE;
-}
-
-Node=ListAddItem(IncludeExclude, CopyStr(NULL, Item));
-Node->ItemType=Type;
-}
 
 
 
@@ -123,7 +107,7 @@ int GlobFiles(HashratCtx *Ctx, char *Path, int FType, ListNode *Dirs)
 {
 char *Tempstr=NULL;
 glob_t Glob;
-int i, count=0, val;
+int i, count=0;
 struct stat *Stat;
 
 switch (FType)
@@ -296,7 +280,7 @@ THash *Hash;
 			Hash->Update(Hash ,Data, DataLen);
 			HashratFinishHash(RetStr, Ctx, Hash);
 		} 
-		else Hash->Update(Ctx->Hash ,Data, DataLen);
+		else Ctx->Hash->Update(Ctx->Hash ,Data, DataLen);
 }
 
 
@@ -331,7 +315,7 @@ int ConsiderItem(HashratCtx *Ctx, char *Path, struct stat *FStat)
 
 int HashItem(HashratCtx *Ctx, char *HashType, char *Path, struct stat *FStat, char **HashStr)
 {
-int result=TRUE, Type=FT_FILE, val;
+int Type=FT_FILE, val;
 char *Tempstr=NULL;
 
 	Type=FileType(Path, Flags, FStat);
@@ -399,7 +383,6 @@ void HashratAction(HashratCtx *Ctx, char *Path, struct stat *Stat)
 {
 char *HashStr=NULL;
 TFingerprint *FP;
-int FType;
 
 switch (Ctx->Action)
 {
@@ -436,7 +419,7 @@ case ACT_CHECK_MEMCACHED:
 
 		if (FP) HashratCheckFile(Ctx, Path, NULL, NULL, FP->Hash, HashStr);
 		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
-		FingerprintDestroy(FP);
+		TFingerprintDestroy(FP);
 		}
 		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
 	}
@@ -483,17 +466,14 @@ DestroyString(HashStr);
 int ProcessDir(HashratCtx *Ctx, char *Dir, char *HashType)
 {
 char *Tempstr=NULL, *HashStr=NULL;
-STREAM *S=NULL;
 ListNode *FileList, *Curr;
-int i, Type;
+int Type;
 int result=TRUE;
 
 		Type=FileType(Dir, Flags, NULL);
 
-		S=Ctx->Out;
-
 		FileList=ListCreate();
-		i=GlobFiles(Ctx, Dir, Type, FileList);
+		GlobFiles(Ctx, Dir, Type, FileList);
 
 		Curr=ListGetNext(FileList);
 		while (Curr)

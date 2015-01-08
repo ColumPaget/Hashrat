@@ -1,5 +1,6 @@
 #include "check.h"
 #include "fingerprint.h"
+#include "files.h"
 
 void HandleCheckFail(char *Path, char *ErrorMessage)
 {
@@ -86,15 +87,7 @@ return(result);
 int HashratCheckFile(HashratCtx *Ctx, char *Path, struct stat *ExpectedStat, struct stat *ActualStat, char *ExpectedHash,  char *ActualHash)
 {
 int result=FALSE;
-int enc;
 
-
-    //Set encoding from args
-    if (Ctx->Flags & CTX_BASE8) enc = ENCODE_OCTAL;
-    else if (Ctx->Flags & CTX_BASE10) enc = ENCODE_DECIMAL;
-    else if (Ctx->Flags & CTX_HEXUPPER) enc = ENCODE_HEXUPPER;
-    else if (Ctx->Flags & CTX_BASE64) enc = ENCODE_BASE64;
-    else enc= ENCODE_HEX;
 
 		if (access(Path,F_OK)!=0) fprintf(stderr,"\rERROR: No such file '%s'\n",Path);
 		else
@@ -138,7 +131,7 @@ while (FP)
 	else ExpectedStat=NULL;
 
   if (! HashratCheckFile(Ctx, FP->Path, ExpectedStat, &Stat, FP->Hash, HashStr)) Errors++;
-  FingerprintDestroy(FP);
+  TFingerprintDestroy(FP);
   FP=FingerprintRead(ListStream);
   Checked++;
 }
