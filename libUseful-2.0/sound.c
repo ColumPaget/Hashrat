@@ -50,6 +50,7 @@ int SoundReformat(char **Out, char *In, int Len, TAudioInfo *AI)
 {
 int len, i;
 
+len=Len;
 //Expand mono to both channels
 if (AI->Channels==1)
 {
@@ -216,8 +217,7 @@ return(AudioInfo);
 /*  ------------------------ OSS Functions  -------------------- */
 int OpenOSSDevice(char *Dev, int Type, TAudioInfo *Info)
 {
-	int fd, i;
-	unsigned char *data;
+	int fd;
 	int val;
 
 	if (Type==OUTPUT) val=O_WRONLY;
@@ -284,7 +284,7 @@ return(OpenOSSDevice(Dev,OUTPUT,Info));
 
 int OSSAlterVolumeType(char *device, int Type, int delta)
 {
-int left_val, right_val, val, mixfd=0;
+int left_val=-1, right_val=-1, val, mixfd=0;
 
 mixfd=open(device, O_RDWR);
 if (mixfd > -1)
@@ -382,23 +382,25 @@ return(left_val);
 
 int OSSAlterVolume(char *device, char *type_str, int delta)
 {
-int type;
+int type, result=-1;
+
 type=MatchTokenFromList(type_str,VolTypeStrings,0);
 if ((type==VOL_ALL) || (type==-1))
 {
-OSSAlterVolumeType(device, VOL_MASTER, delta);
-OSSAlterVolumeType(device, VOL_PCM, delta);
+result=OSSAlterVolumeType(device, VOL_MASTER, delta);
+result=OSSAlterVolumeType(device, VOL_PCM, delta);
 }
-else OSSAlterVolumeType(device, type, delta);
+else result=OSSAlterVolumeType(device, type, delta);
+
+return(result);
 }
 
 
 int OSSPlaySoundFile(char *DevPath, char *FilePath, int Vol)
 {
-STREAM *S;
 char *Buffer=NULL, *Tempstr=NULL;
 int result, fd=-1, mixfd=-1;
-int Flags, val, oldvol;
+int val, oldvol;
 TAudioInfo *AudioInfo=NULL;
 
 AudioInfo=SoundOpenFile(FilePath);
@@ -505,10 +507,9 @@ DestroyString(Tempstr);
 
 int ESDPlaySoundFile(char *SoundFilePath, int Vol)
 {
-int result, fd;
-
 if (StrLen(SoundFilePath) < 1) return(FALSE);
 #ifdef HAVE_LIBESD
+int fd;
 
 fd=ESDGetConnection();
 if (fd > -1)
@@ -655,6 +656,3 @@ DestroyString(device);
 return(val);
 
 }
-
-
-

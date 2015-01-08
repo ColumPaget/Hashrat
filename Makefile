@@ -1,7 +1,7 @@
 
 CC = gcc
 VERSION = 
-CFLAGS = -g -O2
+CFLAGS = -g -O2 -Wall
 LIBS = 
 INSTALL=/bin/install -c
 prefix=/usr/local

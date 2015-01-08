@@ -26,6 +26,6 @@ int ProcessDir(HashratCtx *Ctx, char *Dir, char *HashType);
 
 void HashratFinishHash(char **RetStr, HashratCtx *Ctx, THash *Hash);
 int HashratHashFile(HashratCtx *Ctx, THash *Hash, int Type, char *Path, off_t FileSize);
-
+int HashratHashSingleFile(HashratCtx *Ctx, char *HashType, int FileType, char *Path, struct stat *FStat, char **RetStr);
 
 #endif

@@ -155,9 +155,6 @@ return(ptr);
 
 char *HtmlGetTag(char *Input, char **TagType, char **TagData)
 {
-char *ptr;
-int len=0;
-
 if (! Input) return(NULL);
 if (*Input=='\0') return(NULL);
 

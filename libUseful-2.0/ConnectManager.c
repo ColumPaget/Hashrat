@@ -117,7 +117,6 @@ STREAM *ConnectManagerGetStreamByName(char *Name)
 {
 TConnectManagerItem *Item;
 ListNode *Curr;
-int count=0;
 
 	Curr=ListGetNext(ConnectManClients);
 	while (Curr)
@@ -142,7 +141,7 @@ TConnectManagerItem *Item, *NewItem;
 ListNode *Curr, *Prev;
 int highfd=0;
 fd_set ReadSet, WriteSet;
-int ipaddr, sock, result, SelectResult, NextTimerFire;
+int sock, result, SelectResult, NextTimerFire;
 STREAM *S;
 time_t Now;
 struct timeval tv;

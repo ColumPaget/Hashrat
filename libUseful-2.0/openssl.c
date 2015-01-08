@@ -118,9 +118,9 @@ DestroyString(VerifyPath);
 
 void HandleSSLError()
 {
+#ifdef HAVE_LIBSSL
 int val;
 
-#ifdef HAVE_LIBSSL
 	  val=ERR_get_error();
 	  fprintf(stderr,"Failed to create SSL_CTX: %s\n",ERR_error_string(val,NULL));
 	  fflush(NULL);
@@ -130,10 +130,9 @@ int val;
 
 int INTERNAL_SSL_INIT()
 {
-static int InitDone=FALSE;
-char *Tempstr=NULL;
-
 #ifdef HAVE_LIBSSL
+char *Tempstr=NULL;
+static int InitDone=FALSE;
 
 //Always reseed RAND on a new connection
 //OpenSSLReseedRandom();
@@ -163,7 +162,6 @@ int SSLAvailable()
 
 const char *OpenSSLQueryCipher(STREAM *S)
 {
-char *Tempstr=NULL;
 void *ptr;
 
 if (! S) return(NULL);
@@ -172,6 +170,7 @@ if (! ptr) return(NULL);
 
 #ifdef HAVE_LIBSSL
 const SSL_CIPHER *Cipher;
+char *Tempstr=NULL;
 
 Cipher=SSL_get_current_cipher((const SSL *) ptr);
 
@@ -206,10 +205,10 @@ return(1);
 
 int OpenSSLVerifyCertificate(STREAM *S)
 {
-int val, RetVal=FALSE;
-char *Name=NULL, *Value=NULL, *ptr;
-
+int RetVal=FALSE;
 #ifdef HAVE_LIBSSL
+char *Name=NULL, *Value=NULL, *ptr;
+int val;
 X509 *cert=NULL;
 SSL *ssl;
 
@@ -276,10 +275,12 @@ else
 	STREAMSetValue(S,"SSL-Certificate-Verify","no certificate");
 }
 
-#endif
 
 DestroyString(Name);
 DestroyString(Value);
+
+#endif
+
 return(RetVal);
 }
 
@@ -288,11 +289,12 @@ return(RetVal);
 
 int DoSSLClientNegotiation(STREAM *S, int Flags)
 {
-int result=FALSE, val;
+int result=FALSE;
 #ifdef HAVE_LIBSSL
 const SSL_METHOD *Method;
 SSL_CTX *ctx;
 SSL *ssl;
+int val;
 //struct x509 *cert=NULL;
 char *ptr;
 
@@ -448,9 +450,9 @@ return(result);
 
 int STREAMIsPeerAuth(STREAM *S)
 {
+#ifdef HAVE_LIBSSL
 void *ptr;
 
-#ifdef HAVE_LIBSSL
 ptr=STREAMGetItem(S,"LIBUSEFUL-SSL-CTX");
 if (! ptr) return(FALSE);
 

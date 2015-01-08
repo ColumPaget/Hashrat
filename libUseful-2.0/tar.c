@@ -2,7 +2,7 @@
 #include <glob.h>
 #include <pwd.h>
 #include <grp.h>
-
+#include "FileSystem.h"
 
 #define TAR_RECORDSIZE 512
 
@@ -39,7 +39,7 @@ typedef struct
 
 int TarReadHeader(STREAM *S, ListNode *Vars)
 {
-char *Tempstr=NULL, *ptr;
+char *Tempstr=NULL;
 int len, result, RetVal=FALSE;
 TTarHeader *Head;
 
@@ -160,8 +160,8 @@ Head=(TTarHeader *) calloc(1,sizeof(TTarHeader));
 	sprintf(Head->mode,"%07o",FStat->st_mode);
 	sprintf(Head->uid,"%07o",FStat->st_uid);
 	sprintf(Head->gid,"%07o",FStat->st_gid);
-	sprintf(Head->size,"%011o",FStat->st_size);
-	sprintf(Head->mtime,"%011o",FStat->st_mtime);
+	sprintf(Head->size,"%011lo",(unsigned long) FStat->st_size);
+	sprintf(Head->mtime,"%011lo",(unsigned long) FStat->st_mtime);
 
 	if (S_ISDIR(FStat->st_mode)) Head->typeflag='5';
 	else if (S_ISLNK(FStat->st_mode)) Head->typeflag='2';
@@ -172,8 +172,8 @@ Head=(TTarHeader *) calloc(1,sizeof(TTarHeader));
 
 	memset(Head->chksum,' ',8);
 
-	strcpy(Head->magic,"ustar ");
-	memcpy(Head->version," \0",2);
+	memcpy(Head->magic,"ustar\0",6);
+	memcpy(Head->version,"00",2);
 
 	pwd=getpwuid(FStat->st_uid);
 	if (pwd) strcpy(Head->uname,pwd->pw_name);
@@ -189,7 +189,7 @@ Head=(TTarHeader *) calloc(1,sizeof(TTarHeader));
 
 	ptr=(char *) Head;
 	for (i=0; i < 512; i++) chksum+=*(ptr+i);
-	sprintf(Head->chksum,"%06o\0",chksum);
+	snprintf(Head->chksum,8,"%06o",chksum);
 
 
 STREAMWriteBytes(S,(char *) Head,512);

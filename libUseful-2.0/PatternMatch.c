@@ -156,7 +156,7 @@ return(MATCH_ONE);
 
 int pmatch_charlist(char **P_PtrPtr,char S_Char, int Flags)
 {
-char P_Char, Prev_Char;
+char P_Char, Prev_Char=0;
 int result=MATCH_CONT;
 int mode=0;
 
@@ -448,7 +448,7 @@ int pmatch_process(char **Compiled, char *String, int len, ListNode *Matches, in
 //p_ptr points to the pattern from 'Compiled' that's currently being
 //tested. s_ptr holds our progress through the string
 char **p_ptr;
-char *s_ptr, *s_end, *tp_ptr, *ts_ptr;
+char *s_ptr, *s_end;
 char *Start=NULL, *End=NULL;
 int result, Flags;
 TPMatch *Match;
@@ -512,14 +512,13 @@ while (ptr && (*ptr != '\0'))
 
 int pmatch(char *Pattern, char *String, int Len, ListNode *Matches, int Flags)
 {
-char *ptr, *end, **Compiled=NULL;
+char *ptr, **Compiled=NULL;
 int result, len;
 
 	pmatch_compile(Pattern,&Compiled);
 
 	ptr=String;	
 	len=Len;
-	end=String+len;
 
 	result=pmatch_process(Compiled, ptr, len, Matches, Flags);
 

@@ -40,7 +40,7 @@ void R8(hashState *state)
       /*MDS Layer*/
       for (i = 0; i < 256; i=i+2) L(tem[i], tem[i+1]);
 
-      /*The following is the permuation layer P_8$
+      /*The following is the permuation layer P_8*/
 
       /*initial swap Pi_8*/
       for ( i = 0; i < 256; i=i+4) {
@@ -160,8 +160,8 @@ void E8_finaldegroup(hashState *state) {
 void E8(hashState *state)
 {
       unsigned int i;
-      unsigned char t0,t1,t2,t3;
-      unsigned char tem[256];
+      //unsigned char t0,t1,t2,t3;
+      //unsigned char tem[256];
 
       /*initialize the round constant*/
       for (i = 0; i < 64; i++) state->roundconstant[i] = roundconstant_zero[i];
@@ -317,4 +317,5 @@ unsigned int JHFinal(hashState *state, unsigned char *hashval)
 
       return(len);
 }
+
 

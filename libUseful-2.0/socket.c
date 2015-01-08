@@ -487,7 +487,7 @@ return(FALSE);
 
 int  ProcessIncommingBytes(DownloadContext *CTX)
 {
-int inchar, FoundTerm=FALSE, err;
+int inchar, FoundTerm=FALSE;
 
  inchar=STREAMReadChar(CTX->Input);
 
@@ -498,7 +498,6 @@ int inchar, FoundTerm=FALSE, err;
  {
      if (CTX->TermPos==0) STREAMWriteChar(CTX->Output, (char) inchar);
      inchar=STREAMReadChar(CTX->Input);
-     err=errno;
      FoundTerm=CheckForTerm(CTX, (char) inchar);
  }
 if (inchar==EOF) return(TRUE);
@@ -673,7 +672,7 @@ return(result);
 int STREAMConnectToHost(STREAM *S, const char *DesiredHost, int DesiredPort,int Flags)
 {
 ListNode *Curr;
-char *Token=NULL, *ptr;
+char *Token=NULL;
 int result=FALSE;
 int HopNo=0, val=0;
 ListNode *LastHop=NULL;
@@ -683,7 +682,7 @@ S->Path=FormatStr(S->Path,"tcp:%s:%d",DesiredHost,DesiredPort);
 Curr=ListGetNext(S->Values);
 while (Curr)
 {
-ptr=GetToken(Curr->Tag,":",&Token,0);
+GetToken(Curr->Tag,":",&Token,0);
 if (strcasecmp(Token,"ConnectHop")==0) LastHop=Curr;
 Curr=ListGetNext(Curr);
 }
@@ -692,7 +691,7 @@ STREAMSetFlushType(S,FLUSH_LINE,0);
 Curr=ListGetNext(S->Values);
 while (Curr)
 {
-ptr=GetToken(Curr->Tag,":",&Token,0);
+GetToken(Curr->Tag,":",&Token,0);
 
 if (strcasecmp(Token,"ConnectHop")==0) result=STREAMProcessConnectHop(S, (char *) Curr->Item,Curr==LastHop);
 

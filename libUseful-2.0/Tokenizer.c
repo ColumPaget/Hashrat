@@ -156,7 +156,6 @@ return(FALSE);
 
 char *GetToken(const char *SearchStr, const char *Separator, char **Token, int Flags)
 {
-char *Tempstr=NULL;
 const char *SepStart=NULL, *SepEnd=NULL;
 const char *sptr, *eptr;
 

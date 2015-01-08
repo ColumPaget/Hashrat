@@ -14,7 +14,7 @@ void xmemset(char *Str, char fill, off_t size);
 int WritePidFile(char *ProgName);
 int HexStrToBytes(char **Buffer, char *HexStr);
 char *BytesToHexStr(char *Buffer, char *Bytes, int len);
-char *EncodeBytes(char *Buffer, unsigned const char *Bytes, int len, int Encoding);
+char *EncodeBytes(char *Buffer, const char *Bytes, int len, int Encoding);
 
 
 int SwitchUser(char *User);

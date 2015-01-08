@@ -26,6 +26,38 @@ Node->ItemType=Type;
 }
 
 
+
+void HMACSetup(HashratCtx *Ctx)
+{
+char *Tempstr=NULL, *ptr;
+STREAM *S;
+
+  ptr=GetVar(Ctx->Vars,"EncryptionKey");
+  if (StrLen(ptr)==0)
+  {
+    if (isatty(0))
+    {
+      write(1, "Enter HMAC Key: ",16);
+
+      S=STREAMFromFD(0);
+      Tempstr=STREAMReadLine(Tempstr,S);
+      StripTrailingWhitespace(Tempstr);
+      SetVar(Ctx->Vars,"EncryptionKey",Tempstr);
+      ptr=Tempstr;
+      STREAMDisassociateFromFD(S);
+    }
+
+    //By now we must have an encryption key!
+    if (! StrLen(ptr))
+    {
+      write(1,"ERROR: No HMAC Key given!\n",27);
+      exit(2);
+    }
+  }
+DestroyString(Tempstr);
+}
+
+
 //this function is called when a command-line switch has been recognized. It's told which flags to set
 //and whether the switch takes a string argument, which it then reads and stores in the variable list
 //with the name supplied in 'VarName'. It blanks out anything it reads, so that only unrecognized 
@@ -268,7 +300,7 @@ else if (strcmp(argv[i],"-n")==0) ParseFlags |= CommandLineHandleArg(argc, argv,
 else if (strcmp(argv[i],"-hmac")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_HMAC, "EncryptionKey", "",Ctx->Vars);
 else if (strcmp(argv[i],"-idfile")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, 0,  "SshIdFile", "",Ctx->Vars);
 else if (strcmp(argv[i],"-r")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RECURSE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-f")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, CMDLINE_FROM_LISTFILE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-f")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_FROM_LISTFILE, 0, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-i")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_INCLUDE , "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-x")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_EXCLUDE , "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-dirmode")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_DIRMODE | FLAG_RECURSE, "", "",Ctx->Vars);
@@ -306,6 +338,7 @@ else if (strcmp(argv[i],"-attrs")==0)
 
 
 //if we're reading from a list file, then...
+printf("FLF: %d\n",ParseFlags & CMDLINE_FROM_LISTFILE);
 if ((ParseFlags & CMDLINE_FROM_LISTFILE))
 {
 	//... set appropriate action type
@@ -318,6 +351,7 @@ if ((ParseFlags & CMDLINE_FROM_LISTFILE))
 		if (StrLen(argv[i]))
 		{
 			Ctx->ListPath=CopyStr(Ctx->ListPath, argv[i]);
+	printf("LP: %s\n",Ctx->ListPath);
 			strcpy(argv[i],"");
 			break;
 		}
@@ -331,7 +365,7 @@ if ((ParseFlags & CMDLINE_FROM_LISTFILE))
 if (Flags & FLAG_HMAC)
 {
   Ctx->HashType=MCopyStr(Ctx->HashType,"hmac-",GetVar(Ctx->Vars,"HashType"),NULL);
-  HMACSetup();
+  HMACSetup(Ctx);
 }
 else Ctx->HashType=CopyStr(Ctx->HashType,GetVar(Ctx->Vars,"HashType"));
 

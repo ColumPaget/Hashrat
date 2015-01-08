@@ -1,6 +1,8 @@
 #include "DataProcessing.h"
 #include "SpawnPrograms.h"
 #include "FileSystem.h"
+#include "Hash.h"
+#include "file.h"
 
 #ifdef HAVE_LIBSSL
 
@@ -44,7 +46,6 @@ free(Mod);
 
 char *DataProcessorGetValue(TProcessingModule *M, const char *Name)
 {
-char *ptr;
 ListNode *Curr;
 
 if (! M->Values) return(NULL);
@@ -56,7 +57,6 @@ return(NULL);
 
 void DataProcessorSetValue(TProcessingModule *M, const char *Name, const char *Value)
 {
-char *ptr;
 ListNode *Curr;
 
 if (! M->Values) M->Values=ListCreate();
@@ -475,7 +475,7 @@ int libCryptoProcessorWrite(TProcessingModule *ProcMod, const char *InData, int 
 int wrote=0;
 
 #ifdef HAVE_LIBSSL
-int len, result, val;
+int len, result=0, val;
 libCryptoProcessorData *Data;
 EVP_CIPHER_CTX *ctx;
 char *ptr, *Tempstr=NULL;
@@ -718,8 +718,9 @@ return(result);
 
 int zlibProcessorWrite(TProcessingModule *ProcMod, const char *InData, int InLen, char **OutData, int *OutLen, int Flush)
 {
-int wrote=0, val=0;
+int wrote=0;
 #ifdef HAVE_LIBZ
+int val=0;
 zlibData *ZData;
 
 if (ProcMod->Flags & DPM_WRITE_FINAL) return(EOF);
@@ -761,8 +762,9 @@ return(wrote);
 
 int zlibProcessorRead(TProcessingModule *ProcMod, const char *InData, int InLen, char **OutData, int *OutLen, int Flush)
 {
-int wrote=0, result=0;
+int wrote=0;
 #ifdef HAVE_LIBZ
+int result=0;
 zlibData *ZData;
 
 if (ProcMod->Flags & DPM_READ_FINAL) return(EOF);
@@ -865,27 +867,23 @@ return(TRUE);
 
 TProcessingModule *StandardDataProcessorCreate(const char *Class, const char *Name, const char *iArgs)
 {
-TProcessingModule *Mod=NULL;
 char *Args=NULL;
-
+TProcessingModule *Mod=NULL;
 
 Args=CopyStr(Args,iArgs);
-
 #ifdef HAVE_LIBSSL
-#ifdef HAVE_LIBCRYPTO
-if (strcasecmp(Class,"crypto")==0)
-{
-   Mod=(TProcessingModule *) calloc(1,sizeof(TProcessingModule));
-   Mod->Args=CopyStr(Mod->Args,Args);
-   Mod->Name=CopyStr(Mod->Name,Name);
-   Mod->Init=libCryptoProcessorInit;
-   Mod->Write=libCryptoProcessorWrite;
-   Mod->Read=libCryptoProcessorRead;
-   Mod->Close=libCryptoProcessorClose;
-
-
-}
-#endif
+	#ifdef HAVE_LIBCRYPTO
+	if (strcasecmp(Class,"crypto")==0)
+	{
+ 	  Mod=(TProcessingModule *) calloc(1,sizeof(TProcessingModule));
+ 	  Mod->Args=CopyStr(Mod->Args,Args);
+	  Mod->Name=CopyStr(Mod->Name,Name);
+	  Mod->Init=libCryptoProcessorInit;
+ 	  Mod->Write=libCryptoProcessorWrite;
+	  Mod->Read=libCryptoProcessorRead;
+	  Mod->Close=libCryptoProcessorClose;
+	}
+	#endif
 #endif
 
 
@@ -1018,7 +1016,6 @@ int STREAMDeleteDataProcessor(STREAM *S, char *Class, char *Name)
 {
 ListNode *Curr;
 char *Tempstr=NULL;
-int len;
 
 STREAMFlush(S);
 
@@ -1062,8 +1059,6 @@ return(FALSE);
 
 void STREAMClearDataProcessors(STREAM *S)
 {
-TProcessingModule *Mod;
-
 STREAMFlush(S);
 STREAMResetInputBuffers(S);
 ListDestroy(S->ProcessingModules, DataProcessorDestroy);

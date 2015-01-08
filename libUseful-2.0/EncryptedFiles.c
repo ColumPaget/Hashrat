@@ -43,18 +43,22 @@ int AddEncryptionHeader(STREAM *S, int Flags, const char *Cipher, const char *Ke
 {
 char *EncryptArgs=NULL;
 char *Tempstr=NULL;
+int result=FALSE;
 
-
-
-EncryptArgs=FormatEncryptArgs(EncryptArgs,Flags, Cipher, "", InitVector,Salt);
-Tempstr=FormatStr(Tempstr,"ENCR %s\n",EncryptArgs);
-STREAMWriteLine(Tempstr,S);
 
 EncryptArgs=FormatEncryptArgs(EncryptArgs,Flags, Cipher, Key, InitVector,Salt);
-if (! STREAMAddStandardDataProcessor(S,"Crypto",Cipher,EncryptArgs)) printf("Failed to initialise encryption!\n");
+if (STREAMAddStandardDataProcessor(S,"Crypto",Cipher,EncryptArgs))
+{
+	EncryptArgs=FormatEncryptArgs(EncryptArgs,Flags, Cipher, "", InitVector,Salt);
+	Tempstr=FormatStr(Tempstr,"ENCR %s\n",EncryptArgs);
+	STREAMWriteLine(Tempstr,S);
+	result=TRUE;
+}
 
 DestroyString(Tempstr);
 DestroyString(EncryptArgs);
+
+return(result);
 }
 
 

@@ -33,7 +33,7 @@ free(ExpectDialog);
 
 int STREAMExpectDialog(STREAM *S, ListNode *ExpectDialogs)
 {
-int len=0, inchar;
+int inchar;
 ListNode *Curr;
 TExpectDialog *ExpectDialog;
 

@@ -1,6 +1,7 @@
 #include "ConnectionChain.h"
 #include "ParseURL.h"
 #include "SpawnPrograms.h"
+#include "expect.h"
 
 char *HopTypes[]={"none","direct","http_proxy","ssh","sshtunnel","shell","telnet",NULL};
 typedef enum {CONNECT_HOP_NONE, CONNECT_HOP_TCP, CONNECT_HOP_HTTP_PROXY, CONNECT_HOP_SSH, CONNECT_HOP_SSHTUNNEL, CONNECT_HOP_SHELL_CMD, CONNECT_HOP_TELNET} THopTypes;
@@ -38,7 +39,7 @@ return(result);
 
 int SendPublicKeyToRemote(STREAM *S, char *KeyFile, char *LocalPath)
 {
-char *Tempstr=NULL, *RetStr=NULL, *Line=NULL;
+char *Tempstr=NULL, *Line=NULL;
 STREAM *LocalFile;
 
 
@@ -65,7 +66,7 @@ return(TRUE);
 
 int ConnectHopSSH(STREAM *S,int Type, char *Host, int Port, char *User, char *Pass, char *NextHop)
 {
-char *Tempstr=NULL, *KeyFile=NULL, *Token=NULL, *Token2=NULL, *ptr;
+char *Tempstr=NULL, *KeyFile=NULL, *Token=NULL, *Token2=NULL;
 STREAM *AuthS;
 int result=FALSE, val;
 unsigned int TunnelPort=0;
@@ -157,7 +158,7 @@ return(result);
 int STREAMProcessConnectHop(STREAM *S, char *HopURL, int LastHop)
 {
 int val, result=FALSE;
-char *Token=NULL, *Token2=NULL, *ptr;
+char *Token=NULL, *Token2=NULL;
 char *Tempstr=NULL;
 char *User=NULL, *Host=NULL,*Pass=NULL, *KeyFile=NULL;
 int Port=0;
@@ -225,8 +226,7 @@ switch (val)
 			Tempstr=MCopyStr(Tempstr,Pass,"\n",NULL);
 			STREAMExpectAndReply(S,"assword:",Tempstr);
 		}
-		STREAMSetTimeout(S,2);
-		STREAMExpectSilence(S);
+		STREAMExpectSilence(S,2);
 		break;
 
 
@@ -239,7 +239,6 @@ DestroyString(Host);
 DestroyString(User);
 DestroyString(Pass);
 
-STREAMSetTimeout(S,30);
 STREAMFlush(S);
 return(result);
 }
@@ -272,8 +271,6 @@ return(result);
 int STREAMAddConnectionHop(STREAM *S, char *Value)
 {
 char *Tempstr=NULL;
-char *ConnectType=NULL;
-int i;
 
 StripTrailingWhitespace(Value);
 StripLeadingWhitespace(Value);

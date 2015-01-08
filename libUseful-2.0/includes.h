@@ -17,6 +17,7 @@
 #include <syslog.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include "defines.h"
 #include "string.h"

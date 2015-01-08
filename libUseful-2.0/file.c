@@ -1010,7 +1010,7 @@ int STREAMWriteChar(STREAM *S,unsigned char inchar)
 {
 char tmpchar;
 
-tmpchar=inchar;
+tmpchar=(char) inchar;
 return(STREAMWriteBytes(S,&tmpchar,1));
 }
 

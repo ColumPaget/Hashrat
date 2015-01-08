@@ -47,8 +47,6 @@ return(RetStr);
 
 char *GetExternalIP(char *RetStr)
 {
-STREAM *S;
-
 RetStr=CopyStr(RetStr,"");
 if (! StrLen(RetStr)) RetStr=ExtractFromWebpage(RetStr,"http://checkip.dyndns.org", "Current IP Address: $(extract_item)</body>",4);
 if (! StrLen(RetStr)) RetStr=ExtractFromWebpage(RetStr,"http://ip.appspot.com/", "",4);
@@ -63,6 +61,7 @@ int IPGeoLocate(char *IP, ListNode *Vars)
 STREAM *S=NULL;
 char *ptr, *TagType=NULL, *TagData=NULL, *Tempstr=NULL, *Token=NULL;
 char *DesiredTags[]={"CountryCode","CountryName","City","RegionName","Latitude","Longitude","TimeZone",NULL};
+int result=FALSE;
 
 if (! IsIPAddress(IP)) Token=CopyStr(Token,LookupHostIP(IP));
 else Token=CopyStr(Token,IP);
@@ -83,6 +82,7 @@ if (S)
 			//we can't re-use 'TagType', we still need it
 			ptr=XMLGetTag(ptr,NULL,&Token,&TagData);
 			SetVar(Vars,TagType,TagData);
+			result=TRUE;
 		}
 		ptr=XMLGetTag(ptr,NULL,&TagType,&TagData);
 		}
@@ -96,5 +96,7 @@ DestroyString(Tempstr);
 DestroyString(Token);
 DestroyString(TagType);
 DestroyString(TagData);
+
+return(result);
 }
 

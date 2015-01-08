@@ -17,17 +17,15 @@ ListNode *TTYAttribs=NULL;
 
 void HangUpLine(int tty)
 {
-int result;
 struct termios tty_data, oldtty_data;
 
 
-result=tcgetattr(tty,&oldtty_data);
-result=tcgetattr(tty,&tty_data);
-result=cfsetispeed(&tty_data,B0);
-result=cfsetospeed(&tty_data,B0);
+tcgetattr(tty,&oldtty_data);
+tcgetattr(tty,&tty_data);
+cfsetispeed(&tty_data,B0);
+cfsetospeed(&tty_data,B0);
 
-result=tcsetattr(tty,TCSANOW,&tty_data);
-
+tcsetattr(tty,TCSANOW,&tty_data);
 sleep(5);
 tcsetattr(tty,TCSANOW,&oldtty_data);
 }
@@ -54,7 +52,7 @@ DestroyString(Tempstr);
 void InitTTY(int tty, int LineSpeed, int Flags)
 {
 struct termios tty_data, *old_tty_data;
-int result, val;
+int val;
 char *Tempstr=NULL;
 ListNode *Curr;
 
@@ -172,7 +170,7 @@ cfsetospeed(&tty_data,val);
 }
 
 tcflush(tty,TCIFLUSH);
-result=tcsetattr(tty,TCSANOW,&tty_data);
+tcsetattr(tty,TCSANOW,&tty_data);
 
 DestroyString(Tempstr);
 }

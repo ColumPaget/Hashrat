@@ -1,4 +1,5 @@
 #include "xattr.h"
+#include "fingerprint.h"
 
 #ifdef USE_XATTR
  #include <sys/types.h>

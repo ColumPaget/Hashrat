@@ -2,9 +2,12 @@
 #include "ssh.h"
 #include "fingerprint.h"
 #include "find.h"
+#include "files.h"
 #include "memcached.h"
 #include "check.h"
 #include "command-line-args.h"
+#include "filesigning.h"
+#include "cgi.h"
 
 
 void HashFromListFile(HashratCtx *Ctx)
@@ -19,10 +22,13 @@ Tempstr=STREAMReadLine(Tempstr, S);
 while (Tempstr)
 {
 	StripTrailingWhitespace(Tempstr);
-	if (StatFile(Ctx,Tempstr,&Stat)==0) HashItem(NULL, Ctx->HashType, Tempstr, &Stat, NULL, &HashStr);
-
-	HashratOutputInfo(Ctx, Ctx->Out, Tempstr, &Stat, HashStr);
-	HashratStoreHash(Ctx, Tempstr, &Stat, HashStr);
+	if (StatFile(Ctx,Tempstr,&Stat)==0) 
+	{
+		HashItem(Ctx, Ctx->HashType, Tempstr, &Stat, &HashStr);
+		HashratOutputInfo(Ctx, Ctx->Out, Tempstr, &Stat, HashStr);
+		HashratStoreHash(Ctx, Tempstr, &Stat, HashStr);
+	}
+	else fprintf(stderr,"ERROR: Failed to open file %s\n",Tempstr);
 	Tempstr=STREAMReadLine(Tempstr, S);
 }
 
@@ -32,36 +38,6 @@ DestroyString(Tempstr);
 DestroyString(HashStr);
 }
 
-
-void HMACSetup(HashratCtx *Ctx)
-{
-char *Tempstr=NULL, *ptr;
-STREAM *S;
-
-	ptr=GetVar(Ctx->Vars,"EncryptionKey");
-	if (StrLen(ptr)==0) 
-	{
-		if (isatty(0)) 
-		{
-			write(1, "Enter HMAC Key: ",16);
-
-			S=STREAMFromFD(0);
-			Tempstr=STREAMReadLine(Tempstr,S);
-			StripTrailingWhitespace(Tempstr);
-			SetVar(Ctx->Vars,"EncryptionKey",Tempstr);
-			ptr=Tempstr;
-			STREAMDisassociateFromFD(S);			
-		}
-
-		//By now we must have an encryption key!
-		if (! StrLen(ptr))
-		{
-			write(1,"ERROR: No HMAC Key given!\n",27);
-			exit(2);
-		}
-	}
-DestroyString(Tempstr);
-}
 
 
 
@@ -123,7 +99,7 @@ return(count);
 
 main(int argc, char *argv[])
 {
-char *Tempstr=NULL, *HashStr=NULL, *ptr;
+char *Tempstr=NULL, *ptr;
 int i, result=FALSE, count=0;
 struct stat Stat;
 HashratCtx *Ctx;	

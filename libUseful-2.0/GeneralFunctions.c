@@ -1,8 +1,10 @@
 #include "includes.h"
 #include "base64.h"
 #include "Hash.h"
+#include "Time.h"
 #include <sys/utsname.h>
-
+#include <sys/file.h>
+#include "base64.h"
 
 //xmemset uses a 'volatile' pointer so that it won't be optimized out
 void xmemset(char *Str, char fill, off_t size)
@@ -16,7 +18,7 @@ for (p=Str; p < (Str+size); p++) *p=fill;
 int WritePidFile(char *ProgName)
 {
 char *Tempstr=NULL;
-int result=FALSE, fd;
+int fd;
 
 
 if (*ProgName=='/') Tempstr=CopyStr(Tempstr,ProgName);
@@ -31,7 +33,6 @@ if (fd > -1)
     close(fd);
     exit(1);
   }
-  result=TRUE;
   Tempstr=FormatStr(Tempstr,"%d\n",getpid());
   write(fd,Tempstr,StrLen(Tempstr));
 }
@@ -92,7 +93,7 @@ return(len / 2);
 
 
 
-char *EncodeBytes(char *Buffer, unsigned const char *Bytes, int len, int Encoding)
+char *EncodeBytes(char *Buffer, const char *Bytes, int len, int Encoding)
 {
 char *Tempstr=NULL, *RetStr=NULL;
 int i;
@@ -102,7 +103,7 @@ switch (Encoding)
 {
 	case ENCODE_BASE64: 
 	RetStr=SetStrLen(RetStr,len * 4);
-	to64frombits(RetStr,Bytes,len); break;
+	to64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len); break;
 	break;
 
 	case ENCODE_OCTAL:
@@ -311,14 +312,14 @@ if (Type)
 KAY=KILOBYTE;
 MEG=MEGABYTE;
 GIG=GIGABYTE;
-//TERA=TERABYTE;
+TERA=TERABYTE;
 }
 else
 {
 KAY=KIBIBYTE;
 MEG=MEGIBYTE;
 GIG=GIGIBYTE;
-//TERA=TERIBYTE;
+TERA=TERIBYTE;
 }
 
 	val=strtod(Data,&ptr);
@@ -326,7 +327,7 @@ GIG=GIGIBYTE;
 	if (*ptr=='k') val=val * KAY;
 	if (*ptr=='M') val=val * MEG;
 	if (*ptr=='G') val=val * GIG;
-//	if (*ptr=='T') val=val * TERA;
+	if (*ptr=='T') val=val * TERA;
 
 
 return(val);

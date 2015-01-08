@@ -44,7 +44,7 @@ return(result);
 
 void HMACPrepare(THash *HMAC, char *Data, int Len)
 {
-int i, len;
+int i;
 char *Key=NULL, *Tempstr=NULL;
 
 //Whatever we've been given as a key, we have to turn it into a
@@ -53,7 +53,7 @@ char *Key=NULL, *Tempstr=NULL;
 Key=SetStrLen(Key,HMAC_BLOCKSIZE);
 memset(Key,0,HMAC_BLOCKSIZE);
 
-if (len > HMAC_BLOCKSIZE) 
+if (Len > HMAC_BLOCKSIZE) 
 {
 	HMAC->Key1Len=HashBytes(&Tempstr,HMAC->Type,HMAC->Key1,HMAC->Key1Len,0);
 	memcpy(Key,Tempstr,HMAC->Key1Len);
@@ -111,7 +111,7 @@ HMAC->Key1Len=Len;
 
 void HashUpdateCRC(THash *Hash, char *Data, int Len)
 {
-crc32Update((unsigned long *) &Hash->Ctx, Data, Len);
+crc32Update((unsigned long *) &Hash->Ctx, (unsigned char *) Data, Len);
 }
 
 
@@ -135,18 +135,18 @@ int len;
 
 len=sizeof(unsigned long);
 crc32Finish((unsigned long *) Hash->Ctx);
-//crc=htonl((unsigned long *) Hash->Ctx);
+crc=htonl(* (unsigned long *) Hash->Ctx);
 
 if (Encoding > 0) 
 {
-*HashStr=EncodeBytes(*HashStr, (char *) &crc, len, Encoding);
-return(StrLen(*HashStr));
+	*HashStr=EncodeBytes(*HashStr, (char *) &crc, len, Encoding);
+	return(StrLen(*HashStr));
 }
 else
 {
-*HashStr=SetStrLen(*HashStr,len);
-memcpy(*HashStr,&crc,len);
-return(len);
+	*HashStr=SetStrLen(*HashStr,len);
+	memcpy(*HashStr,&crc,len);
+	return(len);
 }
 }
 
@@ -188,11 +188,11 @@ return(NewHash);
 
 int HashFinishMD5(THash *Hash, int Encoding, char **HashStr)
 {
-int count, len;
+int len;
 char *Tempstr=NULL, *DigestBuff=NULL;
 
 DigestBuff=(char *) calloc(1,MD5LEN+1);
-MD5Final(DigestBuff, (MD5_CTX *) Hash->Ctx);
+MD5Final((unsigned char *) DigestBuff, (MD5_CTX *) Hash->Ctx);
 
 if (Encoding > 0)
 {
@@ -246,7 +246,7 @@ return(NewHash);
 
 int HashFinishSHA1(THash *Hash, int Encoding, char **HashStr)
 {
-int count, len;
+int len;
 char *Tempstr=NULL, *DigestBuff=NULL;
 
 DigestBuff=(char *) calloc(1,SHA1LEN+1);
@@ -276,12 +276,12 @@ return(len);
 
 int HashFinishSHA256(THash *Hash, int Encoding, char **HashStr)
 {
-int count, len;
+int len;
 char *Tempstr=NULL;
-uint8_t *DigestBuff=NULL;
+char *DigestBuff=NULL;
 
-DigestBuff=(uint8_t *) calloc(1,SHA2_SHA256_DIGEST_LENGTH+1);
-SHA2_SHA256_Final(DigestBuff, (SHA2_SHA256_CTX *) Hash->Ctx);
+DigestBuff=(char *) calloc(1,SHA2_SHA256_DIGEST_LENGTH+1);
+SHA2_SHA256_Final((unsigned char *) DigestBuff, (SHA2_SHA256_CTX *) Hash->Ctx);
 
 if (Encoding > 0)
 {
@@ -317,17 +317,17 @@ return(NewHash);
 
 void HashUpdateSHA256(THash *Hash, char *Data, int Len)
 {
-SHA2_SHA256_Update((SHA2_SHA256_CTX *) Hash->Ctx, Data, Len);
+SHA2_SHA256_Update((SHA2_SHA256_CTX *) Hash->Ctx, (unsigned char *) Data, Len);
 }
 
 
 int HashFinishSHA512(THash *Hash, int Encoding, char **HashStr)
 {
-int count, len;
+int len;
 char *Tempstr=NULL, *DigestBuff=NULL;
 
 DigestBuff=(char *) calloc(1,SHA2_SHA512_DIGEST_LENGTH+1);
-SHA2_SHA512_Final(DigestBuff, (SHA2_SHA512_CTX *) Hash->Ctx);
+SHA2_SHA512_Final((unsigned char *) DigestBuff, (SHA2_SHA512_CTX *) Hash->Ctx);
 
 if (Encoding > 0)
 {
@@ -350,7 +350,7 @@ return(len);
 
 void HashUpdateSHA512(THash *Hash, char *Data, int Len)
 {
-SHA2_SHA512_Update((SHA2_SHA512_CTX *) Hash->Ctx, Data, Len);
+SHA2_SHA512_Update((SHA2_SHA512_CTX *) Hash->Ctx, (unsigned char *) Data, Len);
 }
 
 
@@ -407,11 +407,11 @@ break;
 
 int HashFinishWhirlpool(THash *Hash, int Encoding, char **HashStr)
 {
-int count, len;
+int len;
 char *Tempstr=NULL, *DigestBuff=NULL;
 
 DigestBuff=(char *) calloc(1,WHIRLPOOL_DIGESTBYTES+1);
-WHIRLPOOLfinalize((WHIRLPOOLstruct *) Hash->Ctx, DigestBuff);
+WHIRLPOOLfinalize((WHIRLPOOLstruct *) Hash->Ctx, (unsigned char *) DigestBuff);
 
 if (Encoding > 0)
 {
@@ -434,7 +434,7 @@ return(len);
 
 void HashUpdateWhirlpool(THash *Hash, char *Data, int Len)
 {
-WHIRLPOOLadd(Data, Len * 8, (WHIRLPOOLstruct *) Hash->Ctx);
+WHIRLPOOLadd((unsigned char *) Data, Len * 8, (WHIRLPOOLstruct *) Hash->Ctx);
 }
 
 
@@ -466,12 +466,12 @@ Hash->Clone=HashCloneWhirlpool;
 
 int HashFinishJH(THash *Hash, int Encoding, char **HashStr)
 {
-int count, len;
+int len;
 char *Tempstr=NULL, *DigestBuff=NULL;
 
 DigestBuff=(char *) calloc(1,1024);
 
-len=JHFinal((hashState *) Hash->Ctx, DigestBuff);
+len=JHFinal((hashState *) Hash->Ctx, (unsigned char *) DigestBuff);
 
 if (Encoding > 0)
 {
@@ -494,7 +494,7 @@ return(len);
 
 void HashUpdateJH(THash *Hash, char *Data, int Len)
 {
-	JHUpdate( (hashState *) Hash->Ctx, Data, Len);
+	JHUpdate( (hashState *) Hash->Ctx, (unsigned char *) Data, Len);
 }
 
 
@@ -642,4 +642,7 @@ HashDestroy(Hash);
 
 return(result);
 }
+
+
+
 

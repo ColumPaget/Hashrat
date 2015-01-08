@@ -96,7 +96,6 @@ double ProcessMultDiv(ListNode *Tokens)
 ListNode *Curr;
 ExprToken *Tok, *PrevTok, *NextTok;
 double val=0;
-int count;
 
 Curr=ListGetNext(Tokens);
 while (Curr)
@@ -228,7 +227,7 @@ double EvaluateMathStr(char *String)
 double val;
 char *ptr, *Token=NULL;
 int operator;
-ListNode *Tokens, *Curr;
+ListNode *Tokens;
 ExprToken *Tok;
 
 Tokens=ListCreate();

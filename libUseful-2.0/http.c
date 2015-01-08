@@ -1,8 +1,10 @@
 #include "http.h"
 #include "DataProcessing.h"
+#include "ConnectionChain.h"
 #include "Hash.h"
 #include "ParseURL.h"
 #include "Time.h"
+#include "base64.h"
 
 const char *HTTP_AUTH_BY_TOKEN="AuthTokenType";
 ListNode *Cookies=NULL;
@@ -372,8 +374,6 @@ HTTPInfoStruct *HTTPInfoFromURL(char *Method, char *URL)
 {
 HTTPInfoStruct *Info;
 char *Proto=NULL, *User=NULL, *Pass=NULL, *Token=NULL;
-char *ptr=NULL;
-int Port=0;
 
 
 Info=HTTPInfoCreate("", 80, "", "", Method, "", "",0);
@@ -445,7 +445,6 @@ DestroyString(Tempstr);
 char *AppendCookies(char *InStr, ListNode *CookieList)
 {
 	ListNode *Curr;
-	int count=0;
 	char *Tempstr=NULL;
 
 	Tempstr=InStr;
@@ -521,8 +520,6 @@ DestroyString(Opaque);
 void HTTPParseHeader(STREAM *S, HTTPInfoStruct *Info, char *Header)
 {
 char *Token=NULL, *Tempstr=NULL;
-int count=0;
-int result;
 char *ptr;
 
 if (Info->Flags & HTTP_DEBUG) fprintf(stderr,"HEADER: %s\n",Header);
@@ -642,7 +639,6 @@ char *HTTPHeadersAppendAuth(char *RetStr, char *AuthHeader, HTTPInfoStruct *Info
 {
 char *SendStr=NULL, *Tempstr=NULL, *ptr;
 char *HA1=NULL, *HA2=NULL, *ClientNonce=NULL, *Digest=NULL;
-int i, AuthCounter;
 
 	if (! StrLen(AuthInfo)) return(RetStr);
 
@@ -685,7 +681,7 @@ int i, AuthCounter;
 		//We should now have Logon:Password
     Digest=SetStrLen(Digest,StrLen(ptr) *2);
 
-    to64frombits(Digest,ptr,strlen(ptr));
+    to64frombits((unsigned char *) Digest, (unsigned char *) ptr,strlen(ptr));
     SendStr=MCatStr(SendStr,AuthHeader,": Basic ",Digest,"\r\n",NULL);
     Info->AuthFlags |= HTTP_AUTH_SENT;
   }
@@ -705,9 +701,6 @@ void HTTPSendHeaders(STREAM *S, HTTPInfoStruct *Info)
 {
 char *SendStr=NULL, *Tempstr=NULL, *ptr;
 ListNode *Curr;
-int count;
-int i;
-static int AuthCounter=0;
 
 STREAMClearDataProcessors(S);
 SendStr=CopyStr(SendStr,Info->Method);
@@ -893,7 +886,6 @@ DestroyString(Tempstr);
 
 int HTTPProcessResponse(HTTPInfoStruct *HTTPInfo)
 {
-char *ptr, *login_ptr, *pass_ptr;
 int result=HTTP_ERROR;
 char *Proto=NULL, *PortStr=NULL;
 int RCode;
@@ -1234,3 +1226,5 @@ int HTTPGetFlags()
 {
 return(g_Flags);
 }
+
+

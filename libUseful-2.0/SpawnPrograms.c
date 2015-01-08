@@ -1,4 +1,5 @@
 #include "SpawnPrograms.h"
+#include "Log.h"
 #include "pty.h"
 #include "file.h"
 #include "string.h"
@@ -56,7 +57,6 @@ execv(argv[0],argv);
 
 pid_t ForkWithContext(char *User, char *Dir, char *Group)
 {
-char *ptr;
 pid_t pid;
 
 LogFileFlushAll(TRUE);
@@ -178,7 +178,6 @@ return(pid);
 pid_t SpawnWithIO(char *CommandLine, int StdIn, int StdOut, int StdErr)
 {
 pid_t pid;
-int fd, i;
 
 pid=ForkWithIO(StdIn,StdOut,StdErr);
 if (pid==0)
@@ -210,7 +209,6 @@ pid_t PipeSpawnFunction(int *infd,int  *outfd,int  *errfd, BASIC_FUNC Func, void
 {
 pid_t pid;
 int channel1[2], channel2[2], channel3[2], DevNull=-1;
-int count;
 
 if (infd) pipe(channel1);
 if (outfd) pipe(channel2);
@@ -296,10 +294,8 @@ return(PipeSpawnFunction(infd,outfd,errfd, BASIC_FUNC_EXEC_COMMAND, (void *) Com
 
 pid_t PseudoTTYSpawnFunction(int *ret_pty, BASIC_FUNC Func, void *Data, int TTYFlags)
 {
-pid_t pid;
+pid_t pid=-1;
 int tty, pty, i;
-STREAM *S;
-char *Tempstr=NULL;
 
 if (GrabPseudoTTY(&pty, &tty, TTYFlags))
 {
@@ -374,3 +370,6 @@ if (S)
 DestroyString(Tempstr);
 return(S);
 }
+
+
+

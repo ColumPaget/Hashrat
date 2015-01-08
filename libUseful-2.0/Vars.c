@@ -81,7 +81,6 @@ Curr=ListGetNext(Curr);
 void CopyVars(ListNode *Dest, ListNode *Source)
 {
 ListNode *Curr;
-char *Str;
 
 if (! Dest) return;
 if (! Source) return;
@@ -151,9 +150,7 @@ char *SubstituteVarsInString(char *Buffer, const char *Fmt, ListNode *Vars, int 
 {
 char *ReturnStr=NULL, *VarName=NULL, *Tempstr=NULL;
 const char *FmtPtr;
-int count, VarIsPointer=FALSE;
-ListNode *Curr;
-int len=0, i;
+int len=0;
 
 ReturnStr=CopyStr(Buffer,"");
 
@@ -201,7 +198,6 @@ while (*FmtPtr !=0)
 		/*
 			if (*FmtPtr=='$')
 			{
-				 VarIsPointer=TRUE;
 				 FmtPtr++;
 			}
 			if (*FmtPtr=='(') FmtPtr++;

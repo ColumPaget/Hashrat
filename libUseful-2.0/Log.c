@@ -281,6 +281,7 @@ int LogFileAppendTempLog(char *LogPath, char *TmpLogPath)
 TLogFile *LogFile;
 char *Tempstr=NULL;
 STREAM *S;
+int result=FALSE;
 
     LogFile=LogFileGetEntry(LogPath);
     LogFileClose(TmpLogPath);
@@ -298,10 +299,13 @@ STREAM *S;
             if (LogFile->Flags & LOGFILE_FLUSH) STREAMFlush(LogFile->S);
             STREAMLock(LogFile->S,LOCK_UN);
             unlink(TmpLogPath);
+						result=TRUE;
     }
 		if (S) STREAMClose(S);
 
 DestroyString(Tempstr);
+
+return(result);
 }
 
 

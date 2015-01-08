@@ -54,7 +54,7 @@ int MakeDirPath(char *Path, int DirMask)
 {
  char *ptr;
  char *Tempstr=NULL;
- int result;
+ int result=-1;
 
  ptr=Path;
  if (*ptr=='/') ptr++;
@@ -98,7 +98,7 @@ else return(FALSE);
 
 int FindFilesInPath(char *File, char *Path, ListNode *Files)
 {
-char *Tempstr=NULL, *CurrPath=NULL, *RetStr=NULL, *ptr;
+char *Tempstr=NULL, *CurrPath=NULL, *ptr;
 int i;
 glob_t Glob;
 

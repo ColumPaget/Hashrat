@@ -139,7 +139,8 @@ STREAM *STREAMSpawnCommand(const char *Command, int type);
 int STREAMDisassociateFromFD(STREAM *Stream);
 int STREAMPeekChar(STREAM *);
 int STREAMPeekBytes(STREAM *S, char *Buffer, int Buffsize);
-
+void STREAMResetInputBuffers(STREAM *S);
+int STREAMReadThroughProcessors(STREAM *S, char *Bytes, int InLen);
 
 int STREAMReadBytes(STREAM *, char *Buffer, int Bytes);
 int STREAMWriteBytes(STREAM *, const char *Buffer, int Bytes);

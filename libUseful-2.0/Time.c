@@ -48,7 +48,6 @@ time_t DateStrToSecs(char *DateFormat, char *Str, char *TimeZone)
 time_t Secs=0;
 struct tm TMS;
 char *Tempstr=NULL;
-int val;
 
 if (StrLen(DateFormat)==0) return(0);
 if (StrLen(Str)==0) return(0);

@@ -42,6 +42,7 @@ int HashratOutputSigningCheck(HashratCtx *Ctx, const char *ExpectedHash, const c
 {
 char *Token=NULL, *ptr;
 char *DateStr=NULL, *SignHash=NULL, *HashType=NULL;
+int result=FALSE;
 
 		ptr=GetToken(SigningLine+24," ",&Token,0);
 		DateStr=MCopyStr(DateStr,Token, " ", NULL);
@@ -63,6 +64,7 @@ char *DateStr=NULL, *SignHash=NULL, *HashType=NULL;
 			{
 				if (Flags & FLAG_COLOR) printf("%sIntegrity Mark OKAY at Line: %d Date: %s%s\n",ANSICode(ANSI_GREEN,0,0),LineCount,DateStr,ANSI_NORM);
 				else printf("Integrity Mark OKAY at Line: %d Date: %s\n",LineCount,DateStr);
+				result=TRUE;
 			}
 			else 
 			{
@@ -75,6 +77,8 @@ char *DateStr=NULL, *SignHash=NULL, *HashType=NULL;
 	DestroyString(DateStr);
 	DestroyString(SignHash);
 	DestroyString(HashType);
+
+return(result);
 }
 
 
