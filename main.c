@@ -24,9 +24,13 @@ while (Tempstr)
 	StripTrailingWhitespace(Tempstr);
 	if (StatFile(Ctx,Tempstr,&Stat)==0) 
 	{
-		HashItem(Ctx, Ctx->HashType, Tempstr, &Stat, &HashStr);
+		//HashItem returns '0' on success
+		if (HashItem(Ctx, Ctx->HashType, Tempstr, &Stat, &HashStr) ==0)
+		{
 		HashratOutputInfo(Ctx, Ctx->Out, Tempstr, &Stat, HashStr);
 		HashratStoreHash(Ctx, Tempstr, &Stat, HashStr);
+		}
+		else fprintf(stderr,"ERROR: Failed to open file %s\n",Tempstr);
 	}
 	else fprintf(stderr,"ERROR: Failed to open file %s\n",Tempstr);
 	Tempstr=STREAMReadLine(Tempstr, S);

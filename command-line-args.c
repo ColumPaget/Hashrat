@@ -250,19 +250,20 @@ else if (strcmp(argv[i],"-dups")==0)
 	Ctx->Action = ACT_FINDDUPLICATES;
 	strcpy(argv[i],"");
 }
-else if (strcmp(argv[i],"-hook")==0) 
+else if ((strcmp(argv[i],"-hook")==0) || (strcmp(argv[i],"-h")==0))
 {
 	strcpy(argv[i],"");
 	i++;
+	if ((i < argc) && StrLen(argv[i]))
+	{
 	DiffHook=CopyStr(DiffHook,argv[i]);
 	strcpy(argv[i],"");
-}
-else if (strcmp(argv[i],"-h")==0) 
-{
-	strcpy(argv[i],"");
-	i++;
-	DiffHook=CopyStr(DiffHook,argv[i]);
-	strcpy(argv[i],"");
+	}
+	else 
+	{
+		printf("ERROR: No hook function supplied to -h/-hook switch (are you looking for help? Try --help or -?)\n");
+		exit(1);
+	}
 }
 else if (strcmp(argv[i],"-cgi")==0)
 {
@@ -327,8 +328,12 @@ else if (strcmp(argv[i],"-attrs")==0)
 {
 	strcpy(argv[i],"");
 	i++;
-	SetupXAttrList(argv[i]);
-	strcpy(argv[i],"");
+	if ((i < argc) && StrLen(argv[i]))
+	{
+		SetupXAttrList(argv[i]);
+		strcpy(argv[i],"");
+	}
+	else printf("ERROR: No list of attribute names given to -attrs argument\n");
 }
 
 
@@ -338,7 +343,6 @@ else if (strcmp(argv[i],"-attrs")==0)
 
 
 //if we're reading from a list file, then...
-printf("FLF: %d\n",ParseFlags & CMDLINE_FROM_LISTFILE);
 if ((ParseFlags & CMDLINE_FROM_LISTFILE))
 {
 	//... set appropriate action type
@@ -351,7 +355,6 @@ if ((ParseFlags & CMDLINE_FROM_LISTFILE))
 		if (StrLen(argv[i]))
 		{
 			Ctx->ListPath=CopyStr(Ctx->ListPath, argv[i]);
-	printf("LP: %s\n",Ctx->ListPath);
 			strcpy(argv[i],"");
 			break;
 		}
