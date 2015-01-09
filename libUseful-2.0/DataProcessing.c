@@ -475,12 +475,12 @@ int libCryptoProcessorWrite(TProcessingModule *ProcMod, const char *InData, int 
 int wrote=0;
 
 #ifdef HAVE_LIBSSL
+/*
 int len, result=0, val;
 libCryptoProcessorData *Data;
 EVP_CIPHER_CTX *ctx;
 char *ptr, *Tempstr=NULL;
 
-/*
 if (ProcMod->Flags & DPM_WRITE_FINAL) return(0);
 ptr=OutData;
 
@@ -488,9 +488,7 @@ Data=(libCryptoProcessorData *) ProcMod->Data;
 ctx=Data->enc_ctx;
 
 ProcMod->Flags = ProcMod->Flags & ~DPM_WRITE_FINAL;
-*/
 
-/*
 if (ProcMod->Flags & DPM_NOPAD_DATA)
 {
 	val=InLen % Data->BlockSize;
@@ -506,9 +504,8 @@ if (ProcMod->Flags & DPM_NOPAD_DATA)
 	result=EVP_EncryptUpdate(ctx, ptr, &len, Tempstr, val);
 }
 else 
-*/
 {
-//result=EVP_EncryptUpdate(ctx, ptr, &len, InData, InLen);
+	result=EVP_EncryptUpdate(ctx, ptr, &len, InData, InLen);
 }
 
 
@@ -516,6 +513,7 @@ if (! result) wrote=0;
 else wrote=len;
 
 DestroyString(Tempstr);
+*/
 #endif
 return(wrote);
 }
@@ -524,10 +522,12 @@ return(wrote);
 
 int libCryptoProcessorFlush(TProcessingModule *ProcMod, const char *InData, int InLen, char *OutData, int OutLen)
 {
-int result=0, wrote=0, len;
-libCryptoProcessorData *Data;
+int wrote=0;
 
 /*
+int result=0, len;
+libCryptoProcessorData *Data;
+
 if (ProcMod->Flags & DPM_WRITE_FINAL) return(0);
 Data=(libCryptoProcessorData *) ProcMod->Data;
 
@@ -556,28 +556,24 @@ int libCryptoProcessorRead(TProcessingModule *ProcMod, const char *InData, int I
 {
 int bytes_read=0;
 #ifdef HAVE_LIBSSL
+/*
 int len, ivlen, result, val;
 libCryptoProcessorData *Data;
 EVP_CIPHER_CTX *ctx;
 char *ptr;
 
-/*
 ptr=OutData;
 
 Data=(libCryptoProcessorData *) ProcMod->Data;
 if (!Data) return(0);
-*/
 
-/*
 if (ProcMod->Flags & DPM_READ_FINAL)
 {
   if (InLen==0)	return(0);
   EVP_DecryptInit_ex(Data->dec_ctx,Data->Cipher,NULL,Data->Key,Data->InputVector);
 
 }
-*/
 
-/*
 ctx=Data->dec_ctx;
 
 if (InLen==0) 

@@ -25,7 +25,7 @@ return(Tempstr);
 }
 
 
-void SwitchProgram(char *CommandLine, char *User, char *Group, char *Dir)
+void SwitchProgram(const char *CommandLine, const  char *User,const  char *Group, const  char *Dir)
 {
 char **argv, *ptr;
 char *Token=NULL, *SafeStr=NULL;
@@ -55,7 +55,7 @@ execv(argv[0],argv);
 }
 
 
-pid_t ForkWithContext(char *User, char *Dir, char *Group)
+pid_t ForkWithContext(const char *User, const char *Dir, const char *Group)
 {
 pid_t pid;
 
@@ -175,7 +175,7 @@ return(pid);
 
 
 
-pid_t SpawnWithIO(char *CommandLine, int StdIn, int StdOut, int StdErr)
+pid_t SpawnWithIO(const char *CommandLine, int StdIn, int StdOut, int StdErr)
 {
 pid_t pid;
 
@@ -190,7 +190,7 @@ return(pid);
 }
 
 
-int Spawn(char *ProgName, char *User, char *Group, char *Dir)
+int Spawn(const char *ProgName, const char *User, const char *Group, const char *Dir)
 {
 int pid;
 

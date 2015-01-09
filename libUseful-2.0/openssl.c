@@ -11,12 +11,15 @@
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/rand.h>
 
 DH *CachedDH=NULL;
 
+
+
 void OpenSSLReseedRandom()
 {
-int fd, len=32;
+int len=32;
 char *Tempstr=NULL;
 
 
@@ -294,7 +297,6 @@ int result=FALSE;
 const SSL_METHOD *Method;
 SSL_CTX *ctx;
 SSL *ssl;
-int val;
 //struct x509 *cert=NULL;
 char *ptr;
 

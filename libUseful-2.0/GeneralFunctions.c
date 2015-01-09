@@ -155,7 +155,7 @@ return(RetStr);
 #include <pwd.h>
 #include <grp.h>
 
-int SwitchUser(char *NewUser)
+int SwitchUser(const char *NewUser)
 {
 struct passwd *pwent;
 char *ptr;
@@ -182,7 +182,7 @@ char *ptr;
 }
 
 
-int SwitchGroup(char *NewGroup)
+int SwitchGroup(const char *NewGroup)
 {
 struct group *grent;
 char *ptr;

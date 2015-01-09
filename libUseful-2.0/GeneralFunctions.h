@@ -17,8 +17,8 @@ char *BytesToHexStr(char *Buffer, char *Bytes, int len);
 char *EncodeBytes(char *Buffer, const char *Bytes, int len, int Encoding);
 
 
-int SwitchUser(char *User);
-int SwitchGroup(char *Group);
+int SwitchUser(const char *User);
+int SwitchGroup(const char *Group);
 char *GetCurrUserHomeDir();
 
 
