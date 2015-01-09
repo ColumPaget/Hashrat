@@ -119,9 +119,9 @@ void SoundWriteWAVHeader(STREAM *S, TAudioInfo *AI)
 {
   WAVHeader WavHead;
 
-  strcpy(WavHead.RIFF,"RIFF");
-  strcpy(WavHead.Format,"WAVE");
-  strcpy(WavHead.Block,"fmt ");
+  memcpy(WavHead.RIFF,"RIFF",4);
+  memcpy(WavHead.Format,"WAVE",4);
+  memcpy(WavHead.Block,"fmt ",4);
   WavHead.FileSize=AI->DataSize+44;
 	WavHead.AudioFormat=1; 
   WavHead.Channels=AI->Channels;
@@ -130,7 +130,7 @@ void SoundWriteWAVHeader(STREAM *S, TAudioInfo *AI)
   WavHead.ByteRate=WavHead.SampleRate * WavHead.BlockAlign;
   WavHead.BitsPerSample=AI->SampleSize * 8;
   WavHead.ChunkSize=WavHead.BitsPerSample;
-  strcpy(WavHead.DataHeader,"data");
+  memcpy(WavHead.DataHeader,"data",4);
   WavHead.DataSize=AI->DataSize;
 
 
