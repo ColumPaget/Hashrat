@@ -13,6 +13,9 @@
 #define TTYFLAG_CRLF_KEEP 32768
 #define TTYFLAG_IGNSIG 65536
 
+#define TEXT_STARS 1
+#define TEXT_STAR_ONE  2
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,6 +25,7 @@ int OpenTTY(char *devname, int LineSpeed, int Flags);
 void InitTTY(int tty, int LineSpeed, int Flags);
 void ResetTTY(int tty);
 int GrabPseudoTTY(int *pty, int *tty, int Flags);
+char *TTYReadSecret(char *RetStr, STREAM *S, int Flags);
 
 #ifdef __cplusplus
 }

@@ -308,6 +308,8 @@ else if (strcmp(argv[i],"-dirmode")==0) ParseFlags |= CommandLineHandleArg(argc,
 else if (strcmp(argv[i],"-devmode")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_DIRMODE | FLAG_DEVMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-lines")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-rawlines")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-hide-input")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_HIDE_INPUT, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-star-input")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_STAR_INPUT, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-rl")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-fs")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_ONE_FS, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-xattr")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_XATTR, 0, "", "",Ctx->Vars);

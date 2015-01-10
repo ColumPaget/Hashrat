@@ -54,14 +54,19 @@ if (Flags & FLAG_LINEMODE)
 {
 	In=STREAMFromFD(0);
 	STREAMSetTimeout(In,0);
-	Tempstr=STREAMReadLine(Tempstr,In);
+
+	if (Flags & FLAG_HIDE_INPUT) Tempstr=TTYReadSecret(Tempstr, In, 0);
+	else if (Flags & FLAG_STAR_INPUT) Tempstr=TTYReadSecret(Tempstr, In, TEXT_STARS);
+	else Tempstr=STREAMReadLine(Tempstr,In);
 	while (Tempstr)
 	{
 		if (! (Flags & FLAG_RAW)) StripTrailingWhitespace(Tempstr);
 		Hash=CopyStr(Hash,"");
 		ProcessData(&Hash, Ctx, Tempstr, StrLen(Tempstr));
 		STREAMWriteString(Hash,Ctx->Out); STREAMWriteString("\n",Ctx->Out);
-		Tempstr=STREAMReadLine(Tempstr,In);
+		if (Flags & FLAG_HIDE_INPUT) Tempstr=TTYReadSecret(Tempstr, In, 0);
+		else if (Flags & FLAG_STAR_INPUT) Tempstr=TTYReadSecret(Tempstr, In, TEXT_STARS);
+		else Tempstr=STREAMReadLine(Tempstr,In);
 	}
 }
 else

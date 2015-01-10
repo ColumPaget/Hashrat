@@ -243,3 +243,25 @@ return(0);
 }
 
 
+
+char *TTYReadSecret(char *RetStr, STREAM *S, int Flags)
+{
+int len=0, inchar;
+
+//Turn off echo (and other things)
+InitTTY(0,0, TTYFLAG_CRLF);
+inchar=STREAMReadChar(S);
+while (inchar != EOF)
+{
+  RetStr=AddCharToBuffer(RetStr,len++,inchar);
+	if (inchar=='\n') break;
+  if (Flags & TEXT_STARS) write(1,"*",1);
+  inchar=STREAMReadChar(S);
+}
+//turn echo back on
+ResetTTY(0);
+printf("\n");
+
+return(RetStr);
+}
+
