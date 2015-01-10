@@ -245,20 +245,35 @@ char *ptr;
 int HashratHashSingleFile(HashratCtx *Ctx, char *HashType, int FileType, char *Path, struct stat *FStat, char **RetStr)
 {
 THash *Hash;
+struct stat XattrStat;
 char *ptr;
 int size=0;
 
 		*RetStr=CopyStr(*RetStr,"");
-		Hash=HashInit(HashType);
 
-		//If we're not doing HMAC then this doesn't do anything
-		ptr=GetVar(Ctx->Vars,"EncryptionKey");
-		if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
+		#ifdef USE_XATTR
+		if (Ctx->Flags & CTX_XATTR_CACHE)
+		{
+			XAttrGetHash(Ctx, "user", Ctx->HashType, Path, &XattrStat, RetStr);
+			//only use the hash cached in the xattr address if it's younger than the mtime
+			if ( ((XattrStat.st_mtime - FStat->st_mtime) < 10) ) *RetStr=CopyStr(*RetStr,"");	
+		}
 
-		if (FStat) size=FStat->st_size;
-		if (! HashratHashFile(Ctx,Hash,FileType,Path, size)) return(FALSE);
 
-		HashratFinishHash(RetStr, Ctx, Hash);
+		if (StrLen(*RetStr)==0)
+		#endif
+		{
+			Hash=HashInit(HashType);
+
+			//If we're not doing HMAC then this doesn't do anything
+			ptr=GetVar(Ctx->Vars,"EncryptionKey");
+			if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
+
+			if (FStat) size=FStat->st_size;
+			if (! HashratHashFile(Ctx,Hash,FileType,Path, size)) return(FALSE);
+
+			HashratFinishHash(RetStr, Ctx, Hash);
+		}
 
 		return(TRUE);
 }

@@ -88,7 +88,8 @@ int len;
 
 
 Tempstr=MCopyStr(Tempstr,XattrType, ".hashrat:",HashType,NULL);
-len=getxattr(Path, Tempstr, *Hash, 1024); 
+*Hash=SetStrLen(*Hash,255);
+len=getxattr(Path, Tempstr, *Hash, 255); 
 if (len > 0)
 {
 	ptr=*Hash;

@@ -314,6 +314,7 @@ else if (strcmp(argv[i],"-rl")==0) ParseFlags |= CommandLineHandleArg(argc, argv
 else if (strcmp(argv[i],"-fs")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_ONE_FS, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-xattr")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_XATTR, 0, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-txattr")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_TXATTR, 0, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-cache")==0) CommandLineSetCtx(argc, argv, i, Ctx,   CTX_XATTR_CACHE);
 else if (strcmp(argv[i],"-strict")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_FULLCHECK, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-color")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_COLOR, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-S")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_FULLCHECK, "", "",Ctx->Vars);
