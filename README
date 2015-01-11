@@ -92,7 +92,12 @@ Options:
                   URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..
   -idfile <path>  Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.
   -xattr          Use eXtended file ATTRibutes. In hash mode, store hashes in the file attributes, in check mode compare against hashes stored in file attributes.
+  -cache          Use hashes stored in 'user' file attributes. If the stored hash is younger than the mtime of the file, it will be used instead of recalculating the hash. This speeds up hashing, but can result in errors if file mtimes are inaccurate or have been modified for malicious purposes.
   -u <types>      Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.
+  -hide-input      When reading text in linemode with -lines or -rawlines, set the terminal to not echo characters, thus hiding typed text.
+  -star-input      When reading text in linemode with -lines or -rawlines, replace type characters with '*', thus hiding typed text.
+  -u <types>      Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.
+
 
 
 Hashrat can also detect if it's being run under any of the following names (e.g., via symlinks)
@@ -200,6 +205,8 @@ USES FOR HASHRAT
 	'-lines' will produce a different hash  to the 'echo' method listed above, because it strips any trailing whiespace off the lines read. If you want strict compatiblity with 'echo' (by default echo adds a 'newline' to the end of the text to output) then use 'rawlines' mode:
 
 		hashrat -sha1 -64 -rawlines
+
+	Finally, you can prevent shoulder-surfers seeing you type your password by using the '-hide-input' or '-star-input' options to hide what you type.
 
 
 	2) Watching for file changes
