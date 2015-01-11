@@ -257,3 +257,25 @@ USES FOR HASHRAT
 	If hashrat is run with the -cgi flag, or if it's run with a name of 'hashrat.cgi' (either by renaming the 'hashrat' executable, or via a symbolic link) it will output a webpage that allows users to look up hashes over the web. This allows me to look-up my strong passwords even if I don't have access to a local version of hashrat.
 
 
+EXTENDED FILESYSTEM ATTRIBUTES (XATTR)
+
+	Hashrat can use extended filesystem attributes where these are supported. This allows a hash to be stored in the filesystem metadata of the target file. This can then be used for checking hashes, or for caching hashes to produce faster output during hashing runs. There are two types of filesystem attribute, 'trusted' attributes, which can only be set and read by root, and 'user' attributes, which can be set and read by any user that has the appropriate permissions for the file.
+
+	Hashes can be stored against files by using the -xattr option to set 'user' attributes...
+
+		hashrat -sha256 -r . -xattr
+
+	... and using the '-txattr' flag to set trusted attributes (you must be root to set trusted attributes)
+
+		hashrat -sha256 -r . -txattr
+
+	When checking either flag can be used, but hashrat will always use 'trusted' attributes when running as root, if those are avaialable, otherwise it will fall back to 'user' attributes.	
+	
+		hashrat -c -sha256 -r . -xattr
+
+	The -cache option allows using stored hashes rather than regenerating hashes. It only considers hashes stored in 'user' attributes at current.
+
+		hashrat -r . -cache
+
+	This makes getting a report of hashes considerably faster, but it runs the risk that the hashes may not be accurate. Hashrat will only output a hash stored in file attributes if the storage time of the hash is younger than the modify time (mtime) of the file, however, this means an attacker could change the modify time of the file to hide changes they've made. Thus this feature should not be used for security checking purposes (but should be safe for uses like finding files that have changed and need to be backed up, for instance). 
+

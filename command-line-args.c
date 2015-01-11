@@ -474,6 +474,7 @@ printf("  %-15s %s\n","-net", "Treat 'file' arguments as either ssh or http URLs
 printf("  %-15s %s\n","", "URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..");
 printf("  %-15s %s\n","-idfile <path>", "Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.");
 printf("  %-15s %s\n","-xattr", "Use eXtended file ATTRibutes. In hash mode, store hashes in the file attributes, in check mode compare against hashes stored in file attributes.");
+printf("  %-15s %s\n","-txattr", "Use TRUSTED eXtended file ATTRibutes. In hash mode, store hashes in 'trusted' file attributes. 'trusted' attributes can only be read and written by root.");
 printf("  %-15s %s\n","-cache", "Use hashes stored in 'user' xattr if they're younger than the mtime of the file. This speeds up outputting hashes.");
 printf("  %-15s %s\n","-u <types>", "Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.");
 printf("  %-15s %s\n","-hide-input", "When reading data from stdin in linemode, set the terminal to not echo characters, thus hiding typed input.");
