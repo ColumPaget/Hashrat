@@ -55,7 +55,7 @@ int result;
 	if ((Ctx->Flags & CTX_XATTR_ROOT) && (getuid()==0)) Attr=MCopyStr(Attr,"trusted.","hashrat:",HashType,NULL);
 	else Attr=MCopyStr(Attr,"user.","hashrat:",HashType,NULL);
 	Tempstr=FormatStr(Tempstr,"%lu:%llu:%s",(unsigned long) time(NULL),(unsigned long long) Stat->st_size,Hash);
-	result=setxattr(Path, Attr, Tempstr, StrLen(Tempstr), 0);
+	result=setxattr(Path, Attr, Tempstr, StrLen(Tempstr)+1, 0);
 
 	if (result != 0) fprintf(stderr,"ERROR: Failed to store hash in extended attributes for %s\n", Path);
 
@@ -92,12 +92,14 @@ Tempstr=MCopyStr(Tempstr,XattrType, ".hashrat:",HashType,NULL);
 len=getxattr(Path, Tempstr, *Hash, 255); 
 if (len > 0)
 {
+	(*Hash)[len]='\0';
 	ptr=*Hash;
 	FStat->st_mtime=(time_t) strtol(ptr,&ptr,10);
 	if (*ptr==':') ptr++;
 	FStat->st_size=(off_t) strtol(ptr,&ptr,10);
 	if (*ptr==':') ptr++;
-	memmove(*Hash,ptr,StrLen(ptr)+1);
+	len=StrLen(ptr);
+	memmove(*Hash,ptr,len+1);
 	result=TRUE;
 }
 

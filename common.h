@@ -2,7 +2,7 @@
 #ifndef HASHRAT_COMMON_H
 #define HASHRAT_COMMON_H
 
-#include "libUseful-2.0/libUseful.h"
+#include "libUseful-2.1/libUseful.h"
 #include "glob.h"
 
 

@@ -6,6 +6,10 @@
 #define SSH_LOGON_DONE 1
 #define SSH_ASK_PASSWD 2
 
+char *SSHGenerateReplayTerminator(char *RetStr, const char *Command)
+{
+	return(FormatStr(RetStr,"%s-%lu-%lu-%lu",Command,getpid(),time(NULL),rand()));
+}
 
 void SSHRequestPasswd(char **Passwd)
 {
@@ -16,12 +20,12 @@ S=STREAMFromFD(0);
 
 //Turn off echo (and other things)
 InitTTY(0,0,0);
-printf("Password: "); fflush(NULL);
+fprintf(stderr,"Password: "); fflush(NULL);
 inchar=STREAMReadChar(S);
 while ((inchar != EOF) && (inchar != '\n') && (inchar != '\r'))
 {
 	*Passwd=AddCharToStr(*Passwd,inchar);
-	write(1,"*",1);
+	write(2,"*",1);
 	inchar=STREAMReadChar(S);
 }
 StripCRLF(*Passwd);
@@ -41,7 +45,7 @@ ListNode *Dialog=NULL;
 int result=TRUE;
 
 
-	STREAMSetFlushType(Ctx->NetCon,FLUSH_ALWAYS,0);
+	STREAMSetFlushType(Ctx->NetCon,FLUSH_ALWAYS,0,0);
 	if (Flags & SSH_ASK_PASSWD) 
 	{
 		*Passwd=CopyStr(*Passwd, GetVar(Ctx->Vars,"SshPasswd"));
@@ -52,21 +56,27 @@ int result=TRUE;
 		}
 	}
 
+	Tempstr=SSHGenerateReplayTerminator(Tempstr, "CONNECTED1");
+	STREAMWriteLine("echo ",Ctx->NetCon);
+	STREAMWriteLine(Tempstr,Ctx->NetCon);
+	STREAMWriteLine("\n",Ctx->NetCon);
 
   Dialog=ListCreate();
   ExpectDialogAdd(Dialog, "Are you sure you want to continue connecting (yes/no)?", "yes\n", DIALOG_OPTIONAL);
   ExpectDialogAdd(Dialog, "Permission denied", "", DIALOG_OPTIONAL | DIALOG_FAIL);
+  ExpectDialogAdd(Dialog, Tempstr, "", DIALOG_END);
 	if (StrLen(*Passwd))
 	{
   Tempstr=MCopyStr(Tempstr,*Passwd,"\n",NULL);
   ExpectDialogAdd(Dialog, "assword:", Tempstr, DIALOG_END);
 	}
   else ExpectDialogAdd(Dialog, "assword:", "", DIALOG_OPTIONAL | DIALOG_FAIL);
+
   STREAMExpectDialog(Ctx->NetCon, Dialog);
   ListDestroy(Dialog,ExpectDialogDestroy);
 
 
-	STREAMSetFlushType(Ctx->NetCon,FLUSH_LINE,0);
+	STREAMSetFlushType(Ctx->NetCon,FLUSH_LINE,0,0);
 
 	//allow time for stty to take effect!
 	STREAMWriteLine("PS1=\n",Ctx->NetCon); 
@@ -74,14 +84,18 @@ int result=TRUE;
 	STREAMWriteLine("stty -echo\necho\n",Ctx->NetCon);
 	STREAMFlush(Ctx->NetCon);
 
-	Tempstr=FormatStr(Tempstr,"CONNECTED-%lu-%lu\n",getpid(),time(NULL));
+
+	//Do this again so we know we're beyond any crap produced by our setup of the terminal	
+	Tempstr=SSHGenerateReplayTerminator(Tempstr, "CONNECTED2");
 	STREAMWriteLine("echo ",Ctx->NetCon);
 	STREAMWriteLine(Tempstr,Ctx->NetCon);
 	STREAMWriteLine("\n",Ctx->NetCon);
 
+
 	Line=STREAMReadLine(Line,Ctx->NetCon);
 	while (Line)
 	{
+	StripTrailingWhitespace(Line);
 	if (strcmp(Line,Tempstr)==0) break;
 	Line=STREAMReadLine(Line,Ctx->NetCon);
 	}
@@ -118,7 +132,7 @@ Ctx->NetCon=STREAMSpawnCommand(Tempstr,COMMS_BY_PTY|TTYFLAG_CRLF|TTYFLAG_IGNSIG)
 if ((! StrLen(ptr)) && (! StrLen(Passwd)))  Flags |= SSH_ASK_PASSWD;
 SSHFinalizeConnection(Ctx, Flags, &Passwd);
 
-STREAMSetTimeout(Ctx->NetCon,10);
+STREAMSetTimeout(Ctx->NetCon,10000);
 
 /*
 StripTrailingWhitespace(Tempstr);
@@ -205,21 +219,21 @@ char *Token=NULL, *ptr, *tptr;
 		tptr++;
 		if (*tptr=='r') Stat->st_mode |= S_IRUSR;
 		tptr++;
-		if (*tptr=='r') Stat->st_mode |= S_IWUSR;
+		if (*tptr=='w') Stat->st_mode |= S_IWUSR;
 		tptr++;
 		if (*tptr=='x') Stat->st_mode |= S_IXUSR;
 
 		tptr++;
 		if (*tptr=='r') Stat->st_mode |= S_IRGRP;
 		tptr++;
-		if (*tptr=='r') Stat->st_mode |= S_IWGRP;
+		if (*tptr=='w') Stat->st_mode |= S_IWGRP;
 		tptr++;
 		if (*tptr=='x') Stat->st_mode |= S_IXGRP;
 
 		tptr++;
 		if (*tptr=='r') Stat->st_mode |= S_IROTH;
 		tptr++;
-		if (*tptr=='r') Stat->st_mode |= S_IWOTH;
+		if (*tptr=='w') Stat->st_mode |= S_IWOTH;
 		tptr++;
 		if (*tptr=='x') Stat->st_mode |= S_IXOTH;
 		}
@@ -251,11 +265,6 @@ char *Token=NULL, *ptr, *tptr;
  //   DateStr=MCatStr(DateStr," ",Token,NULL);
 
 		*Path=CopyStr(*Path,ptr);
-		if ((Stat->st_mode & S_IFLNK) == S_IFLNK)
-		{
-			ptr=strstr(*Path,"->");
-			if (ptr) *ptr='\0';
-		}
 
 	DestroyString(Token);
 }
@@ -264,13 +273,12 @@ char *Token=NULL, *ptr, *tptr;
 
 int SSHGlob(HashratCtx *Ctx, char *URL, ListNode *Files)
 {
-char *Tempstr=NULL, *Path=NULL, *ptr;
+char *Tempstr=NULL, *Path=NULL, *TermLine=NULL, *ptr;
 STREAM *S;
 int count=0;
 struct stat *Stat;
 
 
-//printf("SSHG: %s\n",URL);
 S=SSHConnect(URL, &Tempstr, Ctx);
 if (S)
 {
@@ -278,13 +286,15 @@ if (S)
 	if (*ptr == '/') ptr++;
 	
 	Path=QuoteCharsInStr(Path,ptr," 	;&'`\"");
-	Tempstr=MCopyStr(Tempstr,"ls -lidn ",Path," 2> /dev/null\n",NULL);
+	TermLine=SSHGenerateReplayTerminator(TermLine, "LIST");
+	Tempstr=MCopyStr(Tempstr,"ls -Llidn ",Path," 2> /dev/null\necho ",TermLine,"\n",NULL);
 	STREAMWriteLine(Tempstr,S); STREAMFlush(S);
 
 	Tempstr=STREAMReadLine(Tempstr,S);
 	while (Tempstr)
 	{
 		StripTrailingWhitespace(Tempstr);
+		if (strcmp(Tempstr,TermLine)==0) break;
 		Stat=(struct stat *) calloc(1,sizeof(struct stat));
 		Decode_LS_Output(Tempstr, &Path, Stat);
 		Tempstr=CopyStr(Tempstr,URL);
@@ -310,6 +320,7 @@ if (S)
 //STREAMClose(S);
 DestroyString(Path);
 DestroyString(Tempstr);
+DestroyString(TermLine);
 
 return(count);
 }

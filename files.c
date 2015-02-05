@@ -3,7 +3,7 @@
 #include "memcached.h"
 #include "fingerprint.h"
 #include "xattr.h"
-#include "check.h"
+#include "check-hash.h"
 #include "find.h"
 #include <string.h>
 #include <fnmatch.h>
@@ -89,7 +89,7 @@ int val;
 
   //Pass NULL for stat, because we are only checking for 'net' type paths
   val=FileType(Path,Flags, NULL);
-  if ((val !=FT_FILE) && (val !=FT_DIR))
+  if ((val !=FT_FILE) && (val !=FT_DIR) && (val != FT_LNK))
   {
     return(0);
   }
@@ -173,10 +173,13 @@ switch (Type)
 
 	default:
 		if ((! StrLen(Path)) || (strcmp(Path,"-")==0)) S=STREAMFromFD(0);
-		else S=STREAMOpenFile(Path,O_RDONLY);
+		else
+		{
+			if (Ctx->Flags & CTX_DEREFERENCE) S=STREAMOpenFile(Path,SF_RDONLY|SF_SYMLINK_OK);
+			else S=STREAMOpenFile(Path,SF_RDONLY);
+		}
 	break;
 }
-
 
 if (S) 
 {
@@ -333,6 +336,7 @@ int HashItem(HashratCtx *Ctx, char *HashType, char *Path, struct stat *FStat, ch
 int Type=FT_FILE, val;
 char *Tempstr=NULL;
 
+
 	Type=FileType(Path, Flags, FStat);
 
 	switch (Type)
@@ -369,13 +373,14 @@ char *Tempstr=NULL;
 		break;
 
 		case FT_LNK:
-		Tempstr=SetStrLen(Tempstr,PATH_MAX);
-		val=readlink(Path, Tempstr,PATH_MAX);
-		if (val > 0)
-		{
-			Tempstr[val]='\0';
-			ProcessData(HashStr, Ctx, Tempstr, val);
-		}
+			fprintf(stderr,"WARN: Not following symbolic link %s\n",Path);
+			Tempstr=SetStrLen(Tempstr,PATH_MAX);
+			val=readlink(Path, Tempstr,PATH_MAX);
+			if (val > 0)
+			{
+				Tempstr[val]='\0';
+				ProcessData(HashStr, Ctx, Tempstr, val);
+			}
 		break;
 
 		default:

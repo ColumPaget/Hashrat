@@ -3,7 +3,7 @@ AC_INIT([main.c])
 
 AC_SUBST(VERSION) 
 
-AC_CONFIG_SUBDIRS([libUseful-2.0])
+AC_CONFIG_SUBDIRS([libUseful-2.1])
 
 AC_PROG_CC 
 AC_LANG_C 

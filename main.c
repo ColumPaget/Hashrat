@@ -4,7 +4,7 @@
 #include "find.h"
 #include "files.h"
 #include "memcached.h"
-#include "check.h"
+#include "check-hash.h"
 #include "command-line-args.h"
 #include "filesigning.h"
 #include "cgi.h"
@@ -17,7 +17,7 @@ STREAM *S;
 struct stat Stat;
 
 if (strcmp(Ctx->ListPath,"-")==0) S=STREAMFromFD(0);
-else S=STREAMOpenFile(Ctx->ListPath,O_RDONLY);
+else S=STREAMOpenFile(Ctx->ListPath,SF_RDONLY);
 Tempstr=STREAMReadLine(Tempstr, S);
 while (Tempstr)
 {
@@ -93,7 +93,6 @@ int i, count=0;
 	{
 			if (StatFile(Ctx, argv[i],&Stat)==0)
 			{
-				if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
 				ProcessItem(Ctx, argv[i], &Stat);
 			}
 			else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);

@@ -1,4 +1,4 @@
-#include "check.h"
+#include "check-hash.h"
 #include "fingerprint.h"
 #include "files.h"
 
@@ -119,7 +119,7 @@ if (strcmp(ptr,"-")==0)
   ListStream=STREAMFromFD(0);
   STREAMSetTimeout(ListStream,0);
 }
-else ListStream=STREAMOpenFile(ptr, O_RDONLY);
+else ListStream=STREAMOpenFile(ptr, SF_RDONLY);
 
 FP=FingerprintRead(ListStream);
 while (FP)

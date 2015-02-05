@@ -7,12 +7,12 @@ INSTALL=@INSTALL@
 prefix=@prefix@
 bindir=$(prefix)@bindir@
 FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) @DEFS@
-OBJ=common.o command-line-args.o ssh.o fingerprint.o files.o filesigning.o xattr.o cgi.o check.o find.o memcached.o
+OBJ=common.o command-line-args.o ssh.o fingerprint.o files.o filesigning.o xattr.o cgi.o check-hash.o find.o memcached.o
 EXE=hashrat
 
 all: $(OBJ) main.c
-	@cd libUseful-2.0; $(MAKE)
-	gcc $(FLAGS) -o$(EXE) $(OBJ) main.c libUseful-2.0/libUseful-2.0.a $(LIBS) 
+	@cd libUseful-2.1; $(MAKE)
+	gcc $(FLAGS) -o$(EXE) $(OBJ) main.c libUseful-2.1/libUseful-2.1.a $(LIBS) 
 
 common.o: common.h common.c
 	gcc $(FLAGS) -c common.c
@@ -29,8 +29,8 @@ filesigning.o: filesigning.h filesigning.c
 find.o: find.h find.c
 	gcc $(FLAGS) -c find.c
 
-check.o: check.h check.c
-	gcc $(FLAGS) -c check.c
+check-hash.o: check-hash.h check-hash.c
+	gcc $(FLAGS) -c check-hash.c
 
 xattr.o: xattr.h xattr.c
 	gcc $(FLAGS) -c xattr.c
