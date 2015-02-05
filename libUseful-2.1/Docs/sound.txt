@@ -1,0 +1,55 @@
+A few simple functions for playing and recording sound. Depending on how libUseful was compiled these will either work via Esound (esd) or Open Sound System.
+
+For systems with ALSA, playback, record and volume control can be enabled by loading the kernel modules snd-mixer-oss and snd-pcm-oss. These will create a 'fake' oss style device (/dev/dsp) which allows oss-style programs to talk to ALSA.
+
+int SoundPlayFile(char *Path, int Vol, int Flags);
+
+A very simple function to play .au or .wav files. 
+
+'Path' is the path to the file.
+
+'Vol' is a value between 0 and 255.  The #defined value 'VOLUME_LEAVEALONE' can be passed as 'Vol', this means don't alter the volume when playing the file.
+
+'Flags' currently only accepts the #defined value 'PLAYSOUND_NONBLOCK', which will cause a background process to be forked off so that the program isn't delayed while the sound plays.
+
+
+
+TAudioInfo *SoundReadAU(STREAM *S);
+TAudioInfo *SoundReadWAV(STREAM *S);
+
+These functions read header info from .wav or .au files. The information is returned in a TAudioInfo structure:
+
+
+typedef struct
+{
+unsigned int Format;
+unsigned int Channels;
+unsigned int SampleRate;
+unsigned int SampleSize;
+unsigned int DataSize;
+}TAudioInfo;
+
+The file is passed in as a STREAM. Look in file.txt for documentation on the STREAM class.
+
+
+
+int SoundOpenOutput(char *Dev, TAudioInfo *Info);
+
+This function opens an output device, with channels, audioformat, samplerate, etc, etc set using the TAudioInfo struct described above. 
+
+If 'Dev' is set to 'esd:" followed by a hostname, e.g. "esd:localhost", "esd:192.168.1.5", then the ESPEAKER environment variable will be set to the hostname, and sound will be send to that host. If the 'Dev' argument is of non-zero length, but does not start with 'esd', then it will be taken to be an OSS device path.
+
+If 'Dev' is of zero length, then localhost esound will be tried first, falling back to OSS on /dev/dsp.
+
+
+int SoundOpenInput(char *Dev, TAudioInfo *Info);
+
+As 'SoundOpenOutput', but for reading/recording sound.
+
+
+
+int SoundAlterVolume(char *Dev, char *Channel, int delta);
+
+Change the volume on the OSS sound device at 'Dev' (usually /dev/mixer). 'Channel' is the sound channel,  one of: "master", "pcm", "cd", "mic", "line", "video", "phonein", "phoneout" or "all".
+
+'Delta' is the amount to increase by, +- in the range 0-255.

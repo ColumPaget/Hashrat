@@ -1,0 +1,29 @@
+inet.h contains functions that relates to utility services offered by sites on the web.
+
+At the moment this is just IP Geolocation and discovery of your External (out on the internet) IP address
+
+
+char *GetExternalIP(char *RetStr);
+
+Pass a char * string into this function, and the function will print your external IP address into it, if it can determine it, and return the string (or null if IP cannot be determined).
+
+Look in the documentation for string.h (string.txt) to understand libUseful strings
+
+
+
+int IPGeoLocate(char *IP, ListNode *Vars);
+
+Pass in an quad-format IP address or a hostname, and this function will do geolocation and return the information as a list that holds strings. Look into list.txt to understand libUseful lists.
+
+
+
+
+char *ExtractFromWebpage(char *RetStr, char *URL, char *ExtractStr, int MinLength);
+
+This is a function for screen-scraping data items from webpages. 
+
+example:
+
+ RetStr=ExtractFromWebpage(RetStr,"http://checkip.dyndns.org", "Current IP Address: $(extract_item)</body>",4);
+
+pass in a blank string as the first argument, and the function will print it's results into it and return it. The second argument is the URL of the web-page to get. The third argument is a string to search for, and clip out that part of the string that is here represented by '$(extract_item)'.
