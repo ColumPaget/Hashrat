@@ -20,6 +20,9 @@
 #define ACT_FINDMATCHES 21
 #define ACT_FINDMATCHES_MEMCACHED 22
 #define ACT_FINDDUPLICATES 23
+#define ACT_BACKUP 24
+#define ACT_CHECKBACKUP 25
+
 
 #define FLAG_RECURSE 1
 //Two flags with the same values, but used in different contexts

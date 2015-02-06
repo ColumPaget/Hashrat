@@ -250,6 +250,16 @@ else if (strcmp(argv[i],"-dups")==0)
 	Ctx->Action = ACT_FINDDUPLICATES;
 	strcpy(argv[i],"");
 }
+else if (strcmp(argv[i],"-B")==0)
+{
+	Ctx->Action = ACT_BACKUP;
+	strcpy(argv[i],"");
+}
+else if (strcmp(argv[i],"-cB")==0)
+{
+	Ctx->Action = ACT_CHECKBACKUP;
+	strcpy(argv[i],"");
+}
 else if ((strcmp(argv[i],"-hook")==0) || (strcmp(argv[i],"-h")==0))
 {
 	strcpy(argv[i],"");
@@ -430,7 +440,7 @@ printf("  %-15s %s\n","-sha256", "Use sha256 hash algorithmn");
 printf("  %-15s %s\n","-sha512", "Use sha512 hash algorithmn");
 printf("  %-15s %s\n","-whirl", "Use whirlpool hash algorithmn");
 printf("  %-15s %s\n","-whirlpool", "Use whirlpool hash algorithmn");
-printf("  %-15s %s\n","-jh244", "Use jh-244 hash algorithmn");
+printf("  %-15s %s\n","-jh224", "Use jh-224 hash algorithmn");
 printf("  %-15s %s\n","-jh256", "Use jh-256 hash algorithmn");
 printf("  %-15s %s\n","-jh384", "Use jh-384 hash algorithmn");
 printf("  %-15s %s\n","-jh512", "Use jh-512 hash algorithmn");
@@ -439,8 +449,8 @@ printf("  %-15s %s\n","-8", "Encode with octal instead of hex");
 printf("  %-15s %s\n","-10", "Encode with decimal instead of hex");
 printf("  %-15s %s\n","-H", "Encode with UPPERCASE hexadecimal");
 printf("  %-15s %s\n","-HEX", "Encode with UPPERCASE hexadecimal");
-printf("  %-15s %s\n","-64", "Encode with base65 instead of hex");
-printf("  %-15s %s\n","-base64", "Encode with base65 instead of hex");
+printf("  %-15s %s\n","-64", "Encode with base64 instead of hex");
+printf("  %-15s %s\n","-base64", "Encode with base64 instead of hex");
 printf("  %-15s %s\n","-t", "Output hashes in traditional md5sum, shaXsum format");
 printf("  %-15s %s\n","-trad", "Output hashes in traditional md5sum, shaXsum format");
 printf("  %-15s %s\n","-r", "Recurse into directories when hashing files");
@@ -492,7 +502,7 @@ printf("  %-15s %s\n","shasum","run with '-trad -sha1'");
 printf("  %-15s %s\n","sha1sum","run with '-trad -sha1'");
 printf("  %-15s %s\n","sha256sum","run with '-trad -sha256'");
 printf("  %-15s %s\n","sha512sum","run with '-trad -sha512'");
-printf("  %-15s %s\n","jh244sum","run with '-trad -jh244'");
+printf("  %-15s %s\n","jh224sum","run with '-trad -jh224'");
 printf("  %-15s %s\n","jh256sum","run with '-trad -jh256'");
 printf("  %-15s %s\n","jh384sum","run with '-trad -jh384'");
 printf("  %-15s %s\n","jh512sum","run with '-trad -jh512'");
