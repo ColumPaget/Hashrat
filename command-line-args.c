@@ -336,6 +336,11 @@ else if (
 					(strcmp(argv[i],"-t")==0) ||
 					(strcmp(argv[i],"-trad")==0)
 				) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_TRAD_OUTPUT, "", "",Ctx->Vars);
+else if (
+					(strcmp(argv[i],"-bsd")==0) ||
+					(strcmp(argv[i],"-tag")==0) ||
+					(strcmp(argv[i],"--tag")==0)
+				) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_BSD_OUTPUT, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-u")==0) CommandLineHandleUpdate(argc, argv, i, Ctx);
 else if (strcmp(argv[i],"-attrs")==0) 
 {
@@ -422,7 +427,13 @@ printf("Hashrat: version %s\n",VERSION);
 printf("Author: Colum Paget\n");
 printf("Email: colums.projects@gmail.com\n");
 printf("Blog:  http://idratherhack.blogspot.com\n");
-printf("Credits:\n	Thanks to the people who invented the hash functions!\n	MD5: Ronald Rivest\n	Whirlpool: Vincent Rijmen, Paulo S. L. M. Barreto\n	JH: Hongjun Wu\n	SHA: The NSA (thanks, but please stop reading my email. It's kinda creepy.).\n\n Special thanks to Professor Hongjun Wu for taking the time to confirm that his JH algorithm is free for use in GPL programs.\n");
+printf("Credits:\n");
+printf("	Thanks for bug reports/advice to: Stephan Hegel, Michael Shigorin <mike@altlinux.org> and Joao Eriberto Mota Filho <eriberto@debian.org>\n");
+printf("	Thanks to the people who invented the hash functions!\n	MD5: Ronald Rivest\n	Whirlpool: Vincent Rijmen, Paulo S. L. M. Barreto\n	JH: Hongjun Wu\n	SHA: The NSA (thanks, but please stop reading my email. It's kinda creepy.).\n\n"); 
+
+printf("	Special thanks to Professor Hongjun Wu for taking the time to confirm that his JH algorithm is free for use in GPL programs.\n");
+
+printf("	Special, special thanks to Joao Eriberto Mota Filho for doing a LOT of work to make hashrat debian ready!\n");
 
 printf("\n");
 printf("Usage:\n    hashrat [options] [path to hash]...\n");
@@ -485,15 +496,11 @@ printf("  %-15s %s\n","", "URLs are in the format ssh://[username]:[password]@[h
 printf("  %-15s %s\n","-idfile <path>", "Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.");
 printf("  %-15s %s\n","-xattr", "Use eXtended file ATTRibutes. In hash mode, store hashes in the file attributes, in check mode compare against hashes stored in file attributes.");
 printf("  %-15s %s\n","-txattr", "Use TRUSTED eXtended file ATTRibutes. In hash mode, store hashes in 'trusted' file attributes. 'trusted' attributes can only be read and written by root.");
+printf("  %-15s %s\n","-attrs", "comma-separated list of filesystem attribute names to be set to the value of the hash.");
 printf("  %-15s %s\n","-cache", "Use hashes stored in 'user' xattr if they're younger than the mtime of the file. This speeds up outputting hashes.");
 printf("  %-15s %s\n","-u <types>", "Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.");
 printf("  %-15s %s\n","-hide-input", "When reading data from stdin in linemode, set the terminal to not echo characters, thus hiding typed input.");
 printf("  %-15s %s\n","-star-input", "When reading data from stdin in linemode replace characters with stars.");
-
-/*
-else if (strcmp(argv[i],"-xattr")==0) CommandLineHandleArg(argc, argv, i, FLAG_XATTR, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-attrs")==0) 
-*/
 
 
 printf("\n\nHashrat can also detect if it's being run under any of the following names (e.g., via symlinks)\n\n");

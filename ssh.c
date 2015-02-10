@@ -5,6 +5,9 @@
 
 #define SSH_LOGON_DONE 1
 #define SSH_ASK_PASSWD 2
+#define SSH_REMOTE_HAS_HASHRAT 4
+#define SSH_REMOTE_HAS_SHA1SUM 8
+#define SSH_REMOTE_HAS_MD5SUM  16
 
 char *SSHGenerateReplayTerminator(char *RetStr, const char *Command)
 {
@@ -108,7 +111,8 @@ return(result);
 
 
 
-STREAM *SSHConnect(char *URL, char **Path, HashratCtx *Ctx)
+
+STREAM *SSHConnect(const char *URL, char **Path, HashratCtx *Ctx)
 {
 char *Tempstr=NULL, *Host=NULL, *PortStr=NULL, *User=NULL, *Passwd=NULL, *ptr;
 int Port=22, Flags=0;
@@ -155,6 +159,8 @@ DestroyString(PortStr);
 
 return(Ctx->NetCon);
 }
+
+
 
 
 

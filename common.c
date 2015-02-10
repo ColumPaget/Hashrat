@@ -31,9 +31,15 @@ free(Ctx);
 
 int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, char *Path, struct stat *Stat, char *Hash)
 {
-char *Tempstr=NULL; 
+char *Tempstr=NULL, *ptr; 
 
 if (Flags & FLAG_TRAD_OUTPUT) Tempstr=MCopyStr(Tempstr,Hash, "  ", Path,NULL);
+else if (Flags & FLAG_BSD_OUTPUT) 
+{
+	Tempstr=CopyStr(Tempstr,Ctx->HashType);
+	for (ptr=Tempstr; *ptr != '\0'; ptr++) *ptr=toupper(*ptr);
+	Tempstr=MCatStr(Tempstr, " (", Path, ") = ", Hash, NULL);
+}
 else
 {
 	/*

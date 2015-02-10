@@ -6,7 +6,7 @@ Blog: http://idratherhack.blogspot.com
 
 
 DISCLAIMER:
-  This is free software. It comes with no guarentees and I take no responsiblity if it makes your computer explode or opens a portal to the demon dimensions, or does anything at all.
+  This is free software. It comes with no guarentees and I take no responsiblity if it makes your computer explode or opens a portal to the demon dimensions, or does anything at all, or doesn't.
 
 
 SYNOPSIS:
@@ -17,10 +17,12 @@ CREDITS:
 	Thanks to the people who invented the hash functions!
 		MD5: Ronald Rivest
 		Whirlpool: Vincent Rijmen, Paulo S. L. M. Barreto
-		JH: Hongjun Wu
+		JH: Prof Hongjun Wu
 		SHA: The NSA (thanks, but please stop reading my email. It's kinda creepy.).
 
 		Special thanks to Professor Hongjun Wu for taking the time to confirm that the JH algorithm is free for use in GPL programs.
+
+		Special, special thanks to Joao Eriberto Mota Filho <eriberto@debian.org>, for doing a LOT of work to get hashrat fit for debian.
 		
 
 USAGE:

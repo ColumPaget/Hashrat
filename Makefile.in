@@ -47,6 +47,10 @@ memcached.o: memcached.h memcached.c
 command-line-args.o: command-line-args.h command-line-args.c
 	gcc $(FLAGS) -c command-line-args.c
 
+check:
+	@./check.sh
+
+
 clean:
 	-rm -f *.o */*.o */*.a */*.so $(EXE)
 	-rm config.log config.status */config.log */config.status
