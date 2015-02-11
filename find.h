@@ -7,8 +7,8 @@
 
 void *MatchesLoad();
 void LoadMatchesToMemcache();
-void MatchAdd(const char *Hash, const char *HashType, const char *Data, const char *Path);
-TFingerprint *CheckForMatch(HashratCtx *Ctx, char *Path, struct stat *FStat, char *HashStr);
+int MatchAdd(TFingerprint *FP, const char *Path, int Flags);
+TFingerprint *CheckForMatch(HashratCtx *Ctx, const char *Path, struct stat *FStat, const char *HashStr);
 
 
 #endif

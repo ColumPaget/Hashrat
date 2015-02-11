@@ -59,6 +59,19 @@ fi
 }
 
 
+TestLocate()
+{
+HR_OUT=`echo $1 | ./hashrat -m -r .`
+
+if [ "$HR_OUT" = "$2" ]
+then
+	OkayMessage "$3 works."
+else 
+	FailMessage "$3 BROKEN."
+fi
+}
+
+
 Title "Testing Hash Types"
 TestHash md5 "" 68e88e7b46a0fbd8a54c8932d2a9710d
 TestHash sha1 "" d27f161a82d2834afccda6bfc1d10b2024fc6ec0
@@ -70,11 +83,11 @@ TestHash jh256 "" 45dc6bfa4cd8bd55030ed3505b268f05431f16005dfcd775eb589f35e4ef67
 TestHash jh384 "" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca47141b09136daaada9fa3f10522456484db
 TestHash jh512 "" 05feebb3148d9b0d12025759e4e054fe851dc6ad5bf58d3f79afb7d61caf8ce9983b7a0c6adab5dc2f186849ca0ea0236541ce4c659a6b4e1dd9748fc28eaf45
 
-Title "Testing Repeated Iterations"
-TestHash md5 "1000 md5" 68e88e7b46a0fbd8a54c8932d2a9710d 1000
-TestHash sha1 "1000 sha1" d27f161a82d2834afccda6bfc1d10b2024fc6ec0 1000
-TestHash whirlpool "1000 whirlpool" b690486285b18a9cbea3105a8f7e8ee439ef878530fe2e389e0b5ab17658df79ad6c83c1f836f81f51ce5c73a6899f0355fdad9f257526fc718ea04f7aa1b792 1000
-TestHash jh384 "1000 jh384" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca47141b09136daaada9fa3f10522456484db 1000
+Title "Testing Repeated Iterations (may take some time)"
+#TestHash md5 "1000 md5" 68e88e7b46a0fbd8a54c8932d2a9710d 1000
+#TestHash sha1 "1000 sha1" d27f161a82d2834afccda6bfc1d10b2024fc6ec0 1000
+#TestHash whirlpool "1000 whirlpool" b690486285b18a9cbea3105a8f7e8ee439ef878530fe2e389e0b5ab17658df79ad6c83c1f836f81f51ce5c73a6899f0355fdad9f257526fc718ea04f7aa1b792 1000
+#TestHash jh384 "1000 jh384" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca47141b09136daaada9fa3f10522456484db 1000
 
 Title "Testing Encoding"
 TestHash 8 "base 8 (octal) encoding" 150350216173106240373330245114211062322251161015
@@ -91,6 +104,15 @@ then
 else
 	FailMessage "Help (-?) BROKEN"
 fi
+
+HR_OUT=`./hashrat -version`
+if [ "$HR_OUT" = "version: 1.6" ]
+then
+	OkayMessage "Version (-version) works"
+else
+	FailMessage "Version (-version) BROKEN"
+fi
+
 
 HR_OUT=`./hashrat -sha1 -trad tests/quotes.txt`
 if [ "$HR_OUT" = "5aa622e49b541f9a71409358d2e20feca1fa1f44  tests/quotes.txt" ]
@@ -110,24 +132,23 @@ else
 	FailMessage "Checking files BROKEN"
 fi
 
-
-HR_INPUT="447d2fb4755ad4f5878d4f35602160350a6ff1815bfa6589ac2ebab75b049ade7bdc95f53d33a875dfb1ab7ca308627b055d7a6680efa4444be42c6e01ad7fbe  tests/quotes.txt" 
-HR_OUT=`echo $HR_INPUT | ./hashrat -sha512 -m -r .`
-
-if [ "$HR_OUT" = "LOCATED: 447d2fb4755ad4f5878d4f35602160350a6ff1815bfa6589ac2ebab75b049ade7bdc95f53d33a875dfb1ab7ca308627b055d7a6680efa4444be42c6e01ad7fbe  tests/quotes.txt" ]
-then
-	OkayMessage "Locating files matching a hash works"
-else 
-	FailMessage "Locating files matching a hash BROKEN"
-fi
-
-
 HR_OUT=`./hashrat -r -dups tests`                      
-if [ "$HR_OUT" = "DUPLICATE: tests/help.txt of tests/duplicate.txt " ]
+if [ "$HR_OUT" = "DUPLICATE: tests/quotes.txt of  tests/duplicate.txt" ]
 then
 	OkayMessage "Finding duplicate files works"
 else 
 	FailMessage "Finding duplicate files BROKEN"
 fi
+
+
+Title "Testing File Locate using different input formats"
+
+TestLocate "hash='md5:6ec9de513a8ff1768eb4768236198cf3' mode='100644' uid='0' gid='0' size='621' mtime='1423180289' inode='2359456' path='test file'" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 'test file ' at ./tests/help.txt" "Locating files with native format input"
+TestLocate "6ec9de513a8ff1768eb4768236198cf3  test file" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 'test file ' at ./tests/help.txt" "Locating files with traditional (md5sum) format input"
+TestLocate "MD5 (test file) = 6ec9de513a8ff1768eb4768236198cf3" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 'test file ' at ./tests/help.txt" "Locating files with bsd format input"
+
+HR_INPUT=`cat tests/test.ioc`
+TestLocate "$HR_INPUT" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 ' Hashrat Test IOC' at ./tests/help.txt" "Locating files with OpenIOC input"
+
 
 exit $EXIT

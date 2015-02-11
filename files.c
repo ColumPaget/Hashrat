@@ -453,7 +453,7 @@ case ACT_FINDMATCHES_MEMCACHED:
 		{
 		HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
 		FP=CheckForMatch(Ctx, Path, Stat, HashStr);
-		if (FP) printf("LOCATED: %s %s %s\n",FP->Hash,FP->Path,FP->Data);
+		if (FP) printf("LOCATED: %s '%s %s' at %s\n",FP->Hash,FP->Path,FP->Data,Path);
 		TFingerprintDestroy(FP);	
 		}
 		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
@@ -468,9 +468,16 @@ case ACT_FINDDUPLICATES:
 		if (HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr) != FLAG_ERROR)
 		{
 			FP=CheckForMatch(Ctx, Path, Stat, HashStr);
-			if (FP) printf("DUPLICATE: %s of %s %s\n",Path,FP->Path,FP->Data);
-			else MatchAdd(HashStr,Ctx->HashType,"", Path);
-			TFingerprintDestroy(FP);	
+			if (FP)
+			{
+				printf("DUPLICATE: %s of %s %s\n",Path,FP->Path,FP->Data);
+				TFingerprintDestroy(FP);	
+			}
+			else 
+			{
+				FP=TFingerprintCreate(HashStr, Ctx->HashType, Path, "");
+				MatchAdd(FP, Path, 0);
+			}
 		}
 	}
 	else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);

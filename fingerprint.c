@@ -2,6 +2,37 @@
 #include <ctype.h>
 
 
+    
+void ParseBSDFormat(const char *Data, char **Type, char **Hash, char **Path)
+{
+int result=FALSE;
+char *ptr;
+
+ptr=GetToken(Data,"\\S",Type,0);
+while (isspace(*ptr)) ptr++;
+if (*ptr=='(') ptr++;
+ptr=GetToken(ptr,")",Path,0);
+while (isspace(*ptr)) ptr++;
+if (*ptr=='=') ptr++;
+while (isspace(*ptr)) ptr++;
+
+*Hash=CopyStr(*Hash,ptr);
+
+}
+
+
+void ParseTradFormat(const char *Data, char **Hash, char **Path)
+{
+char *ptr;
+
+ptr=GetToken(Data,"\\S",Hash,0);
+if (*ptr=='*') ptr++;
+while (isspace(*ptr)) ptr++;
+*Path=CopyStr(*Path,ptr);
+}
+
+
+
 
 
 void TFingerprintDestroy(void *p_Fingerprint)
@@ -36,9 +67,10 @@ TFingerprint *Item;
 
 
 
-TFingerprint *FingerprintRead(STREAM *S)
+
+TFingerprint *TFingerprintParse(const char *Data)
 {
-char *Tempstr=NULL, *Name=NULL, *Value=NULL, *ptr;
+char *Name=NULL, *Value=NULL, *ptr;
 TFingerprint *FP;
 
 FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
@@ -47,15 +79,13 @@ FP->Hash=CopyStr(FP->Hash,"");
 FP->Flags=0;
 memset(&FP->FStat,0,sizeof(struct stat));
 
-Tempstr=STREAMReadLine(Tempstr,S);
-if (! Tempstr) return(NULL);
 
-StripTrailingWhitespace(Tempstr);
-if (strncmp(Tempstr,"hash=",5) ==0)
+StripTrailingWhitespace(Data);
+if (strncmp(Data,"hash=",5) ==0)
 {
 //Native format
 
-	ptr=GetNameValuePair(Tempstr," ","=",&Name,&Value);
+	ptr=GetNameValuePair(Data," ","=",&Name,&Value);
 	while (ptr)
 	{
 		if (StrLen(Name))
@@ -102,12 +132,12 @@ if (strncmp(Tempstr,"hash=",5) ==0)
 }
 else
 {
-	ptr=GetToken(Tempstr," ",&FP->Hash,0);
-	while (isspace(*ptr)) ptr++;
-	FP->Path=CopyStr(FP->Path,ptr);
+	ptr=GetToken(Data," ",&FP->Hash,0);
+	if (StrLen(FP->Hash) < 10) ParseBSDFormat(Data, &FP->HashType, &FP->Hash, &FP->Path);
+	else ParseTradFormat(Data, &FP->Hash, &FP->Path);
 }
 
-DestroyString(Tempstr);
+if (StrLen(FP->Hash)) strlwr(FP->Hash);
 DestroyString(Name);
 DestroyString(Value);
 
@@ -115,7 +145,19 @@ return(FP);
 }
 
 
+TFingerprint *FingerprintRead(STREAM *S)
+{
+char *Tempstr=NULL;
+TFingerprint *FP;
 
+Tempstr=STREAMReadLine(Tempstr,S);
+if (! Tempstr) return(NULL);
+
+FP=TFingerprintParse(Tempstr);
+
+DestroyString(Tempstr);
+return(FP);
+}
 
 
 

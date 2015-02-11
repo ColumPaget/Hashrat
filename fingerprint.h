@@ -8,6 +8,7 @@
 void TFingerprintDestroy(void *p_Fingerprint);
 TFingerprint *TFingerprintCreate(const char *Hash, const char *HashType, const char *Data, const char *Path);
 TFingerprint *FingerprintRead(STREAM *S);
+TFingerprint *TFingerprintParse(const char *Data);
 int FingerprintCompare(const void *v1, const void *v2);
 
 #endif

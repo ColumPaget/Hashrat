@@ -195,11 +195,11 @@ switch (Ctx->Action)
 	case ACT_LOADMATCHES:
 	ptr=GetVar(Ctx->Vars, "Memcached:Server");
 	if (StrLen(ptr) ==0) printf("ERROR: No memcached server specified. Use the -memcached <server> command-line argument to specify one\n");
-	else LoadMatchesToMemcache();
+	else MatchesLoad(FLAG_MEMCACHED);
 	break;
 
 	case ACT_FINDMATCHES:
-	if (! MatchesLoad())
+	if (! MatchesLoad(0))
 	{
 		printf("No hashes supplied on stdin.\n");
 		exit(1);
