@@ -72,6 +72,16 @@ fi
 }
 
 
+
+##################### MAIN STARTS HERE ##########################
+
+if [ ! -e ./hashrat ]
+then
+	FailMessage "'./hashrat' executable missing"
+	echo
+	exit 3
+fi
+
 Title "Testing Hash Types"
 TestHash md5 "" 68e88e7b46a0fbd8a54c8932d2a9710d
 TestHash sha1 "" d27f161a82d2834afccda6bfc1d10b2024fc6ec0
@@ -97,13 +107,6 @@ TestHash 64 "base 64 encoding" aOiOe0ag+9ilTIky0qlxDQ==
 
 
 Title "Testing Misc. Features"
-HR_OUT=`./hashrat -? | ./hashrat -64 -jh256`
-if [ "$HR_OUT" = "lolbz4lttrTKWUQji0YcUM3qxUyp+xhQ7bbilDZp6b0=" ]
-then
-	OkayMessage "Help (-?) works"
-else
-	FailMessage "Help (-?) BROKEN"
-fi
 
 HR_OUT=`./hashrat -version`
 if [ "$HR_OUT" = "version: 1.6" ]

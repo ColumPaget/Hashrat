@@ -32,6 +32,7 @@ free(Ctx);
 int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, char *Path, struct stat *Stat, char *Hash)
 {
 char *Tempstr=NULL, *ptr; 
+char *p_Type="unknown";
 
 if (Flags & FLAG_TRAD_OUTPUT) Tempstr=MCopyStr(Tempstr,Hash, "  ", Path,NULL);
 else if (Flags & FLAG_BSD_OUTPUT) 
@@ -59,10 +60,18 @@ else
     time_t    st_ctime;   // time of last status change 
 	*/
 
+if (S_ISREG(Stat->st_mode)) p_Type="file";
+else if (S_ISDIR(Stat->st_mode)) p_Type="dir";
+else if (S_ISLNK(Stat->st_mode)) p_Type="link";
+else if (S_ISSOCK(Stat->st_mode)) p_Type="socket";
+else if (S_ISFIFO(Stat->st_mode)) p_Type="fifo";
+else if (S_ISCHR(Stat->st_mode)) p_Type="chrdev";
+else if (S_ISBLK(Stat->st_mode)) p_Type="blkdev";
+
 #if _FILE_OFFSET_BITS == 64
-	Tempstr=FormatStr(Tempstr,"hash='%s:%s' mode='%o' uid='%lu' gid='%lu' size='%llu' mtime='%lu' inode='%llu' path='%s'",Ctx->HashType,Hash,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
+	Tempstr=FormatStr(Tempstr,"hash='%s:%s' type='%s' mode='%o' uid='%lu' gid='%lu' size='%llu' mtime='%lu' inode='%llu' path='%s'",Ctx->HashType,Hash,p_Type,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
 #else
-	Tempstr=FormatStr(Tempstr,"hash='%s:%s' mode='%o' uid='%lu' gid='%lu' size='%lu' mtime='%lu' inode='%lu' path='%s'",Ctx->HashType,Hash,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
+	Tempstr=FormatStr(Tempstr,"hash='%s:%s' type='%s' mode='%o' uid='%lu' gid='%lu' size='%lu' mtime='%lu' inode='%lu' path='%s'",Ctx->HashType,Hash,p_Type,Stat->st_mode,Stat->st_uid,Stat->st_gid,Stat->st_size,Stat->st_mtime,Stat->st_ino,Path);
 #endif
 }
 

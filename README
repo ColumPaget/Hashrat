@@ -14,16 +14,15 @@ SYNOPSIS:
 
 
 CREDITS:  
+	Thanks for bug reports/advice to: Stephan Hegel, Michael Shigorin <mike@altlinux.org> and Joao Eriberto Mota Filho <eriberto@debian.org>
 	Thanks to the people who invented the hash functions!
-		MD5: Ronald Rivest
-		Whirlpool: Vincent Rijmen, Paulo S. L. M. Barreto
-		JH: Prof Hongjun Wu
-		SHA: The NSA (thanks, but please stop reading my email. It's kinda creepy.).
+	MD5: Ronald Rivest
+	Whirlpool: Vincent Rijmen, Paulo S. L. M. Barreto
+	JH: Hongjun Wu
+	SHA: The NSA (thanks, but please stop reading my email. It's kinda creepy.).
 
-		Special thanks to Professor Hongjun Wu for taking the time to confirm that the JH algorithm is free for use in GPL programs.
-
-		Special, special thanks to Joao Eriberto Mota Filho <eriberto@debian.org>, for doing a LOT of work to get hashrat fit for debian.
-		
+	Special thanks to Professor Hongjun Wu for taking the time to confirm that his JH algorithm is free for use in GPL programs.
+	Special, special thanks to Joao Eriberto Mota Filho for doing a LOT of work to make hashrat debian ready!
 
 USAGE:
     hashrat [options] [paths]...
@@ -35,21 +34,20 @@ USAGE:
 		Find duplicate files:		hashrat -dups [options] [paths to hash]
 
 
+
 Options:
   --help          Print this help
   -help           Print this help
   -?              Print this help
   --version       Print program version
   -version        Print program version
-  -V              Print program version
-  -v              Verbose output (currently just reports Zero Length Files on stderr when running in match or dups mode)
   -md5            Use md5 hash algorithmn
   -sha1           Use sha1 hash algorithmn
   -sha256         Use sha256 hash algorithmn
   -sha512         Use sha512 hash algorithmn
   -whirl          Use whirlpool hash algorithmn
   -whirlpool      Use whirlpool hash algorithmn
-  -jh244          Use jh-244 hash algorithmn
+  -jh224          Use jh-224 hash algorithmn
   -jh256          Use jh-256 hash algorithmn
   -jh384          Use jh-384 hash algorithmn
   -jh512          Use jh-512 hash algorithmn
@@ -58,10 +56,13 @@ Options:
   -10             Encode with decimal instead of hex
   -H              Encode with UPPERCASE hexadecimal
   -HEX            Encode with UPPERCASE hexadecimal
-  -64             Encode with base65 instead of hex
-  -base64         Encode with base65 instead of hex
+  -64             Encode with base64 instead of hex
+  -base64         Encode with base64 instead of hex
   -t              Output hashes in traditional md5sum, shaXsum format
   -trad           Output hashes in traditional md5sum, shaXsum format
+  -bsd            Output hashes in bsdsum format
+  -tag            Output hashes in bsdsum format
+  --tag           Output hashes in bsdsum format
   -r              Recurse into directories when hashing files
   -f <listfile>   Hash files listed in <listfile>
   -i <pattern>    Only hash items matching <pattern>
@@ -73,7 +74,6 @@ Options:
   -lm             Read hashes from stdin, upload them to a memcached server (requires the -memcached option).
   -X              In CHECK or MATCH mode only examine executable files.
   -exec           In CHECK or MATCH mode only examine executable files.
-  -D              Search for duplicate files.
   -dups           Search for duplicate files.
   -memcached <server> Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
   -mcd <server>   Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
@@ -83,7 +83,7 @@ Options:
   -strict         Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
   -S              Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
   -d              dereference (follow) symlinks
-  -fs             Stay one one file system
+  -fs             Stay on one file system
   -dirmode        DirMode: Read all files in directory and create one hash for them!
   -devmode        DevMode: read from a file EVEN OF IT'S A DEVNODE
   -lines          Read lines from stdin and hash each line independantly.
@@ -94,12 +94,12 @@ Options:
                   URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..
   -idfile <path>  Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.
   -xattr          Use eXtended file ATTRibutes. In hash mode, store hashes in the file attributes, in check mode compare against hashes stored in file attributes.
-  -cache          Use hashes stored in 'user' file attributes. If the stored hash is younger than the mtime of the file, it will be used instead of recalculating the hash. This speeds up hashing, but can result in errors if file mtimes are inaccurate or have been modified for malicious purposes.
+  -txattr         Use TRUSTED eXtended file ATTRibutes. In hash mode, store hashes in 'trusted' file attributes. 'trusted' attributes can only be read and written by root.
+  -attrs          comma-separated list of filesystem attribute names to be set to the value of the hash.
+  -cache          Use hashes stored in 'user' xattr if they're younger than the mtime of the file. This speeds up outputting hashes.
   -u <types>      Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.
-  -hide-input      When reading text in linemode with -lines or -rawlines, set the terminal to not echo characters, thus hiding typed text.
-  -star-input      When reading text in linemode with -lines or -rawlines, replace type characters with '*', thus hiding typed text.
-  -u <types>      Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.
-
+  -hide-input     When reading data from stdin in linemode, set the terminal to not echo characters, thus hiding typed input.
+  -star-input     When reading data from stdin in linemode replace characters with stars.
 
 
 Hashrat can also detect if it's being run under any of the following names (e.g., via symlinks)
@@ -109,12 +109,13 @@ Hashrat can also detect if it's being run under any of the following names (e.g.
   sha1sum         run with '-trad -sha1'
   sha256sum       run with '-trad -sha256'
   sha512sum       run with '-trad -sha512'
-  jh244sum        run with '-trad -jh244'
+  jh224sum        run with '-trad -jh224'
   jh256sum        run with '-trad -jh256'
   jh384sum        run with '-trad -jh384'
   jh512sum        run with '-trad -jh512'
   whirlpoolsum    run with '-trad -whirl'
   hashrat.cgi     run in web-enabled 'cgi mode'
+
 
 
 USE EXAMPLES:
@@ -258,6 +259,16 @@ USES FOR HASHRAT
 
 	If hashrat is run with the -cgi flag, or if it's run with a name of 'hashrat.cgi' (either by renaming the 'hashrat' executable, or via a symbolic link) it will output a webpage that allows users to look up hashes over the web. This allows me to look-up my strong passwords even if I don't have access to a local version of hashrat.
 
+	6) As an 'ls'
+
+	Hashrat outputs a file's name, type, mode, mtime, uid, gid and size, along with a hash. This allows it to be used as a kind of 'ls' by ftp style programs, listing all the details of a file, but with the added feature of a hash.
+
+	7) Hashing files on remote machines
+
+	If run with the '-net' option, hashrat will treat paths starting with 'http://' or 'ssh://' differently, connecting to the target machine and pulling files off it (hashrat assumes there is no hashing program on the remote machine, and that it must therefore download the files to hash them). For ssh paths wildcars are supported:
+
+		hashrat -net ssh://username:password@server/usr/bin/*
+
 
 EXTENDED FILESYSTEM ATTRIBUTES (XATTR)
 
@@ -271,7 +282,7 @@ EXTENDED FILESYSTEM ATTRIBUTES (XATTR)
 
 		hashrat -sha256 -r . -txattr
 
-	When checking either flag can be used, but hashrat will always use 'trusted' attributes when running as root, if those are avaialable, otherwise it will fall back to 'user' attributes.	
+	When checking either flag can be used, but hashrat will always use 'trusted' attributes when running as root, if those are available, otherwise it will fall back to 'user' attributes.	
 	
 		hashrat -c -sha256 -r . -xattr
 
@@ -281,3 +292,6 @@ EXTENDED FILESYSTEM ATTRIBUTES (XATTR)
 
 	This makes getting a report of hashes considerably faster, but it runs the risk that the hashes may not be accurate. Hashrat will only output a hash stored in file attributes if the storage time of the hash is younger than the modify time (mtime) of the file, however, this means an attacker could change the modify time of the file to hide changes they've made. Thus this feature should not be used for security checking purposes (but should be safe for uses like finding files that have changed and need to be backed up, for instance). 
 
+	The '-u' option allows filesystem attributes to be updated as we do checks (in check mode -xattr means 'read from xattr', so we need the '-u' (update) flag to tell hashrat to also update the stored hash of any files who's hash has changed).
+
+	hashrat -c -r . -xattr -u xattr

@@ -464,6 +464,9 @@ printf("  %-15s %s\n","-64", "Encode with base64 instead of hex");
 printf("  %-15s %s\n","-base64", "Encode with base64 instead of hex");
 printf("  %-15s %s\n","-t", "Output hashes in traditional md5sum, shaXsum format");
 printf("  %-15s %s\n","-trad", "Output hashes in traditional md5sum, shaXsum format");
+printf("  %-15s %s\n","-bsd", "Output hashes in bsdsum format");
+printf("  %-15s %s\n","-tag", "Output hashes in bsdsum format");
+printf("  %-15s %s\n","--tag", "Output hashes in bsdsum format");
 printf("  %-15s %s\n","-r", "Recurse into directories when hashing files");
 printf("  %-15s %s\n","-f <listfile>", "Hash files listed in <listfile>");
 printf("  %-15s %s\n","-i <pattern>", "Only hash items matching <pattern>");
@@ -484,7 +487,7 @@ printf("  %-15s %s\n","-color", "Use ANSI color codes on output when checking ha
 printf("  %-15s %s\n","-strict", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
 printf("  %-15s %s\n","-S", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
 printf("  %-15s %s\n","-d","dereference (follow) symlinks"); 
-printf("  %-15s %s\n","-fs", "Stay one one file system");
+printf("  %-15s %s\n","-fs", "Stay on one file system");
 printf("  %-15s %s\n","-dirmode", "DirMode: Read all files in directory and create one hash for them!");
 printf("  %-15s %s\n","-devmode", "DevMode: read from a file EVEN OF IT'S A DEVNODE");
 printf("  %-15s %s\n","-lines", "Read lines from stdin and hash each line independantly.");

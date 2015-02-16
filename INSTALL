@@ -15,4 +15,6 @@ So, to turn both on:
 make
 make install 
 
+You can run some tests of the hashrat you've built with:
 
+make check

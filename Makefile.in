@@ -10,7 +10,9 @@ FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) @DEFS@
 OBJ=common.o command-line-args.o ssh.o fingerprint.o files.o filesigning.o xattr.o cgi.o check-hash.o find.o memcached.o
 EXE=hashrat
 
-all: $(OBJ) main.c
+all: hashrat
+
+hashrat: $(OBJ) main.c
 	@cd libUseful-2.1; $(MAKE)
 	gcc $(FLAGS) -o$(EXE) $(OBJ) main.c libUseful-2.1/libUseful-2.1.a $(LIBS) 
 
@@ -47,21 +49,22 @@ memcached.o: memcached.h memcached.c
 command-line-args.o: command-line-args.h command-line-args.c
 	gcc $(FLAGS) -c command-line-args.c
 
-check:
+check: hashrat
 	@./check.sh
-
 
 clean:
 	-rm -f *.o */*.o */*.a */*.so $(EXE)
-	-rm config.log config.status */config.log */config.status
-	-rm -r autom4te.cache */autom4te.cache
+	-rm -f config.log config.status */config.log */config.status
+	-rm -fr autom4te.cache */autom4te.cache
 
 distclean:
 	-rm -f *.o */*.o */*.a */*.so $(EXE)
-	-rm config.log config.status */config.log */config.status Makefile */Makefile
-	-rm -r autom4te.cache */autom4te.cache
+	-rm -f config.log config.status */config.log */config.status Makefile */Makefile
+	-rm -fr autom4te.cache */autom4te.cache
 
 
-install:
+install: hashrat
 	-mkdir -p $(DESTDIR)$(prefix)/bin
 	cp -f $(EXE) $(DESTDIR)$(prefix)/bin
+	-mkdir -p $(DESTDIR)$(prefix)/man/man1
+	cp -f hashrat.1 $(DESTDIR)$(prefix)/man/man1
