@@ -166,7 +166,11 @@ USE EXAMPLES:
 
 	cat APT1.md5 | hashrat -lm -memcached 127.0.0.1
 
-		Read a list of hashes from stdin, and register them in a memcached server.
+		Read a list of hashes from stdin, and register them in a memcached server for later use in a search/check.
+
+	cat APT1.ioc | hashrat -lm -memcached 127.0.0.1
+
+		Extract hashes from an Open IOC file and register them in a memcached server for later use in a search/check.
 
 	hashrat -m -memcached 127.0.0.1 -r /
 
@@ -242,6 +246,8 @@ USES FOR HASHRAT
 	Hashtypes other than md5 can be used thusly:
 
 		cat sha1-list.lst | hashrat -r -sha1 -m /usr
+
+	The input file can be in hashrat format, 'traditional' md5sum/shasum format, bsdsum format, or can be an Open IOC file from which any hashes will be extracted.
 
 	Hashes can also be loaded into a memcached server, so that the same file list can be checked on a number of machines, without needing to store the hashlist on those machines. First we load the hashes:
 
