@@ -94,16 +94,21 @@ TestHash jh384 "" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca4
 TestHash jh512 "" 05feebb3148d9b0d12025759e4e054fe851dc6ad5bf58d3f79afb7d61caf8ce9983b7a0c6adab5dc2f186849ca0ea0236541ce4c659a6b4e1dd9748fc28eaf45
 
 Title "Testing Repeated Iterations (may take some time)"
-#TestHash md5 "1000 md5" 68e88e7b46a0fbd8a54c8932d2a9710d 1000
-#TestHash sha1 "1000 sha1" d27f161a82d2834afccda6bfc1d10b2024fc6ec0 1000
-#TestHash whirlpool "1000 whirlpool" b690486285b18a9cbea3105a8f7e8ee439ef878530fe2e389e0b5ab17658df79ad6c83c1f836f81f51ce5c73a6899f0355fdad9f257526fc718ea04f7aa1b792 1000
-#TestHash jh384 "1000 jh384" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca47141b09136daaada9fa3f10522456484db 1000
+TestHash md5 "1000 md5" 68e88e7b46a0fbd8a54c8932d2a9710d 1000
+TestHash sha1 "1000 sha1" d27f161a82d2834afccda6bfc1d10b2024fc6ec0 1000
+TestHash whirlpool "1000 whirlpool" b690486285b18a9cbea3105a8f7e8ee439ef878530fe2e389e0b5ab17658df79ad6c83c1f836f81f51ce5c73a6899f0355fdad9f257526fc718ea04f7aa1b792 1000
+TestHash jh384 "1000 jh384" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca47141b09136daaada9fa3f10522456484db 1000
 
 Title "Testing Encoding"
 TestHash 8 "base 8 (octal) encoding" 150350216173106240373330245114211062322251161015
 TestHash 10 "base 10 (decimal) encoding" 104232142123070160251216165076137050210169113013
 TestHash HEX "UPPERCASE base 16 (HEX) encoding" 68E88E7B46A0FBD8A54C8932D2A9710D
 TestHash 64 "base 64 encoding" aOiOe0ag+9ilTIky0qlxDQ==
+TestHash u64 "uu-encode style base 64 encoding" ":.B.>T:@^]BE3(DRTJEQ#0''"
+TestHash x64 "xx-encode style base 64 encoding" "OCWCSoOUyxWZH6YmoeZl1E++"
+TestHash p64 "'website compatible' base 64 encoding" "PDXDToPVyxX_I8Zmoe_l3F"
+TestHash a85 "ASCII85 encoding" "B]tJ7\KYV+c_d]%3"
+TestHash z85 "ZEROMQ85 encoding" "wX%ElWFTQ9+Z=X4h"
 
 
 Title "Testing Misc. Features"

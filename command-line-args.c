@@ -478,7 +478,7 @@ printf("  %-15s %s\n","-x64", "Encode with XXencode style base64.");
 printf("  %-15s %s\n","-u64", "Encode with UUencode style base64.");
 printf("  %-15s %s\n","-g64", "Encode with GEDCOM style base64.");
 printf("  %-15s %s\n","-a85", "Encode with ASCII85.");
-printf("  %-15s %s\n","-z85", "Encode with ZERMQ variant of ASCII85.");
+printf("  %-15s %s\n","-z85", "Encode with ZEROMQ variant of ASCII85.");
 printf("  %-15s %s\n","-t", "Output hashes in traditional md5sum, shaXsum format");
 printf("  %-15s %s\n","-trad", "Output hashes in traditional md5sum, shaXsum format");
 printf("  %-15s %s\n","-bsd", "Output hashes in bsdsum format");

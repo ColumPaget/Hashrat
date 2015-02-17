@@ -64,7 +64,7 @@ Options:
   -u64            Encode with UUencode style base64.
   -g64            Encode with GEDCOM style base64.
   -a85            Encode with ASCII85.
-  -z85            Encode with ZERMQ variant of ASCII85.
+  -z85            Encode with ZEROMQ variant of ASCII85.
   -t              Output hashes in traditional md5sum, shaXsum format
   -trad           Output hashes in traditional md5sum, shaXsum format
   -bsd            Output hashes in bsdsum format
