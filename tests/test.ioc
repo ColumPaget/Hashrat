@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<ioc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="c32b8af3-28d0-47d3-801f-a2c2b0129650" last-modified="2013-02-10T13:00:00" xmlns="http://schemas.mandiant.com/2010/ioc">
+  <short_description>Hashrat Test IOC</short_description>
+  <description>This is an example ioc file for use in testing. Hashrat can load up all the md5 hashes in an OpenIOC file and  search for them.</description>
+  <authored_by>Colum Paget</authored_by>
+  <authored_date>2015-02-10T23:11:00</authored_date>
+  <links>
+    <link rel="category">Test</link>
+  </links>
+  <definition>
+    <Indicator operator="OR" id="ef180c46-8d36-46bc-b45c-d88cefa85002">
+      <IndicatorItem id="683a261d-0d11-4d81-9974-f76244cf5f7f" condition="is">
+        <Context document="FileItem" search="FileItem/Md5sum" type="mir" />
+        <Content type="md5">8fc5fb519a222ab919f28d21545774c6</Content>
+      </IndicatorItem>
+      <IndicatorItem id="8164f745-0c7a-4971-9534-c32795908588" condition="is">
+        <Context document="FileItem" search="FileItem/Md5sum" type="mir" />
+        <Content type="md5">6ec9de513a8ff1768eb4768236198cf3</Content>
+      </IndicatorItem>
+    </Indicator>
+  </definition>
+</ioc>

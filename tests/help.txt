@@ -1,0 +1,94 @@
+Hashrat: version 1.6
+Author: Colum Paget
+Email: colums.projects@gmail.com
+Blog:  http://idratherhack.blogspot.com
+Credits:
+	Thanks to the people who invented the hash functions!
+	MD5: Ronald Rivest
+	Whirlpool: Vincent Rijmen, Paulo S. L. M. Barreto
+	JH: Hongjun Wu
+	SHA: The NSA (thanks, but please stop reading my email. It's kinda creepy.).
+
+ Special thanks to Professor Hongjun Wu for taking the time to confirm that his JH algorithm is free for use in GPL programs.
+
+Usage:
+    hashrat [options] [path to hash]...
+
+    hashrat -c [options] [input file of hashes]...
+
+Options:
+  --help          Print this help
+  -help           Print this help
+  -?              Print this help
+  --version       Print program version
+  -version        Print program version
+  -md5            Use md5 hash algorithmn
+  -sha1           Use sha1 hash algorithmn
+  -sha256         Use sha256 hash algorithmn
+  -sha512         Use sha512 hash algorithmn
+  -whirl          Use whirlpool hash algorithmn
+  -whirlpool      Use whirlpool hash algorithmn
+  -jh224          Use jh-224 hash algorithmn
+  -jh256          Use jh-256 hash algorithmn
+  -jh384          Use jh-384 hash algorithmn
+  -jh512          Use jh-512 hash algorithmn
+  -hmac           HMAC using specified hash algorithm
+  -8              Encode with octal instead of hex
+  -10             Encode with decimal instead of hex
+  -H              Encode with UPPERCASE hexadecimal
+  -HEX            Encode with UPPERCASE hexadecimal
+  -64             Encode with base64 instead of hex
+  -base64         Encode with base64 instead of hex
+  -t              Output hashes in traditional md5sum, shaXsum format
+  -trad           Output hashes in traditional md5sum, shaXsum format
+  -r              Recurse into directories when hashing files
+  -f <listfile>   Hash files listed in <listfile>
+  -i <pattern>    Only hash items matching <pattern>
+  -x <pattern>    Exclude items matching <pattern>
+  -n <length>     Truncate hashes to <length> bytes
+  -c              CHECK hashes against list from file (or stdin)
+  -cf             CHECK hashes but only show failures
+  -m              MATCH files from a list read from stdin.
+  -lm             Read hashes from stdin, upload them to a memcached server (requires the -memcached option).
+  -X              In CHECK or MATCH mode only examine executable files.
+  -exec           In CHECK or MATCH mode only examine executable files.
+  -dups           Search for duplicate files.
+  -memcached <server> Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
+  -mcd <server>   Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
+  -h <script>     Script to run when a file fails CHECK mode, or is found in MATCH mode.
+  -hook <script>  Script to run when a file fails CHECK mode, or is found in FIND mode
+  -color          Use ANSI color codes on output when checking hashes.
+  -strict         Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
+  -S              Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
+  -d              dereference (follow) symlinks
+  -fs             Stay one one file system
+  -dirmode        DirMode: Read all files in directory and create one hash for them!
+  -devmode        DevMode: read from a file EVEN OF IT'S A DEVNODE
+  -lines          Read lines from stdin and hash each line independantly.
+  -rawlines       Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
+  -rl             Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
+  -cgi            Run in HTTP CGI mode
+  -net            Treat 'file' arguments as either ssh or http URLs, and pull files over the network and then hash them (Allows hashing of files on remote machines).
+                  URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..
+  -idfile <path>  Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.
+  -xattr          Use eXtended file ATTRibutes. In hash mode, store hashes in the file attributes, in check mode compare against hashes stored in file attributes.
+  -txattr         Use TRUSTED eXtended file ATTRibutes. In hash mode, store hashes in 'trusted' file attributes. 'trusted' attributes can only be read and written by root.
+  -cache          Use hashes stored in 'user' xattr if they're younger than the mtime of the file. This speeds up outputting hashes.
+  -u <types>      Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.
+  -hide-input     When reading data from stdin in linemode, set the terminal to not echo characters, thus hiding typed input.
+  -star-input     When reading data from stdin in linemode replace characters with stars.
+
+
+Hashrat can also detect if it's being run under any of the following names (e.g., via symlinks)
+
+  md5sum          run with '-trad -md5'
+  shasum          run with '-trad -sha1'
+  sha1sum         run with '-trad -sha1'
+  sha256sum       run with '-trad -sha256'
+  sha512sum       run with '-trad -sha512'
+  jh224sum        run with '-trad -jh224'
+  jh256sum        run with '-trad -jh256'
+  jh384sum        run with '-trad -jh384'
+  jh512sum        run with '-trad -jh512'
+  whirlpoolsum    run with '-trad -whirl'
+  hashrat.cgi     run in web-enabled 'cgi mode'
