@@ -225,14 +225,7 @@ void HashratFinishHash(char **RetStr, HashratCtx *Ctx, THash *Hash)
 int val;
 char *ptr;
 
-			//Set encoding from args
-		if (Ctx->Flags & CTX_BASE8) val = ENCODE_OCTAL;
-		else if (Ctx->Flags & CTX_BASE10) val = ENCODE_DECIMAL;
-		else if (Ctx->Flags & CTX_HEXUPPER) val = ENCODE_HEXUPPER;
-		else if (Ctx->Flags & CTX_BASE64) val = ENCODE_BASE64;
-		else val= ENCODE_HEX;
-
-		Hash->Finish(Hash,val,RetStr);
+		Hash->Finish(Hash,Ctx->Encoding,RetStr);
 
 		ptr=GetVar(Ctx->Vars,"Output:Length");
 		if (StrLen(ptr))

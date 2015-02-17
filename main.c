@@ -159,7 +159,7 @@ switch (Ctx->Action)
 	break;
 
 	case ACT_SIGN:
-	Ctx->Flags |= CTX_BASE64;
+	Ctx->Encoding = ENCODE_BASE64;
 	for (i=1; i < argc; i++)
 	{
 	if (StrLen(argv[i]))
@@ -176,7 +176,7 @@ switch (Ctx->Action)
 	break;
 
 	case ACT_CHECKSIGN:
-	Ctx->Flags |= CTX_BASE64;
+	Ctx->Encoding |= ENCODE_BASE64;
 	for (i=1; i < argc; i++)
 	{
 	if (StrLen(argv[i]))

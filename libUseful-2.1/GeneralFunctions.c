@@ -92,6 +92,50 @@ return(len / 2);
 }
 
 
+char *Ascii85(char *RetStr, const char *Bytes, int ilen, const char *CharMap)
+{
+char *ptr, *block, *end;
+uint32_t val, mod;
+int olen=0, i;
+char Buff[6];
+
+end=Bytes+ilen;
+for (ptr=Bytes; ptr < end; )
+{
+	block=ptr;
+	val = ((*ptr & 0xFF) << 24); ptr++;
+	if (ptr < end)
+	{
+	val |= ((*ptr & 0xFF) << 16); ptr++;
+	}
+
+	if (ptr < end)
+	{
+	val |= ((*ptr & 0xFF) << 8); ptr++;
+	}
+
+	if (ptr < end)
+	{
+	val |= (*ptr & 0xFF); ptr++;
+	}
+
+	if (val==0) strcpy(Buff,"z");
+	else for (i=4; i >-1; i--)
+	{
+		mod=val % 85;
+		val /= 85;
+		Buff[i]=CharMap[mod & 0xFF];
+	}
+
+	//we only add as many characters as we encoded
+	//so for the last chracter
+	RetStr=CatStrLen(RetStr,Buff,ptr-block);
+} 
+printf("\n");
+
+return(RetStr);
+}
+
 
 char *EncodeBytes(char *Buffer, const char *Bytes, int len, int Encoding)
 {
@@ -104,6 +148,40 @@ switch (Encoding)
 	case ENCODE_BASE64: 
 	RetStr=SetStrLen(RetStr,len * 4);
 	to64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len); break;
+	break;
+
+	case ENCODE_IBASE64: 
+	RetStr=SetStrLen(RetStr,len * 4);
+	Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,IBASE64_CHARS,'\0'); break;
+	break;
+
+	case ENCODE_PBASE64: 
+	RetStr=SetStrLen(RetStr,len * 4);
+	Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,SBASE64_CHARS,'\0'); break;
+	break;
+
+
+	case ENCODE_CRYPT: 
+	RetStr=SetStrLen(RetStr,len * 4);
+	Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,CRYPT_CHARS,'\0'); break;
+	break;
+
+	case ENCODE_XXENC: 
+	RetStr=SetStrLen(RetStr,len * 4);
+	Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,XXENC_CHARS,'+'); break;
+	break;
+
+	case ENCODE_UUENC: 
+	RetStr=SetStrLen(RetStr,len * 4);
+	Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,UUENC_CHARS,'\''); break;
+	break;
+
+	case ENCODE_ASCII85: 
+	RetStr=Ascii85(RetStr,Bytes,len,ASCII85_CHARS); break;
+	break;
+
+	case ENCODE_Z85: 
+	RetStr=Ascii85(RetStr,Bytes,len,Z85_CHARS); break;
 	break;
 
 	case ENCODE_OCTAL:

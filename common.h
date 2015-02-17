@@ -49,11 +49,6 @@
 #define FLAG_UPDATE   16777216
 
 #define CTX_CACHED		1
-#define CTX_BASE10		4
-#define CTX_BASE8			8
-#define CTX_HEX				16
-#define CTX_HEXUPPER	32
-#define CTX_BASE64 		64
 #define CTX_DEREFERENCE 128
 #define CTX_STORE_XATTR 256
 #define CTX_STORE_MEMCACHED 512
@@ -98,6 +93,7 @@ char *ListPath;
 char *HashStr;
 int Action;
 int Flags;
+int Encoding;
 ListNode *Vars;
 } HashratCtx;
 

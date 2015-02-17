@@ -243,11 +243,11 @@ if (Flags & CGI_DOHASH)
 {
 	Ctx=(HashratCtx *) calloc(1,sizeof(HashratCtx));
 	Ctx->HashType=CopyStr(Ctx->HashType,HashType);
-	Ctx->Flags |=ENCODE_HEX;
-	if (Flags & CGI_BASE64) Ctx->Flags |=CTX_BASE64;
-	if (Flags & CGI_HEXUPPER) Ctx->Flags |=CTX_HEXUPPER;
-	if (Flags & CGI_DECIMAL) Ctx->Flags |=CTX_BASE10;
-	if (Flags & CGI_OCTAL) Ctx->Flags |=CTX_BASE8;
+	Ctx->Encoding |=ENCODE_HEX;
+	if (Flags & CGI_BASE64) Ctx->Encoding |=ENCODE_BASE64;
+	if (Flags & CGI_HEXUPPER) Ctx->Encoding =ENCODE_HEXUPPER;
+	if (Flags & CGI_DECIMAL) Ctx->Encoding |= ENCODE_DECIMAL;
+	if (Flags & CGI_OCTAL) Ctx->Encoding |= ENCODE_OCTAL;
 	if (Flags & CGI_CRLF) Text=CatStr(Text,"\r\n");
 	if (Flags & CGI_LF) Text=CatStr(Text,"\n");
 	ProcessData(&Hash, Ctx, Text, StrLen(Text));

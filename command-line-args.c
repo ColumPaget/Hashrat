@@ -92,8 +92,9 @@ return(ParseFlags);
 
 
 
-void CommandLineSetCtx(int argc, char *argv[], int i, HashratCtx *Ctx, int Flag)
+void CommandLineSetCtx(int argc, char *argv[], int i, HashratCtx *Ctx, int Flag, int Encoding)
 {
+if (Encoding > 0) Ctx->Encoding=Encoding;
 Ctx->Flags |= Flag;
 strcpy(argv[i],"");
 }
@@ -297,16 +298,23 @@ else if (strcmp(argv[i],"-jh384")==0) ParseFlags |= CommandLineHandleArg(argc, a
 else if (strcmp(argv[i],"-jh512")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-512",Ctx->Vars);
 else if (strcmp(argv[i],"-jh")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-512",Ctx->Vars);
 //else if (strcmp(argv[i],"-crc32")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "crc32",Ctx->Vars);
-else if (strcmp(argv[i],"-8")==0)  CommandLineSetCtx(argc, argv, i, Ctx,  CTX_BASE8);
-else if (strcmp(argv[i],"-10")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_BASE10);
-else if (strcmp(argv[i],"-16")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_HEX);
-else if (strcmp(argv[i],"-H")==0)  CommandLineSetCtx(argc, argv, i, Ctx,  CTX_HEXUPPER);
-else if (strcmp(argv[i],"-HEX")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_HEXUPPER);
-else if (strcmp(argv[i],"-64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_BASE64);
-else if (strcmp(argv[i],"-base64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  CTX_BASE64);
-else if (strcmp(argv[i],"-d")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_DEREFERENCE);
-else if (strcmp(argv[i],"-X")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_EXES);
-else if (strcmp(argv[i],"-exe")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_EXES);
+else if (strcmp(argv[i],"-8")==0)  CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_OCTAL);
+else if (strcmp(argv[i],"-10")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_DECIMAL);
+else if (strcmp(argv[i],"-16")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_HEX);
+else if (strcmp(argv[i],"-H")==0)  CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_HEXUPPER);
+else if (strcmp(argv[i],"-HEX")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_HEXUPPER);
+else if (strcmp(argv[i],"-64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_BASE64);
+else if (strcmp(argv[i],"-base64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_BASE64);
+else if (strcmp(argv[i],"-i64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_IBASE64);
+else if (strcmp(argv[i],"-p64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_PBASE64);
+else if (strcmp(argv[i],"-x64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_XXENC);
+else if (strcmp(argv[i],"-u64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_UUENC);
+else if (strcmp(argv[i],"-g64")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_CRYPT);
+else if (strcmp(argv[i],"-a85")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_ASCII85);
+else if (strcmp(argv[i],"-z85")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_Z85);
+else if (strcmp(argv[i],"-d")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_DEREFERENCE,0);
+else if (strcmp(argv[i],"-X")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_EXES,0);
+else if (strcmp(argv[i],"-exe")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_EXES,0);
 else if (strcmp(argv[i],"-n")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, 0, "Output:Length", "",Ctx->Vars);
 else if (strcmp(argv[i],"-hmac")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_HMAC, "EncryptionKey", "",Ctx->Vars);
 else if (strcmp(argv[i],"-idfile")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, 0,  "SshIdFile", "",Ctx->Vars);
@@ -324,7 +332,7 @@ else if (strcmp(argv[i],"-rl")==0) ParseFlags |= CommandLineHandleArg(argc, argv
 else if (strcmp(argv[i],"-fs")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_ONE_FS, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-xattr")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_XATTR, 0, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-txattr")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_TXATTR, 0, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-cache")==0) CommandLineSetCtx(argc, argv, i, Ctx,   CTX_XATTR_CACHE);
+else if (strcmp(argv[i],"-cache")==0) CommandLineSetCtx(argc, argv, i, Ctx,   CTX_XATTR_CACHE,0);
 else if (strcmp(argv[i],"-strict")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_FULLCHECK, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-color")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_COLOR, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-S")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_FULLCHECK, "", "",Ctx->Vars);
@@ -411,6 +419,8 @@ break;
 
 }
 
+if (Ctx->Encoding==0) Ctx->Encoding=ENCODE_HEX;
+
 //if no path given, then force to '-' for 'standard in'
 ptr=GetVar(Ctx->Vars,"Path");
 if (! StrLen(ptr)) SetVar(Ctx->Vars,"Path","-");
@@ -462,6 +472,13 @@ printf("  %-15s %s\n","-H", "Encode with UPPERCASE hexadecimal");
 printf("  %-15s %s\n","-HEX", "Encode with UPPERCASE hexadecimal");
 printf("  %-15s %s\n","-64", "Encode with base64 instead of hex");
 printf("  %-15s %s\n","-base64", "Encode with base64 instead of hex");
+printf("  %-15s %s\n","-i64", "Encode with base64 with rearranged characters");
+printf("  %-15s %s\n","-p64", "Encode with base64 with a-z,A-Z and _-, for best compatibility with 'allowed characters' in websites.");
+printf("  %-15s %s\n","-x64", "Encode with XXencode style base64.");
+printf("  %-15s %s\n","-u64", "Encode with UUencode style base64.");
+printf("  %-15s %s\n","-g64", "Encode with GEDCOM style base64.");
+printf("  %-15s %s\n","-a85", "Encode with ASCII85.");
+printf("  %-15s %s\n","-z85", "Encode with ZERMQ variant of ASCII85.");
 printf("  %-15s %s\n","-t", "Output hashes in traditional md5sum, shaXsum format");
 printf("  %-15s %s\n","-trad", "Output hashes in traditional md5sum, shaXsum format");
 printf("  %-15s %s\n","-bsd", "Output hashes in bsdsum format");

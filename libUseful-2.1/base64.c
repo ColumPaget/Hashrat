@@ -8,9 +8,7 @@
  * scheme used here.
  */
 #include <ctype.h>
-
-static const char base64digits[] =
-   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+#include "defines.h"
 
 #define BAD	-1
 static const char base64val[] = {
@@ -23,21 +21,25 @@ static const char base64val[] = {
     BAD, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36,  37, 38, 39, 40,
      41, 42, 43, 44,  45, 46, 47, 48,  49, 50, 51,BAD, BAD,BAD,BAD,BAD
 };
+
 #define DECODE64(c)  (isascii(c) ? base64val[c] : BAD)
 
-void to64frombits(unsigned char *out, const unsigned char *in, int inlen)
+
+
+void Radix64frombits(unsigned char *out, const unsigned char *in, int inlen, const char *base64digits, char pad)
 /* raw bytes in quasi-big-endian order to base 64 string (NUL-terminated) */
 {
-    for (; inlen >= 3; inlen -= 3)
-    {
+	for (; inlen >= 3; inlen -= 3)
+  {
 	*out++ = base64digits[in[0] >> 2];
 	*out++ = base64digits[((in[0] << 4) & 0x30) | (in[1] >> 4)];
 	*out++ = base64digits[((in[1] << 2) & 0x3c) | (in[2] >> 6)];
 	*out++ = base64digits[in[2] & 0x3f];
 	in += 3;
-    }
-    if (inlen > 0)
-    {
+  }
+
+  if (inlen > 0)
+  {
 	unsigned char fragment;
     
 	*out++ = base64digits[in[0] >> 2];
@@ -45,13 +47,23 @@ void to64frombits(unsigned char *out, const unsigned char *in, int inlen)
 	if (inlen > 1)
 	    fragment |= in[1] >> 4;
 	*out++ = base64digits[fragment];
-	*out++ = (inlen < 2) ? '=' : base64digits[(in[1] << 2) & 0x3c];
-	*out++ = '=';
-    }
-    *out = '\0';
+	*out++ = (inlen < 2) ? pad : base64digits[(in[1] << 2) & 0x3c];
+	*out++ = pad;
+  }
+  *out = '\0';
 }
 
-int from64tobits(char *out, const char *in)
+
+
+void to64frombits(char *out, const char *in, int inlen)
+{
+	Radix64frombits(out, in, inlen, BASE64_CHARS,'=');
+}
+
+
+
+
+int Radix64tobits(char *out, const char *in, const char *base64digits, char pad)
 /* base 64 to raw bytes in quasi-big-endian order, returning count of bytes */
 {
     int len = 0;
@@ -70,28 +82,35 @@ int from64tobits(char *out, const char *in)
 	if (DECODE64(digit2) == BAD)
 	    return(-1);
 	digit3 = in[2];
-	if (digit3 != '=' && DECODE64(digit3) == BAD)
+	if (digit3 != pad && DECODE64(digit3) == BAD)
 	    return(-1); 
 	digit4 = in[3];
-	if (digit4 != '=' && DECODE64(digit4) == BAD)
+	if (digit4 != pad && DECODE64(digit4) == BAD)
 	    return(-1);
 	in += 4;
 	*out++ = (DECODE64(digit1) << 2) | (DECODE64(digit2) >> 4);
 	++len;
-	if (digit3 != '=')
+	if (digit3 != pad)
 	{
 	    *out++ = ((DECODE64(digit2) << 4) & 0xf0) | (DECODE64(digit3) >> 2);
 	    ++len;
-	    if (digit4 != '=')
+	    if (digit4 != pad)
 	    {
 		*out++ = ((DECODE64(digit3) << 6) & 0xc0) | DECODE64(digit4);
 		++len;
 	    }
 	}
     } while 
-	(*in && *in != '\r' && digit4 != '=');
+	(*in && *in != '\r' && digit4 != pad);
 
     return (len);
+}
+
+
+
+int from64tobits(char *out, const char *in)
+{
+	return(Radix64tobits(out, in, BASE64_CHARS,'='));
 }
 
 /* base64.c ends here */
