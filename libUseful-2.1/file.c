@@ -1136,9 +1136,7 @@ while (1)
 	result=STREAMReadCharsToBuffer(S);
 	if (S->InStart >= S->InEnd)
 	{
-		if (result==STREAM_TIMEOUT) return(RetStr);
-
-		if (bytes_read==0)
+		if ((result==STREAM_CLOSED) && (bytes_read==0))
 		{
 			DestroyString(RetStr);
 			return(NULL);
