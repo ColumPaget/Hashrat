@@ -2,6 +2,7 @@
 #define __GNU_SOURCE
 #include "errno.h"
 
+
 /*This is code to change the command-line of a program as visible in ps */
 
 extern char **environ;
@@ -52,7 +53,8 @@ arg++;
 }
 
 arg=environ;
-clearenv();
+//clearenv();  //clearenv is not portable
+environ[0]=NULL;
 while (*arg)
 {
 	for (end=*arg; *end != '\0'; end++);
