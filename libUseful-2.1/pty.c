@@ -204,7 +204,7 @@ if (*pty > -1)
 	grantpt(*pty);
 	unlockpt(*pty);
 	SetStrLen(Tempstr,100);
-#ifdef ptsname_r
+#ifdef HAVE_PTSNAME_R
 	if (ptsname_r(*pty,Tempstr,100) != 0) Tempstr=CopyStr(Tempstr,ptsname(*pty));
 #else
 	Tempstr=CopyStr(Tempstr,ptsname(*pty));

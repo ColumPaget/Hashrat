@@ -2,12 +2,14 @@
 #define __GNU_SOURCE
 #include "errno.h"
 
-
 /*This is code to change the command-line of a program as visible in ps */
 
 extern char **environ;
+/*
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
+*/
+
 char *TitleBuffer=NULL;
 int TitleLen=0;
 
@@ -40,8 +42,10 @@ void ProcessTitleCaptureBuffer(char **argv)
 {
 char **arg, *end=NULL, *tmp;
 
+/*
 program_invocation_name=strdup(program_invocation_name);
 program_invocation_short_name=strdup(program_invocation_short_name);
+*/
 
 TitleBuffer=argv[0];
 arg=argv;

@@ -16,6 +16,16 @@ cf_have_libz=yes
 cf_have_oss=no
 cf_have_libesd=no
 cf_have_sendfile=no
+cf_have_ptsname_r=no
+
+
+AC_CHECK_LIB(c,ptsname_r,,)
+cf_have_ptsname_r=$ac_cv_lib_c_ptsname_r
+if test "$cf_have_ptsname_r"
+then
+AC_DEFINE([HAVE_PTSNAME_R])
+fi
+
 
 AC_ARG_ENABLE(sendfile, [  --enable-sendfile       enable sendfile support], cf_use_sendfile=$enableval )
 
