@@ -197,6 +197,8 @@ int GrabPseudoTTY(int *pty, int *tty, int TermFlags)
 char c1,c2;
 char *Tempstr=NULL;
 
+#ifdef __GNU_LIBRARY__
+#ifdef HAVE_PTSNAME_R
 //first try unix98 style
 *pty=open("/dev/ptmx",O_RDWR);
 if (*pty > -1)
@@ -204,11 +206,7 @@ if (*pty > -1)
 	grantpt(*pty);
 	unlockpt(*pty);
 	SetStrLen(Tempstr,100);
-#ifdef HAVE_PTSNAME_R
 	if (ptsname_r(*pty,Tempstr,100) != 0) Tempstr=CopyStr(Tempstr,ptsname(*pty));
-#else
-	Tempstr=CopyStr(Tempstr,ptsname(*pty));
-#endif
 	if (StrLen(Tempstr))
 	{
 		if ( (*tty=open(Tempstr,O_RDWR)) >-1)
@@ -219,6 +217,8 @@ if (*pty > -1)
 	}
 	close(*pty);
 }
+#endif
+#endif
 
 //if unix98 fails, try old BSD style
 
