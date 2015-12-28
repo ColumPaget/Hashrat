@@ -5,11 +5,6 @@
 /*This is code to change the command-line of a program as visible in ps */
 
 extern char **environ;
-/*
-extern char *program_invocation_name;
-extern char *program_invocation_short_name;
-*/
-
 char *TitleBuffer=NULL;
 int TitleLen=0;
 
@@ -42,10 +37,13 @@ void ProcessTitleCaptureBuffer(char **argv)
 {
 char **arg, *end=NULL, *tmp;
 
-/*
+#ifdef __GNU_LIBRARY__
+extern char *program_invocation_name;
+extern char *program_invocation_short_name;
+
 program_invocation_name=strdup(program_invocation_name);
 program_invocation_short_name=strdup(program_invocation_short_name);
-*/
+#endif
 
 TitleBuffer=argv[0];
 arg=argv;
