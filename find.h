@@ -7,6 +7,7 @@
 
 void *MatchesLoad();
 void LoadMatchesToMemcache();
+void OutputUnmatched(HashratCtx *Ctx);
 int MatchAdd(TFingerprint *FP, const char *Path, int Flags);
 TFingerprint *CheckForMatch(HashratCtx *Ctx, const char *Path, struct stat *FStat, const char *HashStr);
 

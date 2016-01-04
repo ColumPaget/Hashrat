@@ -9,10 +9,6 @@
 #include "filesigning.h"
 #include "cgi.h"
 
-#ifndef HOST_NAME_MAX
-#define HOST_NAME_MAX 255
-#endif
-
 void HashFromListFile(HashratCtx *Ctx)
 {
 char *Tempstr=NULL, *HashStr=NULL;
@@ -137,8 +133,35 @@ switch (Ctx->Action)
 	if (count==0) HashStdIn(Ctx);
 	break;
 
-	case ACT_CHECK:
+	case ACT_CHECK_LIST:
 		result=CheckHashesFromList(Ctx);
+	break;
+
+	case ACT_HASH_LISTFILE:
+		HashFromListFile(Ctx);
+	break;
+
+	case ACT_CHECK:
+	case ACT_FINDMATCHES:
+	if (! MatchesLoad(0))
+	{
+		printf("No hashes supplied on stdin.\n");
+		exit(1);
+	}
+	ProcessCommandLine(Ctx, argc, argv);
+	if (Ctx->Action==ACT_CHECK) OutputUnmatched(Ctx);
+	break;
+
+	//Load matches to an mcached server
+	case ACT_LOADMATCHES:
+	ptr=GetVar(Ctx->Vars, "Memcached:Server");
+	if (StrLen(ptr) ==0) printf("ERROR: No memcached server specified. Use the -memcached <server> command-line argument to specify one\n");
+	else MatchesLoad(FLAG_MEMCACHED);
+	break;
+
+	case ACT_FINDMATCHES_MEMCACHED:
+	case ACT_FINDDUPLICATES:
+	ProcessCommandLine(Ctx, argc, argv);
 	break;
 
 	case ACT_CHECK_XATTR:
@@ -149,16 +172,13 @@ switch (Ctx->Action)
 		ProcessCommandLine(Ctx, argc, argv);
 	break;
 
+
 	case ACT_CGI:
 		CGIDisplayPage();
 	break;
 
 	case ACT_PRINTUSAGE:
 		CommandLinePrintUsage();
-	break;
-
-	case ACT_HASH_LISTFILE:
-		HashFromListFile(Ctx);
 	break;
 
 	case ACT_SIGN:
@@ -194,28 +214,6 @@ switch (Ctx->Action)
 	}
 	}
 	break;
-
-	case ACT_LOADMATCHES:
-	ptr=GetVar(Ctx->Vars, "Memcached:Server");
-	if (StrLen(ptr) ==0) printf("ERROR: No memcached server specified. Use the -memcached <server> command-line argument to specify one\n");
-	else MatchesLoad(FLAG_MEMCACHED);
-	break;
-
-	case ACT_FINDMATCHES:
-	if (! MatchesLoad(0))
-	{
-		printf("No hashes supplied on stdin.\n");
-		exit(1);
-	}
-	ProcessCommandLine(Ctx, argc, argv);
-	break;
-
-	case ACT_FINDMATCHES_MEMCACHED:
-	case ACT_FINDDUPLICATES:
-	ProcessCommandLine(Ctx, argc, argv);
-	break;
-
-
 }
 
 fflush(NULL);

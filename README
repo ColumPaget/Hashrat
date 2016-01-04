@@ -235,11 +235,19 @@ USES FOR HASHRAT
 
 	Similarly these can then be used to check files later
 
-		cat /tmp/files.sha256 | hashrat -sha256 
-		hashrat -c -sha256 -r . -xattr
-		hashrat -c -sha256 -r . -memcached
+		cat /tmp/files.sha256 | hashrat -c -sha256 
+		cat /tmp/files.sha256 | hashrat -sha256 -C /tmp
+		hashrat -C -sha256 -xattr
+		hashrat -C -sha256 -memcached
 
-	There is a slight difference between xattr/memcached checks and checks where a list is read from stdin. Currently when reading from stdin hashrat will ONLY check the files in the list. However, in -xattr and -memcached mode, it will check all files, outputting and error for those where no stored hash can be found. This is likely to change in the a future release, with the stdin method being brought into line with the others.
+	Hashrat has four 'check' options:
+
+	-c   check from list
+	-cf  check from list and only show failures
+	-C   check directory
+	-Cf  check directory and only show failures
+
+	the -c forms only check the files listed on stdin. The -C forms read a list of files on stdin, but they expect to be given a directory to check, and they check every file in that directory, outputing any that weren't in the list, or that are in the list but not on disk, as well as any that have changed. Thus the -C forms allow one to detect new files, changed files, and deleted files, where the -c form only detects changed and deleted files. The -c and -C forms both work as -C if the hashes are supplied via memcached or file system attributes (using -xattr or -memcached)
 
 
 	3) Finding files that match hashes.

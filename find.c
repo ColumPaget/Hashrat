@@ -5,7 +5,30 @@
 #include <search.h>
 
 
-void *Tree;
+/****************************************************
+
+This file contains the implementation of an in-memory storage/search
+system for hashes->paths. It's used in finding duplicate files, files
+matching a hash, and changed files.
+
+The libc 'tree' implementation is used for speed, but it can only
+store one item per key, so the node items (TFingerprint) have 
+a 'next' pointer, so that the system is a tree with linked lists 
+hanging off each node.
+
+In 'check' mode items are deleted from this list, so that we can detect
+items that have been deleted from the filesystem (as they are still 
+left in the tree at the end of a check)
+
+Because the head node is a real data node, and the head of the list
+it cannot be deleted if there are other items hanging off it, and so
+its path is set to 'blank' instead
+
+****************************************************/
+
+
+
+void *Tree=NULL;
 
 
 
@@ -25,6 +48,7 @@ int MatchAdd(TFingerprint *FP, const char *Path, int Flags)
 TFingerprint *Item;
 int result=FALSE;
 char *ptr;
+void *vptr;
 
 	if (Flags & FLAG_MEMCACHED)
 	{
@@ -35,7 +59,13 @@ char *ptr;
 	}
 	else
 	{
-		tsearch(FP, &Tree, MatchCompareFunc);
+			vptr=tsearch(FP, &Tree, MatchCompareFunc);
+			Item=*(TFingerprint **) vptr;
+		if (strcmp(Item->Path, FP->Path) !=0)
+		{
+			while (Item->Next !=NULL) Item=(TFingerprint *) Item->Next;
+			Item->Next=(void *) FP;
+		}
 		result=TRUE;
 	}
 
@@ -43,13 +73,39 @@ char *ptr;
 }
 
 
+TFingerprint *FindInMatches(HashratCtx *Ctx, TFingerprint *Head, const char *Path)
+{
+TFingerprint *Item=NULL, *Prev=NULL;
+
+Item=Head;
+Prev=Head;
+while (Item->Next && (strcmp(Path,Item->Path) !=0)) 
+{
+	Prev=Item;
+	Item=Item->Next;
+}
+
+if (strcmp(Path, Item->Path)==0) 
+{
+	if (Ctx->Action==ACT_CHECK) 
+	{
+		//unclip item from list
+		if (Item != Head) Prev->Next=Item->Next;
+	}
+	return(Item);
+}
+
+return(NULL);
+}
+
 
 
 TFingerprint *CheckForMatch(HashratCtx *Ctx, const char *Path, struct stat *FStat, const char *HashStr)
 {
-TFingerprint *Lookup, *Found, *Result=NULL;
+TFingerprint *Lookup, *Head=NULL, *Prev=NULL, *Item=NULL, *Result=NULL;
 void *ptr;
 
+if (! StrLen(Path)) return(NULL);
 
 Lookup=TFingerprintCreate(HashStr,"","",Path);
 if (Ctx->Action==ACT_FINDMATCHES_MEMCACHED)
@@ -60,11 +116,31 @@ if (Ctx->Action==ACT_FINDMATCHES_MEMCACHED)
 else
 {
 		ptr=tfind(Lookup, &Tree, MatchCompareFunc);
-		if (ptr)
+		if (ptr) 
 		{
-			Found=*(TFingerprint **) ptr;
-			Result=TFingerprintCreate(Found->Hash, Found->HashType, Found->Data, Found->Path);
-		}
+			Item=FindInMatches(Ctx, *(TFingerprint **) ptr, Path);
+
+      if (Item) 
+			{
+			Result=TFingerprintCreate(Item->Hash, Item->HashType, Item->Data, Item->Path);
+      if (Ctx->Action==ACT_CHECK)
+      {
+        if (Item==Head) 
+				{
+					if (Item->Next==NULL) 
+					{
+						// tree functions take a copy of the 'head' item, so we cannot
+						// destroy it. No idea how they do this, it's magic
+						// however we can destroy non-head items that we hang off
+						// the tree
+						tdelete(Lookup, &Tree, MatchCompareFunc);
+					}
+					else Item->Path=CopyStr(Item->Path, "");
+				}
+				//else TFingerprintDestroy(Item);
+      }
+      }
+    }
 }
 
 TFingerprintDestroy(Lookup);
@@ -72,7 +148,33 @@ TFingerprintDestroy(Lookup);
 return(Result);
 }
 
+void OutputUnmatchedItem(const void *p_Item, const VISIT which, const int depth)
+{
+	TFingerprint *Item;
 
+	if ((which==preorder) || (which==leaf))
+	{
+		Item=*(TFingerprint **) p_Item;
+	
+		while (Item)
+		{
+			//if a root node of the linked list has been deleted, its path is
+			//set blank, rather than actually deleting it, as we need it to 
+			//continue acting as the head node
+			if (StrLen(Item->Path))
+			{
+			if (access(Item->Path, F_OK) !=0) HandleCheckFail(Item->Path, "Missing");
+			}
+			Item=Item->Next;
+		}
+	}
+}
+
+
+void OutputUnmatched(HashratCtx *Ctx)
+{
+twalk (Tree, OutputUnmatchedItem);
+}
 
 
 int LoadFromIOC(const char *XML, int Flags)
@@ -117,7 +219,7 @@ int count=0;
 
 
 S=STREAMFromFD(0);
-STREAMSetTimeout(S,1);
+STREAMSetTimeout(S,100);
 Line=STREAMReadLine(Line,S);
 if (! StrLen(Line)) return(NULL);
 

@@ -14,8 +14,9 @@
 #define ACT_SIGN 7
 #define ACT_CHECKSIGN 8
 #define ACT_CHECK       10
-#define ACT_CHECK_XATTR 11
+#define ACT_CHECK_LIST  11
 #define ACT_CHECK_MEMCACHED 12
+#define ACT_CHECK_XATTR 13
 #define ACT_LOADMATCHES 20
 #define ACT_FINDMATCHES 21
 #define ACT_FINDMATCHES_MEMCACHED 22
@@ -57,6 +58,11 @@
 #define CTX_XATTR_CACHE 4096
 #define CTX_EXES 8192
 
+#define INEX_INCLUDE 1
+#define INEX_EXCLUDE 2
+#define INEX_INCLUDE_DIR 3
+#define INEX_EXCLUDE_DIR 4
+
 #define RESULT_PASS 1
 #define RESULT_FAIL 2
 #define RESULT_WARN 4
@@ -68,7 +74,7 @@
 
 #define BLOCKSIZE 4096
 
-#define VERSION "1.7"
+#define VERSION "1.8"
 
 
 typedef struct
@@ -79,6 +85,7 @@ char *Hash;
 char *HashType;
 char *Data;
 struct stat FStat;
+void *Next;
 } TFingerprint;
 
 
@@ -104,7 +111,7 @@ extern char *Key;
 extern char *LocalHost;
 extern char *HashratHashTypes[];
 extern ListNode *IncludeExclude;
-
+extern int MatchCount, DiffCount;
 
 TFingerprint *TFingerprintCreate(const char *Hash, const char *HashType, const char *Data, const char *Path);
 void HashratCtxDestroy(void *p_Ctx);

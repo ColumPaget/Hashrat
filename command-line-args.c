@@ -206,14 +206,26 @@ else if (
 	Ctx->Action=ACT_PRINTUSAGE;
 	return(Ctx);
 }
-else if (strcmp(argv[i],"-c")==0)
+else if (strcmp(argv[i],"-C")==0)
 {
 	Ctx->Action = ACT_CHECK;
+	ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RECURSE, "", "",Ctx->Vars);
+	strcpy(argv[i],"");
+}
+else if (strcmp(argv[i],"-Cf")==0)
+{
+	Ctx->Action = ACT_CHECK;
+	ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RECURSE | FLAG_OUTPUT_FAILS, "", "",Ctx->Vars);
+	strcpy(argv[i],"");
+}
+else if (strcmp(argv[i],"-c")==0)
+{
+	Ctx->Action = ACT_CHECK_LIST;
 	strcpy(argv[i],"");
 }
 else if (strcmp(argv[i],"-cf")==0)
 {
-	Ctx->Action = ACT_CHECK;
+	Ctx->Action = ACT_CHECK_LIST;
 	ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_OUTPUT_FAILS, "", "",Ctx->Vars);
 }
 else if (strcmp(argv[i],"-s")==0)
@@ -401,6 +413,7 @@ else Ctx->HashType=CopyStr(Ctx->HashType,GetVar(Ctx->Vars,"HashType"));
 switch (Ctx->Action)
 {
 case ACT_CHECK:
+case ACT_CHECK_LIST:
 	if (ParseFlags & CMDLINE_XATTR) Ctx->Action=ACT_CHECK_XATTR;
 	if (ParseFlags & CMDLINE_MEMCACHED) Ctx->Action=ACT_CHECK_MEMCACHED;
 break;
@@ -490,7 +503,9 @@ printf("  %-15s %s\n","-i <pattern>", "Only hash items matching <pattern>");
 printf("  %-15s %s\n","-x <pattern>", "Exclude items matching <pattern>");
 printf("  %-15s %s\n","-n <length>", "Truncate hashes to <length> bytes");
 printf("  %-15s %s\n","-c", "CHECK hashes against list from file (or stdin)");
-printf("  %-15s %s\n","-cf", "CHECK hashes but only show failures");
+printf("  %-15s %s\n","-cf", "CHECK hashes against list but only show failures");
+printf("  %-15s %s\n","-C <dir>", "Recursively CHECK directory against list of files on stdin ");
+printf("  %-15s %s\n","-Cf <dir>", "Recursively CHECK directory against list but only show failures");
 printf("  %-15s %s\n","-m", "MATCH files from a list read from stdin.");
 printf("  %-15s %s\n","-lm", "Read hashes from stdin, upload them to a memcached server (requires the -memcached option).");
 printf("  %-15s %s\n","-X", "In CHECK or MATCH mode only examine executable files.");

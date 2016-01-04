@@ -63,12 +63,14 @@ int CheckStat(char *Path, struct stat *ExpectedStat, struct stat *Stat)
 }
 
 
-int CheckFileHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *ExpectedHash, char *ActualHash) 
+//FP here is the expected fingerprint of the file, ActualHash and Path are
+// its actual path and hash value
+
+int CheckFileHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *ActualHash, TFingerprint *FP) 
 {
 int result=FALSE;
 
-	if (strcasecmp(ExpectedHash,ActualHash)!=0) HandleCheckFail(Path, "Hash mismatch");
-	else
+	if (strcasecmp(FP->Hash,ActualHash) != 0) HandleCheckFail(Path, "Hash mismatch");
 	{
 		if (! (Flags & FLAG_OUTPUT_FAILS))
 		{
@@ -84,22 +86,34 @@ return(result);
 }
 
 
-int HashratCheckFile(HashratCtx *Ctx, char *Path, struct stat *ExpectedStat, struct stat *ActualStat, char *ExpectedHash,  char *ActualHash)
+int HashratCheckFile(HashratCtx *Ctx, char *Path, struct stat *ActualStat, char *ActualHash, TFingerprint *FP)
 {
 int result=FALSE;
+char *Tempstr=NULL;
 
 
-		if (access(Path,F_OK)!=0) fprintf(stderr,"\rERROR: No such file '%s'\n",Path);
+		if (access(Path,F_OK)!=0) 
+		{
+			//fprintf(stderr,"\rERROR: No such file '%s'\n",Path);
+			Tempstr=MCopyStr(Tempstr,"No such file [",Path,"]",NULL);
+			HandleCheckFail(Path, Tempstr);
+		}
+		else if (strcasecmp(FP->Path, Path) != 0) 
+		{
+				Tempstr=MCopyStr(Tempstr,"Moved [",FP->Path,"] to [",Path,"]",NULL);
+				HandleCheckFail(Path, Tempstr);
+		}
 		else
 		{
-			if (ExpectedStat)
+			if (FP->Flags & FP_HASSTAT) 
 			{
-				result=CheckStat(Path, ExpectedStat, ActualStat);
-				if (result) result=CheckFileHash(Ctx, Path, ActualStat, ExpectedHash, ActualHash); 
+				result=CheckStat(Path, &FP->FStat, ActualStat);
+				if (result) result=CheckFileHash(Ctx, Path, ActualStat, ActualHash, FP); 
 			}
-			else result=CheckFileHash(Ctx, Path, ActualStat, ExpectedHash, ActualHash); 
+			else result=CheckFileHash(Ctx, Path, ActualStat, ActualHash, FP); 
 		}
 
+DestroyString(Tempstr);
 return(result);
 }
 
@@ -110,7 +124,7 @@ char *HashStr=NULL, *ptr;
 int Checked=0, Errors=0;
 STREAM *ListStream;
 TFingerprint *FP;
-struct stat Stat, *ExpectedStat;
+struct stat Stat;
 
 
 ptr=GetVar(Ctx->Vars,"Path");
@@ -127,10 +141,7 @@ while (FP)
   if (StrLen(FP->HashType)) Ctx->HashType=CopyStr(Ctx->HashType, FP->HashType);
 	if (StatFile(Ctx,FP->Path,&Stat)==0) HashItem(Ctx, Ctx->HashType, FP->Path, &Stat, &HashStr);
 
-	if (FP->Flags & FP_HASSTAT) ExpectedStat=&FP->FStat;
-	else ExpectedStat=NULL;
-
-  if (! HashratCheckFile(Ctx, FP->Path, ExpectedStat, &Stat, FP->Hash, HashStr)) Errors++;
+  if (! HashratCheckFile(Ctx, FP->Path, &Stat, HashStr, FP)) Errors++;
   TFingerprintDestroy(FP);
   FP=FingerprintRead(ListStream);
   Checked++;

@@ -18,7 +18,6 @@ dev_t StartingFS=0;
 int FileType(char *Path, int FTFlags, struct stat *Stat)
 {
 
-
 	if ((FTFlags & FLAG_NET))
 	{
 		if (strncasecmp(Path,"ssh:",4)==0) return(FT_SSH);
@@ -67,12 +66,25 @@ while (Curr)
 		dptr=GetBasename(Path);
 	}
 	
-	if (fnmatch(mptr,dptr,0)==0) 
+	switch (Curr->ItemType)
 	{
-		if (Curr->ItemType==FLAG_INCLUDE) result=TRUE;
-		else result=FALSE;
+	case INEX_INCLUDE:
+	if (fnmatch(mptr,dptr,0)==0) result=TRUE;
+	break;
+
+	case INEX_EXCLUDE:
+	if (fnmatch(mptr,dptr,0)==0) result=FALSE;
+	break;
+
+	case INEX_INCLUDE_DIR:
+	if (strncmp(mptr,dptr,StrLen(mptr))==0) result=TRUE;
+	break;
+
+	case INEX_EXCLUDE_DIR:
+	if (strncmp(mptr,dptr,StrLen(mptr))==0) result=FALSE;
+	break;
 	}
-	
+
 	Curr=ListGetNext(Curr);
 }
 
@@ -311,6 +323,8 @@ int ConsiderItem(HashratCtx *Ctx, char *Path, struct stat *FStat)
 		break;
 	}
 
+	if (FStat)
+	{
 	if (Flags & FLAG_ONE_FS)
 	{
 		if (StartingFS==0) StartingFS=FStat->st_dev;
@@ -318,7 +332,7 @@ int ConsiderItem(HashratCtx *Ctx, char *Path, struct stat *FStat)
 	}
 	if ((Ctx->Flags & CTX_EXES) && (! (FStat->st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)))) return(FLAG_EXCLUDE);
 	if (! IsIncluded(Path, FStat)) return(FLAG_EXCLUDE);
-
+	}
 
 	return(0);
 }
@@ -366,7 +380,8 @@ char *Tempstr=NULL;
 		break;
 
 		case FT_LNK:
-			fprintf(stderr,"WARN: Not following symbolic link %s\n",Path);
+		if (Ctx->Flags & CTX_DEREFERENCE)
+		{
 			Tempstr=SetStrLen(Tempstr,PATH_MAX);
 			val=readlink(Path, Tempstr,PATH_MAX);
 			if (val > 0)
@@ -374,6 +389,8 @@ char *Tempstr=NULL;
 				Tempstr[val]='\0';
 				ProcessData(HashStr, Ctx, Tempstr, val);
 			}
+		}
+		else fprintf(stderr,"WARN: Not following symbolic link %s\n",Path);
 		break;
 
 		default:
@@ -383,6 +400,13 @@ char *Tempstr=NULL;
 		} else if (! HashratHashFile(Ctx, Ctx->Hash,Type,Path, FStat->st_size)) return(FLAG_ERROR);
 		break;
 	}
+
+  if (StrLen(DiffHook))
+  {
+    Tempstr=MCopyStr(Tempstr,DiffHook," '",Path,"'",NULL);
+    system(Tempstr);
+  }
+
 
 DestroyString(Tempstr);
 
@@ -405,6 +429,24 @@ case ACT_HASH:
 	HashratStoreHash(Ctx, Path, Stat, HashStr);
 break;
 
+case ACT_CHECK:
+	if (S_ISREG(Stat->st_mode))
+	{
+		if (Stat->st_size > 0)
+		{
+			HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
+			FP=CheckForMatch(Ctx, Path, Stat, HashStr);
+			if (FP)
+			{
+				if (HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) MatchCount++;
+			}
+	   	else HandleCheckFail(Path, "Changed or new");
+			TFingerprintDestroy(FP);	
+			}
+		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
+	}
+break;
+
 case ACT_CHECK_XATTR:
 	if (S_ISREG(Stat->st_mode))
 	{
@@ -412,8 +454,8 @@ case ACT_CHECK_XATTR:
 		if (FP) 
 		{
 			HashItem(Ctx, FP->HashType, Path, Stat, &HashStr);
-			if (FP->Flags & FP_HASSTAT) HashratCheckFile(Ctx, Path, &FP->FStat, Stat, FP->Hash, HashStr);
-			else HashratCheckFile(Ctx, Path, NULL, Stat, FP->Hash, HashStr);
+			if (FP->Flags & FP_HASSTAT) HashratCheckFile(Ctx, Path, Stat, HashStr, FP);
+			else HashratCheckFile(Ctx, Path, Stat, HashStr, FP);
 		}
 		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
 	}
@@ -430,7 +472,7 @@ case ACT_CHECK_MEMCACHED:
     else FP->Path=MCopyStr(FP->Path,"hashrat://",LocalHost,Path,NULL);
     FP->Hash=MemcachedGet(FP->Hash, FP->Path);
 
-		if (FP) HashratCheckFile(Ctx, Path, NULL, NULL, FP->Hash, HashStr);
+		if (FP) HashratCheckFile(Ctx, Path, NULL, HashStr, FP);
 		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
 		TFingerprintDestroy(FP);
 		}
@@ -446,7 +488,12 @@ case ACT_FINDMATCHES_MEMCACHED:
 		{
 		HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
 		FP=CheckForMatch(Ctx, Path, Stat, HashStr);
-		if (FP) printf("LOCATED: %s '%s %s' at %s\n",FP->Hash,FP->Path,FP->Data,Path);
+		if (FP)
+		{
+			printf("LOCATED: %s '%s %s' at %s\n",FP->Hash,FP->Path,FP->Data,Path);
+			MatchCount++;
+		}
+		else DiffCount++;
 		TFingerprintDestroy(FP);	
 		}
 		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
@@ -464,11 +511,13 @@ case ACT_FINDDUPLICATES:
 			if (FP)
 			{
 				printf("DUPLICATE: %s of %s %s\n",Path,FP->Path,FP->Data);
+				MatchCount++;
 				TFingerprintDestroy(FP);	
 			}
 			else 
 			{
 				FP=TFingerprintCreate(HashStr, Ctx->HashType, Path, "");
+				DiffCount++;
 				MatchAdd(FP, Path, 0);
 			}
 		}
