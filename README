@@ -77,6 +77,8 @@ Options:
   -n <length>     Truncate hashes to <length> bytes
   -c              CHECK hashes against list from file (or stdin)
   -cf             CHECK hashes but only show failures
+  -C              CHECK files against list from file (or stdin) can spot new files
+  -Cf             CHECK files but only show failures
   -m              MATCH files from a list read from stdin.
   -lm             Read hashes from stdin, upload them to a memcached server (requires the -memcached option).
   -X              In CHECK or MATCH mode only examine executable files.
@@ -248,6 +250,8 @@ USES FOR HASHRAT
 	-Cf  check directory and only show failures
 
 	the -c forms only check the files listed on stdin. The -C forms read a list of files on stdin, but they expect to be given a directory to check, and they check every file in that directory, outputing any that weren't in the list, or that are in the list but not on disk, as well as any that have changed. Thus the -C forms allow one to detect new files, changed files, and deleted files, where the -c form only detects changed and deleted files. The -c and -C forms both work as -C if the hashes are supplied via memcached or file system attributes (using -xattr or -memcached)
+
+	Note that -C implies -r, so you don't need to supply -r
 
 
 	3) Finding files that match hashes.

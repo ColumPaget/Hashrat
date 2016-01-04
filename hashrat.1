@@ -454,13 +454,15 @@ Similarly these can then be used \fIto\fP check files later:
 .PP
 .nf
 .fam C
-    $ cat /tmp/files.sha256 | hashrat \-sha256
+    $ cat /tmp/files.sha256 | hashrat -c \-sha256
 
-    $ hashrat \-c \-sha256 \-r . \-xattr
+    $ hashrat \-C . \-sha256  \-xattr
 
-    $ hashrat \-c \-sha256 \-r . \-memcached
+    $ hashrat \-C /tmp \-sha256  \-memcached
 
 .fam T
+.fi
+Note that -c checks only check the files in the supplied list. The -C flag instead checks all files in a directory (supplied on command line) and expects to find those in the list. This means that -C can find new files that aren't in the list, whereas -c can't.
 .fi
 There is a slight difference between xattr/memcached checks and checks where a list is read from stdin. Currently when reading from stdin \fBhashrat\fP will ONLY check the
 files in the list. However, in \fB-xattr\fP and \fB-memcached\fP mode, it will check all files, outputting and error for those where no stored \fIhash\fP can be found. This is likely
