@@ -117,7 +117,7 @@ while (ptr)
 	else if (strcasecmp(Token, "txattr")==0) Ctx->Flags |= CTX_STORE_XATTR | CTX_XATTR_ROOT;
 	else if (strcasecmp(Token, "memcached")==0) Ctx->Flags |= CTX_STORE_MEMCACHED;
 	else if (strcasecmp(Token, "mcd")==0) Ctx->Flags |= CTX_STORE_MEMCACHED;
-	else if (! Ctx->Aux) Ctx->Aux=STREAMOpenFile(Token,SF_WRONLY | SF_CREAT | SF_TRUNC);
+	else if (! Ctx->Aux) Ctx->Aux=STREAMOpenFile(Token,STREAM_WRONLY | STREAM_CREAT | STREAM_TRUNC);
 
 ptr=GetToken(ptr,",",&Token,0);
 }

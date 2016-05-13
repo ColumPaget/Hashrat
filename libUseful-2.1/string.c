@@ -100,8 +100,16 @@ len+=StrLen(sptr)+1;
 len=len*2;
 
 
-ptr=(char *) realloc(ptr,len);
-if (ptr && sptr) strcat(ptr,sptr);
+ptr=(char *)realloc(ptr,len+1);
+if (ptr && sptr) 
+{
+	#ifdef strlcat
+	strlcat(ptr,sptr,len);
+	#else
+	strncat(ptr,sptr,len);
+	ptr[len]='\0';
+	#endif
+}
 }
 
 return(ptr);
@@ -152,10 +160,17 @@ else
 
 if (StrLen(Src)==0) return(ptr);
 len+=StrLen(Src);
-len++;
 
-ptr=(char *)realloc(ptr,len);
-if (ptr && Src) strcat(ptr,Src);
+ptr=(char *)realloc(ptr,len+1);
+if (ptr && Src) 
+{
+	#ifdef strlcat
+	strlcat(ptr,Src,len);
+	#else
+	strncat(ptr,Src,len);
+	ptr[len]='\0';
+	#endif
+}
 return(ptr);
 }
 

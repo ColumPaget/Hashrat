@@ -187,8 +187,8 @@ switch (Type)
 		if ((! StrLen(Path)) || (strcmp(Path,"-")==0)) S=STREAMFromFD(0);
 		else
 		{
-			if (Ctx->Flags & CTX_DEREFERENCE) S=STREAMOpenFile(Path,SF_RDONLY|SF_SYMLINK_OK);
-			else S=STREAMOpenFile(Path,SF_RDONLY);
+			if (Ctx->Flags & CTX_DEREFERENCE) S=STREAMOpenFile(Path,STREAM_RDONLY|STREAM_SYMLINK_OK);
+			else S=STREAMOpenFile(Path,STREAM_RDONLY);
 		}
 	break;
 }
@@ -440,9 +440,9 @@ case ACT_CHECK:
 			{
 				if (HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) MatchCount++;
 			}
-	   	else HandleCheckFail(Path, "Changed or new");
+			else HandleCheckFail(Path, "Changed or new");
 			TFingerprintDestroy(FP);	
-			}
+		}
 		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
 	}
 break;
@@ -468,9 +468,9 @@ case ACT_CHECK_MEMCACHED:
 		{
 		HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
 		FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
-    if (Flags & FLAG_NET) FP->Path=MCopyStr(FP->Path, Path);
-    else FP->Path=MCopyStr(FP->Path,"hashrat://",LocalHost,Path,NULL);
-    FP->Hash=MemcachedGet(FP->Hash, FP->Path);
+		if (Flags & FLAG_NET) FP->Path=MCopyStr(FP->Path, Path);
+		else FP->Path=MCopyStr(FP->Path,"hashrat://",LocalHost,Path,NULL);
+		FP->Hash=MemcachedGet(FP->Hash, FP->Path);
 
 		if (FP) HashratCheckFile(Ctx, Path, NULL, HashStr, FP);
 		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
@@ -516,7 +516,7 @@ case ACT_FINDDUPLICATES:
 			}
 			else 
 			{
-				FP=TFingerprintCreate(HashStr, Ctx->HashType, Path, "");
+				FP=TFingerprintCreate(HashStr, Ctx->HashType, "", Path);
 				DiffCount++;
 				MatchAdd(FP, Path, 0);
 			}

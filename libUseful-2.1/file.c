@@ -89,7 +89,7 @@ int val;
 
         //Handling nonblock flag involves setting nonblock on or off
   fcntl(S->in_fd,F_GETFL,&val);
-  if (S->Flags & SF_NONBLOCK) val |= O_NONBLOCK;
+  if (S->Flags & STREAM_NONBLOCK) val |= O_NONBLOCK;
   else val &= (~O_NONBLOCK);
   fcntl(S->in_fd, F_SETFL, val);
 }
@@ -121,7 +121,7 @@ void STREAMResizeBuffer(STREAM *S, int size)
 	int PageSize;
 
 	PageSize=getpagesize();
-	if (S->Flags & SF_SECURE) S->BuffSize=(size / PageSize + 1) * PageSize;
+	if (S->Flags & STREAM_SECURE) S->BuffSize=(size / PageSize + 1) * PageSize;
   else S->BuffSize=size;
 
 	S->InputBuff =(char *) realloc(S->InputBuff,S->BuffSize);
@@ -131,7 +131,7 @@ void STREAMResizeBuffer(STREAM *S, int size)
 	if (S->InEnd > S->BuffSize) S->InEnd=0;
 	if (S->OutEnd > S->BuffSize) S->OutEnd=0;
 
-	if (S->Flags & SF_SECURE) 
+	if (S->Flags & STREAM_SECURE) 
 	{
 		mlock(S->InputBuff, S->BuffSize);
 		mlock(S->OutputBuff, S->BuffSize);
@@ -151,7 +151,7 @@ struct stat Stat;
   if (S->InEnd > S->InStart) return(TRUE);
   if (S->in_fd==-1) return(FALSE);
 
-	if (S->Flags & SF_FOLLOW) 
+	if (S->Flags & STREAM_FOLLOW) 
 	{
 		while (1)
 		{
@@ -262,7 +262,7 @@ if (S->out_fd==-1) return(STREAM_CLOSED);
 
 while (count < DataLen)
 {
-if (S->Flags & SF_SSL)
+if (S->Flags & STREAM_SSL)
 {
 #ifdef HAVE_LIBSSL
 result=SSL_write((SSL *) STREAMGetItem(S,"LIBUSEFUL-SSL-CTX"), Data + count, DataLen - count);
@@ -283,11 +283,11 @@ else
 		if (result == 0) return(STREAM_TIMEOUT);
 	}
 
-	if (S->Flags & SF_WRLOCK) flock(S->out_fd,LOCK_EX);
+	if (S->Flags & STREAM_WRLOCK) flock(S->out_fd,LOCK_EX);
 	if (S->BlockSize && (S->BlockSize < (DataLen-count))) result=S->BlockSize;
 	else result=DataLen-count;
   result=write(S->out_fd, Data + count, result);
-	if (S->Flags & SF_WRLOCK) flock(S->out_fd,LOCK_UN);
+	if (S->Flags & STREAM_WRLOCK) flock(S->out_fd,LOCK_UN);
 
 }
 
@@ -461,11 +461,11 @@ int fd, Mode=0;
 STREAM *Stream;
 struct stat myStat;
 
-if (Flags & SF_WRONLY) Mode=O_WRONLY;
-else if (Flags & SF_RDONLY) Mode=O_RDONLY;
+if (Flags & STREAM_WRONLY) Mode=O_WRONLY;
+else if (Flags & STREAM_RDONLY) Mode=O_RDONLY;
 else Mode=O_RDWR;
 
-if (Flags & SF_CREATE) Flags |= O_CREAT;
+if (Flags & STREAM_CREATE) Flags |= O_CREAT;
 
 if (strcmp(FilePath,"-")==0)
 {
@@ -477,7 +477,7 @@ return(Stream);
 fd=open(FilePath, Mode, 0600);
 if (fd==-1) return(NULL);
 
-if (Flags & SF_WRLOCK)
+if (Flags & STREAM_WRLOCK)
 {
 	if (flock(fd,LOCK_EX | LOCK_NB)==-1)
 	{
@@ -487,7 +487,7 @@ if (Flags & SF_WRLOCK)
 
 }
 
-if (Flags & SF_RDLOCK)
+if (Flags & STREAM_RDLOCK)
 {
 	if (flock(fd,LOCK_SH | LOCK_NB)==-1)
 	{
@@ -503,7 +503,7 @@ if (Flags & SF_RDLOCK)
 // to get us to write somewhere other than intended.
 
 
-if (! (Flags & SF_SYMLINK_OK))
+if (! (Flags & STREAM_SYMLINK_OK))
 {
 	if (lstat(FilePath, &myStat) !=0)
 	{
@@ -519,8 +519,8 @@ if (! (Flags & SF_SYMLINK_OK))
 	}
 }
 
-if (Flags & SF_TRUNC) ftruncate(fd,0);
-if (Flags & SF_APPEND) lseek(fd,0,SEEK_END);
+if (Flags & STREAM_TRUNC) ftruncate(fd,0);
+if (Flags & STREAM_APPEND) lseek(fd,0,SEEK_END);
 
 Stream=STREAMFromFD(fd);
 Stream->Path=CopyStr(Stream->Path,FilePath);
@@ -556,7 +556,7 @@ if (strncmp(Curr->Tag,"HelperPID",9)==0) kill(atoi(Curr->Item),SIGKILL);
 Curr=ListGetNext(Curr);
 }
 
-if (S->Flags & SF_SECURE) 
+if (S->Flags & STREAM_SECURE) 
 {
 	munlock(S->InputBuff, S->BuffSize);
 	munlock(S->OutputBuff, S->BuffSize);
@@ -634,14 +634,14 @@ SSL_CTX=STREAMGetItem(S,"LIBUSEFUL-SSL-CTX");
 //if there are bytes available in the internal OpenSSL buffers, when we don't have to 
 //wait on a select, we can just go straight through to SSL_read
 #ifdef HAVE_LIBSSL
-if (S->Flags & SF_SSL)
+if (S->Flags & STREAM_SSL)
 {
 if (SSL_pending((SSL *) SSL_CTX) > 0) WaitForBytes=FALSE;
 }
 #endif
 
 
-//if ((S->Timeout > 0) && (! (S->Flags & SF_NONBLOCK)) && WaitForBytes)
+//if ((S->Timeout > 0) && (! (S->Flags & STREAM_NONBLOCK)) && WaitForBytes)
 if ((S->Timeout > 0) && WaitForBytes)
 {
    FD_ZERO(&selectset);
@@ -681,16 +681,16 @@ if (read_result==0)
 	tmpBuff=SetStrLen(tmpBuff,S->BuffSize-S->InEnd);
 
 	#ifdef HAVE_LIBSSL
-	if (S->Flags & SF_SSL)
+	if (S->Flags & STREAM_SSL)
 	{
 		read_result=SSL_read((SSL *) SSL_CTX, tmpBuff, S->BuffSize-S->InEnd);
 	}
 	else
 	#endif
 	{
-		if (S->Flags & SF_RDLOCK) flock(S->in_fd,LOCK_SH);
+		if (S->Flags & STREAM_RDLOCK) flock(S->in_fd,LOCK_SH);
 		read_result=read(S->in_fd, tmpBuff, S->BuffSize-S->InEnd);
-		if (S->Flags & SF_RDLOCK) flock(S->in_fd,LOCK_UN);
+		if (S->Flags & STREAM_RDLOCK) flock(S->in_fd,LOCK_UN);
 	}
 
 	if (read_result > 0) 
@@ -1277,8 +1277,8 @@ long val, len;
 //if we are not using ssl and not using processor modules, we can use 
 //kernel-level copy!
 if (
-			(! (In->Flags & SF_SSL)) && 
-			(! (Out->Flags & SF_SSL)) && 
+			(! (In->Flags & STREAM_SSL)) && 
+			(! (Out->Flags & STREAM_SSL)) && 
 			(ListSize(In->ProcessingModules)==0) && 
 			(ListSize(Out->ProcessingModules)==0)
 	) UseSendFile=TRUE;

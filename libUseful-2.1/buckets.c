@@ -67,7 +67,7 @@ STREAM *S;
 char *Tempstr=NULL;
 clock_t start, mid, end;
 
-S=STREAMOpenFile(argv[1],SF_RDONLY);
+S=STREAMOpenFile(argv[1],STREAM_RDONLY);
 start=clock();
 Tempstr=STREAMReadLine(Tempstr,S);
 while (Tempstr)

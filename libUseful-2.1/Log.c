@@ -43,7 +43,7 @@ TLogFile *LogFileGetEntry(const char *FileName)
 		else if (strcmp(FileName,"SYSLOG")==0) S=STREAMCreate();
 		else
 		{
-			S=STREAMOpenFile(FileName,SF_CREAT | SF_APPEND | SF_WRONLY);
+			S=STREAMOpenFile(FileName,STREAM_CREAT | STREAM_APPEND | STREAM_WRONLY);
 		}
 
 		if (S)
@@ -129,7 +129,7 @@ STREAM *LogFileInternalDoRotate(TLogFile *LogFile)
 			
     STREAMClose(LogFile->S);
 		if (PrevPath) rename(LogFile->Path,PrevPath);
-    LogFile->S=STREAMOpenFile(LogFile->Path,SF_CREAT | SF_APPEND | SF_WRONLY);
+    LogFile->S=STREAMOpenFile(LogFile->Path,STREAM_CREAT | STREAM_APPEND | STREAM_WRONLY);
   }
   }
 
@@ -216,8 +216,8 @@ int LogFileInternalWrite(TLogFile *LF, STREAM *S, int Flags, const char *Str)
 
 		if (S)
 		{
-			if (Flags & LOGFILE_LOCK) S->Flags |= SF_WRLOCK;
-			else S->Flags &= ~SF_WRLOCK;
+			if (Flags & LOGFILE_LOCK) S->Flags |= STREAM_WRLOCK;
+			else S->Flags &= ~STREAM_WRLOCK;
 
 			if (LF && ((Now.tv_sec-LF->LastFlushTime) > LF->FlushInterval)) Flags |= LOGFILE_FLUSH;
 			STREAMWriteLine(LogStr,S);
@@ -320,7 +320,7 @@ int result=FALSE;
 
     LogFile=LogFileGetEntry(LogPath);
     LogFileClose(TmpLogPath);
-    S=STREAMOpenFile(TmpLogPath,SF_RDONLY);
+    S=STREAMOpenFile(TmpLogPath,STREAM_RDONLY);
     if (LogFile && S)
     {
 

@@ -187,7 +187,7 @@ TAudioInfo *AudioInfo=NULL;
 char *FourCharacter;
 STREAM *S;
 
-S=STREAMOpenFile(FilePath,SF_RDONLY);
+S=STREAMOpenFile(FilePath,STREAM_RDONLY);
 if (! S) return(NULL);
 
 FourCharacter=calloc(4, sizeof(char));

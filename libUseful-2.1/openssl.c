@@ -318,7 +318,7 @@ if (S)
 	ptr=LibUsefulGetValue("SSL-Permitted-Ciphers");
 	if (ptr) SSL_set_cipher_list(ssl, ptr);
   result=SSL_connect(ssl);
-  S->Flags|=SF_SSL;
+  S->Flags|=STREAM_SSL;
 
 	OpenSSLQueryCipher(S);
 	OpenSSLVerifyCertificate(S);
@@ -428,7 +428,7 @@ if (S)
 	  result=SSL_accept(ssl);
 		if (result == TRUE)
 		{
-	  S->Flags|=SF_SSL;
+	  S->Flags|=STREAM_SSL;
 		OpenSSLQueryCipher(S);
 		if (Flags & SSL_VERIFY_PEER) OpenSSLVerifyCertificate(S);
 		}

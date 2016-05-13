@@ -267,7 +267,7 @@ while (1)
 				{
 					if (STREAMIsConnected(S)) 
 					{
-						STREAMSetFlags(S, 0, SF_NONBLOCK);
+						STREAMSetFlags(S, 0, STREAM_NONBLOCK);
 						if (Item->OnConnect) Item->OnConnect(Item);
 					}
 

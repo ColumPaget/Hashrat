@@ -105,7 +105,10 @@ tty_data.c_iflag |= IXON | IXOFF;
 tty_data.c_cc[VSTART]=old_tty_data->c_cc[VSTART];
 tty_data.c_cc[VSTOP]=old_tty_data->c_cc[VSTOP];
 }
+
+#ifdef CRTSCTS
 if (Flags & TTYFLAG_HARDWARE_FLOW) tty_data.c_cflag |=CRTSCTS;
+#endif
 
 // 'local' input flags
 tty_data.c_lflag=0;
@@ -133,6 +136,8 @@ else
 	tty_data.c_cc[VTIME]=0;
 }
 
+//Higher line speeds protected with #ifdef because not all
+//operating systems seem to have them
 if (LineSpeed > 0)
 {
 switch (LineSpeed)
@@ -142,28 +147,43 @@ case 4800: val=B4800; break;
 case 9600: val=B9600; break;
 case 19200: val=B19200; break;
 case 38400: val=B38400; break;
+#ifdef B57600
 case 57600: val=B57600; break;
+#endif
+
+#ifdef B115200
 case 115200: val=B115200; break;
+#endif
+
+#ifdef B230400
 case 230400: val=B230400; break;
+#endif
+
 #ifdef B460800
 case 460800: val=B460800; break;
 #endif
+
 #ifdef B500000
 case 500000: val=B500000; break;
 #endif
+
 #ifdef B1000000
 case 10000000: val=B1000000; break;
 #endif
+
 #ifdef B1152000
 case 1152000: val=B1152000; break;
 #endif
+
 #ifdef B2000000
 case 2000000: val=B2000000; break;
 #endif
+
 #ifdef B4000000
 case 4000000: val=B4000000; break;
 #endif
-default: val=B115200; break;
+
+default: val=B38400; break;
 }
 cfsetispeed(&tty_data,val);
 cfsetospeed(&tty_data,val);
@@ -180,10 +200,23 @@ DestroyString(Tempstr);
 
 int OpenTTY(char *devname, int LineSpeed, int Flags)
 {
-int tty;
+int tty, flags=O_RDWR | O_NOCTTY;
 
-if (Flags & TTYFLAG_NONBLOCK) tty=open(devname,O_RDWR | O_NOCTTY | O_NDELAY);
-else tty=open(devname,O_RDWR | O_NOCTTY);
+
+if (Flags & TTYFLAG_NONBLOCK) 
+{
+	//O_NDELAY should be used only if nothing else available
+	//as O_NONBLOCK is more 'posixy'
+	#ifdef O_NDELAY
+	flags |= O_NDELAY;
+	#endif
+
+	#ifdef O_NONBLOCK
+	flags |= O_NONBLOCK;
+	#endif
+}
+
+tty=open(devname, flags);
 
 if ( tty <0) return(-1);
 InitTTY(tty, LineSpeed, Flags);

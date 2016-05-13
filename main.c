@@ -16,7 +16,7 @@ STREAM *S;
 struct stat Stat;
 
 if (strcmp(Ctx->ListPath,"-")==0) S=STREAMFromFD(0);
-else S=STREAMOpenFile(Ctx->ListPath,SF_RDONLY);
+else S=STREAMOpenFile(Ctx->ListPath,STREAM_RDONLY);
 Tempstr=STREAMReadLine(Tempstr, S);
 while (Tempstr)
 {

@@ -113,7 +113,7 @@ while (TarReadHeader(Tar, Vars))
 		else if (strcmp(ptr,"file")==0)
 		{
 			MakeDirPath(Path,0700);
-			S=STREAMOpenFile(Path,SF_WRONLY|SF_CREAT|SF_TRUNC);
+			S=STREAMOpenFile(Path,STREAM_WRONLY|STREAM_CREAT|STREAM_TRUNC);
 			if (S) fchmod(S->out_fd,atoi(GetVar(Vars,"Mode")));
 			bytes_read=0;
 			bytes_total=atoi(GetVar(Vars,"Size"));
@@ -176,10 +176,10 @@ Head=(TTarHeader *) calloc(1,sizeof(TTarHeader));
 	memcpy(Head->version,"00",2);
 
 	pwd=getpwuid(FStat->st_uid);
-	if (pwd) strcpy(Head->uname,pwd->pw_name);
+	if (pwd) strncpy(Head->uname,pwd->pw_name,32);
 
 	grp=getgrgid(FStat->st_gid);
-	if (grp) strcpy(Head->gname,grp->gr_name);
+	if (grp) strncpy(Head->gname,grp->gr_name,32);
 
 	if ( (Head->typeflag == '3') || (Head->typeflag == '4') ) 
 	{
@@ -262,7 +262,7 @@ for (i=0; i < Glob.gl_pathc; i++)
 	}
 	else 
 	{
-		S=STREAMOpenFile(Glob.gl_pathv[i],SF_RDONLY);
+		S=STREAMOpenFile(Glob.gl_pathv[i],STREAM_RDONLY);
 		if (S)
 		{
 			TarWriteHeader(Tar, Glob.gl_pathv[i],&FStat);

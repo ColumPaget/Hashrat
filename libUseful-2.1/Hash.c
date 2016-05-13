@@ -615,7 +615,7 @@ STREAM *S;
 char *Tempstr=NULL;
 int result;
 
-S=STREAMOpenFile(Path,SF_RDONLY);
+S=STREAMOpenFile(Path,STREAM_RDONLY);
 if (! S) return(FALSE);
 
 Hash=HashInit(Type);

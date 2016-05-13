@@ -57,7 +57,7 @@ TFingerprint *Item;
 
   Item=(TFingerprint *) calloc(1,sizeof(TFingerprint));
   Item->Hash=CopyStr(Item->Hash, Hash);
- 	strlwr(Item->Hash);
+  strlwr(Item->Hash);
   Item->HashType=CopyStr(Item->HashType, HashType);
   Item->Data=CopyStr(Item->Data, Data);
   Item->Path=CopyStr(Item->Path, Path);

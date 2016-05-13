@@ -24,9 +24,7 @@ const char *GetInterfaceIP(const char *Interface);
 
 /* Server Socket Funcs*/
 int InitServerSock(int Type, const char *Address, int Port);
-int InitUnixServerSock(int Type, const char *Path);
 int TCPServerSockAccept(int ServerSock,char **Addr);
-int UnixServerSockAccept(int ServerSock);
 
 int GetSockDetails(int fd, char **LocalAddress, int *LocalPort, char **RemoteAddress, int *RemotePort);
 

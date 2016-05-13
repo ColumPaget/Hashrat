@@ -45,7 +45,7 @@ STREAM *LocalFile;
 
 Tempstr=FormatStr(Tempstr,"rm -f %s ; touch %s; chmod 0600 %s\n",KeyFile,KeyFile,KeyFile);
 STREAMWriteLine(Tempstr,S);
-LocalFile=STREAMOpenFile(LocalPath,SF_RDONLY);
+LocalFile=STREAMOpenFile(LocalPath,STREAM_RDONLY);
 if (LocalFile)
 {
 Line=STREAMReadLine(Line,LocalFile);

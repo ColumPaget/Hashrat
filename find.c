@@ -39,6 +39,7 @@ TFingerprint *M1, *M2;
 M1=(TFingerprint *) i1;
 M2=(TFingerprint *) i2;
 
+
 return(strcmp(M1->Hash, M2->Hash));
 }
 
@@ -59,8 +60,8 @@ void *vptr;
 	}
 	else
 	{
-			vptr=tsearch(FP, &Tree, MatchCompareFunc);
-			Item=*(TFingerprint **) vptr;
+		vptr=tsearch(FP, &Tree, MatchCompareFunc);
+		Item=*(TFingerprint **) vptr;
 		if (strcmp(Item->Path, FP->Path) !=0)
 		{
 			while (Item->Next !=NULL) Item=(TFingerprint *) Item->Next;
@@ -73,7 +74,7 @@ void *vptr;
 }
 
 
-TFingerprint *FindInMatches(HashratCtx *Ctx, TFingerprint *Head, const char *Path)
+TFingerprint *FindPathMatches(HashratCtx *Ctx, TFingerprint *Head, const char *Path)
 {
 TFingerprint *Item=NULL, *Prev=NULL;
 
@@ -108,39 +109,52 @@ void *ptr;
 if (! StrLen(Path)) return(NULL);
 
 Lookup=TFingerprintCreate(HashStr,"","",Path);
-if (Ctx->Action==ACT_FINDMATCHES_MEMCACHED)
+switch (Ctx->Action)
 {
-		Lookup->Data=MemcachedGet(Lookup->Data, Lookup->Hash);
-		if (StrLen(Lookup->Data)) Result=TFingerprintCreate(Lookup->Hash, Lookup->HashType, Lookup->Data, "");
-}
-else
-{
-		ptr=tfind(Lookup, &Tree, MatchCompareFunc);
-		if (ptr) 
-		{
-			Item=FindInMatches(Ctx, *(TFingerprint **) ptr, Path);
+	case ACT_FINDMATCHES_MEMCACHED:
+	Lookup->Data=MemcachedGet(Lookup->Data, Lookup->Hash);
+	if (StrLen(Lookup->Data)) Result=TFingerprintCreate(Lookup->Hash, Lookup->HashType, Lookup->Data, "");
+	break;
 
-      if (Item) 
+	case ACT_FINDDUPLICATES:
+	case ACT_FINDMATCHES:
+	ptr=tfind(Lookup, &Tree, MatchCompareFunc);
+	if (ptr)
+	{
+	Item=*(TFingerprint **) ptr;
+
+	//we have to make a copy because 'Result' is destroyed by parent function
+	Result=TFingerprintCreate(Item->Hash, Item->HashType, Item->Data, Item->Path);
+	}
+	break;
+
+	default:
+	ptr=tfind(Lookup, &Tree, MatchCompareFunc);
+	if (ptr) 
+	{
+		Item=FindPathMatches(Ctx, *(TFingerprint **) ptr, Path);
+		if (Item) 
+		{
+		Result=TFingerprintCreate(Item->Hash, Item->HashType, Item->Data, Item->Path);
+		if (Ctx->Action==ACT_CHECK)
+		{
+			if (Item==Head) 
 			{
-			Result=TFingerprintCreate(Item->Hash, Item->HashType, Item->Data, Item->Path);
-      if (Ctx->Action==ACT_CHECK)
-      {
-        if (Item==Head) 
+				if (Item->Next==NULL) 
 				{
-					if (Item->Next==NULL) 
-					{
-						// tree functions take a copy of the 'head' item, so we cannot
-						// destroy it. No idea how they do this, it's magic
-						// however we can destroy non-head items that we hang off
-						// the tree
-						tdelete(Lookup, &Tree, MatchCompareFunc);
-					}
-					else Item->Path=CopyStr(Item->Path, "");
+					// tree functions take a copy of the 'head' item, so we cannot
+					// destroy it. No idea how they do this, it's magic
+					// however we can destroy non-head items that we hang off
+					// the tree
+					tdelete(Lookup, &Tree, MatchCompareFunc);
 				}
-				//else TFingerprintDestroy(Item);
-      }
-      }
-    }
+				else Item->Path=CopyStr(Item->Path, "");
+			}
+			//else TFingerprintDestroy(Item);
+		}
+		}
+	}
+	break;
 }
 
 TFingerprintDestroy(Lookup);

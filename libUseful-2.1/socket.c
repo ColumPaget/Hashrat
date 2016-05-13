@@ -244,40 +244,6 @@ return(-1);
 #endif
 
 
-int InitUnixServerSock(int Type, const char *Path)
-{
-int sock;
-struct sockaddr_un sa;
-socklen_t salen;
-int result;
-
-if (Type==0) Type=SOCK_STREAM;
-sock=socket(AF_UNIX, Type, 0);
-if (sock <0) return(-1);
-
-//No reason to pass server/listen sockets across an exec
-fcntl(sock, F_SETFD, FD_CLOEXEC);
-
-result=1;
-salen=sizeof(result);
-strcpy(sa.sun_path,Path);
-sa.sun_family=AF_UNIX;
-salen=sizeof(struct sockaddr_un);
-result=bind(sock,(struct sockaddr *) &sa, salen);
-
-if ((result==0) && (Type==SOCK_STREAM))
-{
- result=listen(sock,10);
-}
-
-if (result==0) return(sock);
-else 
-{
-close(sock);
-return(-1);
-}
-}
-
 
 int TCPServerSockAccept(int ServerSock, char **Addr)
 {
@@ -294,20 +260,6 @@ getnameinfo((struct sockaddr *) &sa, salen, *Addr, NI_MAXHOST, NULL, 0, NI_NUMER
 }
 return(sock);
 }
-
-
-int UnixServerSockAccept(int ServerSock)
-{
-struct sockaddr_un sa;
-socklen_t salen;
-int sock;
-
-salen=sizeof(sa);
-sock=accept(ServerSock,(struct sockaddr *) &sa,&salen);
-return(sock);
-}
-
-
 
 
 
@@ -652,7 +604,7 @@ if ((S->in_fd > -1) && (S->Timeout > 0) )
     S->in_fd=-1;
     S->out_fd=-1;
   }
-  else if (! (Flags & CONNECT_NONBLOCK))  STREAMSetFlags(S, 0, SF_NONBLOCK);
+  else if (! (Flags & CONNECT_NONBLOCK))  STREAMSetFlags(S, 0, STREAM_NONBLOCK);
 }
 
 if (S->in_fd > -1)
@@ -707,7 +659,7 @@ Curr=ListGetNext(Curr);
 //just connect to host
 if ((HopNo==0) && StrLen(DesiredHost))
 {
-	if (Flags & CONNECT_NONBLOCK) S->Flags |= SF_NONBLOCK;
+	if (Flags & CONNECT_NONBLOCK) S->Flags |= STREAM_NONBLOCK;
 	val=Flags;
 
 	//STREAMDoPostConnect handles this	
@@ -724,7 +676,7 @@ if (result==TRUE)
 	if (Flags & CONNECT_NONBLOCK) 
 	{
 		S->State |=SS_CONNECTING;
-		S->Flags |=SF_NONBLOCK;
+		S->Flags |=STREAM_NONBLOCK;
 	}
 	else
 	{

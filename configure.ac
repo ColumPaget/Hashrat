@@ -12,12 +12,13 @@ AC_PROG_INSTALL
 AC_HEADER_STDC 
 AC_SYS_LARGEFILE
 
-AC_ARG_ENABLE(xattr, [  --enable-xattr       enable extended file attributes support], cf_use_xattr=$enableval )
+AC_ARG_ENABLE(xattr, [  --enable-xattr       enable extended file attributes support], cf_enable_xattr=$enableval )
 
 
-if test "$cf_use_xattr" = "yes"
+if test "$cf_enable_xattr" = "yes"
 then
-AC_DEFINE([USE_XATTR])
+AC_CHECK_HEADER([sys/extattr.h],[cf_extended_attribs=extattr],[])
+AC_CHECK_HEADER([sys/xattr.h],[cf_extended_attribs=xattr],[])
 fi
 
 
@@ -35,11 +36,14 @@ else
 echo "Largefiles ( > 2GB ) NOT enabled"
 fi
 
-if test "$cf_use_xattr" = "yes"
+if test "$cf_extended_attribs" = "xattr"
 then
 echo "File system attributes (xattr) enabled"
+elif test "$cf_extended_attribs" = "extattr"
+then
+echo "File system attributes (extattr) enabled"
 else
-echo "File system attributes (xattr) NOT enabled"
+echo "File system attributes NOT enabled"
 fi
 
 

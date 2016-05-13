@@ -39,21 +39,21 @@
 #define FLUSH_ALWAYS 4
 #define FLUSH_BUFFER 8
 
-#define SF_RDWR 0 //is the default
-#define SF_RDONLY 16
-#define SF_WRONLY 32
-#define SF_CREAT 64
-#define SF_CREATE 64
-#define SF_APPEND 128
-#define SF_TRUNC 256
-#define SF_SYMLINK_OK 512
-#define SF_WRLOCK 1024
-#define SF_RDLOCK 2048
-#define SF_FOLLOW 4096
-#define SF_SECURE 8192
-#define SF_NONBLOCK 16384
-#define SF_SSL 32768
-#define SF_AUTH 65536
+#define STREAM_RDWR 0 //is the default
+#define STREAM_RDONLY 16
+#define STREAM_WRONLY 32
+#define STREAM_CREAT 64
+#define STREAM_CREATE 64
+#define STREAM_APPEND 128
+#define STREAM_TRUNC 256
+#define STREAM_SYMLINK_OK 512
+#define STREAM_WRLOCK 1024
+#define STREAM_RDLOCK 2048
+#define STREAM_FOLLOW 4096
+#define STREAM_SECURE 8192
+#define STREAM_NONBLOCK 16384
+#define STREAM_SSL 32768
+#define STREAM_AUTH 65536
 
 
 

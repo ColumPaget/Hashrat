@@ -9,7 +9,8 @@
 extern "C" {
 #endif
 
-
+int InitUnixServerSock(int Type, const char *Path);
+int UnixServerSockAccept(int ServerSock);
 int OpenUnixSocket(const char *Path, int SockType);
 int STREAMConnectUnixSocket(STREAM *S, const char *Path, int SockType);
 

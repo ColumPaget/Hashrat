@@ -8,7 +8,7 @@ char *Tempstr=NULL, *HashStr=NULL;
 double pos;
 THash *Hash;
 
-S=STREAMOpenFile(Path, SF_RDWR);
+S=STREAMOpenFile(Path, STREAM_RDWR);
 if (! S) return;
 
 
@@ -90,7 +90,7 @@ char *Tempstr=NULL, *HashStr=NULL;
 THash *Hash, *tmpHash;
 int LineCount=0;
 
-S=STREAMOpenFile(Path, SF_RDWR);
+S=STREAMOpenFile(Path, STREAM_RDWR);
 if (! S) return(FALSE);
 
 Hash=HashInit(Ctx->HashType);
