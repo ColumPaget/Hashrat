@@ -34,7 +34,7 @@ int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, char *Path, struct stat *Sta
 char *Line=NULL, *Tempstr=NULL, *ptr; 
 char *p_Type="unknown";
 
-if (Flags & FLAG_TRAD_OUTPUT) Line=MCopyStr(Line,Hash, "  ", Path,NULL);
+if (Flags & FLAG_TRAD_OUTPUT) Line=MCopyStr(Line,Hash, "  ", Path,"\n",NULL);
 else if (Flags & FLAG_BSD_OUTPUT) 
 {
 	Line=CopyStr(Line,Ctx->HashType);

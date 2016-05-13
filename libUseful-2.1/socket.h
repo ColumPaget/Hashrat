@@ -2,6 +2,7 @@
 #define LIBUSEFUL_SOCK
 
 #include "includes.h"
+#include "limits.h"
 
 #define CONNECT_NONBLOCK 1
 #define CONNECT_SSL 2
@@ -10,6 +11,10 @@
 
 #define SOCK_CONNECTED 1
 #define SOCK_CONNECTING -1
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 255
+#endif
 
 #ifdef __cplusplus
 extern "C" {
