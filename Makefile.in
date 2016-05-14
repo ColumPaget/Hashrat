@@ -66,5 +66,5 @@ distclean:
 install: hashrat
 	-mkdir -p $(DESTDIR)$(prefix)/bin
 	cp -f $(EXE) $(DESTDIR)$(prefix)/bin
-	-mkdir -p $(DESTDIR)$(prefix)/man/man1
-	cp -f hashrat.1 $(DESTDIR)$(prefix)/man/man1
+	-mkdir -p $(DESTDIR)$(prefix)/share/man/man1
+	cp -f hashrat.1 $(DESTDIR)$(prefix)/share/man/man1
