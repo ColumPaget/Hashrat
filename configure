@@ -3556,6 +3556,37 @@ fi
 fi
 
 
+if test "$cf_extended_attribs" = "extattr"
+then
+$as_echo "#define USE_EXTATTR 1" >>confdefs.h
+
+elif test "$cf_extended_attribs" = "xattr"
+then
+$as_echo "#define USE_XATTR 1" >>confdefs.h
+
+fi
+
+echo
+echo
+echo "############# Hashrat Build Config: #############"
+if test "$ac_cv_sys_file_offset_bits" = "64"
+then
+echo "Largefiles ( > 2GB ) enabled"
+else
+echo "Largefiles ( > 2GB ) NOT enabled"
+fi
+
+if test "$cf_extended_attribs" = "xattr"
+then
+echo "File system attributes (xattr) enabled"
+elif test "$cf_extended_attribs" = "extattr"
+then
+echo "File system attributes (extattr) enabled"
+else
+echo "File system attributes NOT enabled"
+fi
+
+
 ac_config_files="$ac_config_files Makefile"
 
 cat >confcache <<\_ACEOF
@@ -4863,38 +4894,5 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
-
-
-if test "$cf_extended_attribs" = "extattr"
-then
-echo "DEFINE"
-$as_echo "#define USE_EXTATTR 1" >>confdefs.h
-
-elif test "$cf_extended_attribs" = "xattr"
-then
-$as_echo "#define USE_XATTR 1" >>confdefs.h
-
-fi
-
-echo
-echo
-echo "############# Hashrat Build Config: #############"
-if test "$ac_cv_sys_file_offset_bits" = "64"
-then
-echo "Largefiles ( > 2GB ) enabled"
-else
-echo "Largefiles ( > 2GB ) NOT enabled"
-fi
-
-if test "$cf_extended_attribs" = "xattr"
-then
-echo "File system attributes (xattr) enabled"
-elif test "$cf_extended_attribs" = "extattr"
-then
-echo "File system attributes (extattr) enabled"
-else
-echo "File system attributes NOT enabled"
-fi
-
 
 

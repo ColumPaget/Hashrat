@@ -22,16 +22,12 @@ AC_CHECK_HEADER([sys/xattr.h],[cf_extended_attribs=xattr],[])
 fi
 
 
-dnl read Makefile.in and write Makefile 
-AC_OUTPUT(Makefile)
-
 if test "$cf_extended_attribs" = "extattr"
 then
-echo "DEFINE"
-AC_DEFINE([USE_EXTATTR],[1])
+AC_DEFINE([USE_EXTATTR], [1])
 elif test "$cf_extended_attribs" = "xattr"
 then
-AC_DEFINE([USE_XATTR],[1])
+AC_DEFINE([USE_XATTR], [1])
 fi
 
 echo
@@ -55,4 +51,6 @@ echo "File system attributes NOT enabled"
 fi
 
 
+dnl read Makefile.in and write Makefile 
+AC_OUTPUT(Makefile)
 
