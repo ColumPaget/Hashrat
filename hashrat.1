@@ -241,7 +241,7 @@ Use eXtended \fIfile\fP ATTRibutes. In \fIhash\fP mode, store \fIhashes\fP in th
 .TP
 .B
 \fB-txattr\fP
-Use TRUSTED eXtended \fIfile\fP ATTRibutes. In \fIhash\fP mode, store \fIhashes\fP in trusted \fIfile\fP attributes. The trusted attributes can only be read and written by root.
+Use TRUSTED eXtended \fIfile\fP ATTRibutes. In \fIhash\fP mode, store \fIhashes\fP in trusted \fIfile\fP attributes. The trusted attributes can only be read and written by root. Under FreeBSD this means 'SYSTEM' attributes.
 .TP
 .B
 \fB-cache\fP
@@ -255,6 +255,10 @@ or a \fIfile\fP name. This will update these targets with the \fIhash\fP that wa
 .B
 \fB-hide\fP-\fIinput\fP
 When reading data from stdin in linemode, set the terminal \fIto\fP not echo characters, thus hiding typed \fIinput\fP.
+.TP
+.B
+\fB-xsel\fP
+Update X11 clipboard and primary selections to the current hash. This works using Xterm command sequences. The xterm resource 'allowWindowOps' must be set to 'true' for this to work.
 .TP
 .B
 \fB-star\fP-\fIinput\fP
