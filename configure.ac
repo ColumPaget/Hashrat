@@ -25,6 +25,14 @@ fi
 dnl read Makefile.in and write Makefile 
 AC_OUTPUT(Makefile)
 
+if test "$cf_extended_attribs" = "extattr"
+then
+echo "DEFINE"
+AC_DEFINE([USE_EXTATTR],[1])
+elif test "$cf_extended_attribs" = "xattr"
+then
+AC_DEFINE([USE_XATTR],[1])
+fi
 
 echo
 echo

@@ -4865,6 +4865,16 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
+if test "$cf_extended_attribs" = "extattr"
+then
+echo "DEFINE"
+$as_echo "#define USE_EXTATTR 1" >>confdefs.h
+
+elif test "$cf_extended_attribs" = "xattr"
+then
+$as_echo "#define USE_XATTR 1" >>confdefs.h
+
+fi
 
 echo
 echo
