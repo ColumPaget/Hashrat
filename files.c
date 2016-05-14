@@ -45,13 +45,13 @@ int FileType(char *Path, int FTFlags, struct stat *Stat)
 }
 
 
-int IsIncluded(char *Path, struct stat *FStat)
+int IsIncluded(HashratCtx *Ctx, char *Path, struct stat *FStat)
 {
 ListNode *Curr;
 char *mptr, *dptr;
 int result=TRUE;
 
-if (Flags & FLAG_EXCLUDE) result=FALSE;
+if (Ctx->Flags & CTX_EXCLUDE) result=FALSE;
 if (S_ISDIR(FStat->st_mode)) result=TRUE;
 
 Curr=ListGetNext(IncludeExclude);
@@ -315,23 +315,23 @@ int ConsiderItem(HashratCtx *Ctx, char *Path, struct stat *FStat)
 	switch (Type)
 	{
 		case FT_SSH:
-			if (SSHGlob(Ctx, Path, NULL) > 1) return(FLAG_RECURSE);
+			if (SSHGlob(Ctx, Path, NULL) > 1) return(CTX_RECURSE);
 		break;
 
 		case FT_DIR:
-		if (Flags & FLAG_RECURSE) return(FLAG_RECURSE);
+		if (Ctx->Flags & CTX_RECURSE) return(CTX_RECURSE);
 		break;
 	}
 
 	if (FStat)
 	{
-	if (Flags & FLAG_ONE_FS)
+	if (Ctx->Flags & CTX_ONE_FS)
 	{
 		if (StartingFS==0) StartingFS=FStat->st_dev;
-		else if (FStat->st_dev != StartingFS) return(FLAG_ONE_FS);
+		else if (FStat->st_dev != StartingFS) return(CTX_ONE_FS);
 	}
-	if ((Ctx->Flags & CTX_EXES) && (! (FStat->st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)))) return(FLAG_EXCLUDE);
-	if (! IsIncluded(Path, FStat)) return(FLAG_EXCLUDE);
+	if ((Ctx->Flags & CTX_EXES) && (! (FStat->st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)))) return(CTX_EXCLUDE);
+	if (! IsIncluded(Ctx,Path, FStat)) return(CTX_EXCLUDE);
 	}
 
 	return(0);
@@ -359,7 +359,7 @@ char *Tempstr=NULL;
 		break;
 
 		case FT_DIR:
-		if (Flags & FLAG_RECURSE) return(FLAG_RECURSE);
+		if (Ctx->Flags & CTX_RECURSE) return(CTX_RECURSE);
 		else ProcessData(HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
 		break;
 
@@ -590,11 +590,11 @@ char *HashStr=NULL;
 
 				switch (ConsiderItem(Ctx, Path, Stat))
 				{
-					case FLAG_EXCLUDE:
-					case FLAG_ONE_FS:
+					case CTX_EXCLUDE:
+					case CTX_ONE_FS:
 					break;
 
-					case FLAG_RECURSE:
+					case CTX_RECURSE:
 					HashratRecurse(Ctx, Path, &HashStr, 0);
 					break;
 

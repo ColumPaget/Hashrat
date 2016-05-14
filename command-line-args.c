@@ -9,16 +9,16 @@
 
 
 
-//if first item added to Include/Exclude is an include
-//then the program will exclude by default
-void AddIncludeExclude(int Type, const char *Item)
+void AddIncludeExclude(HashratCtx *Ctx, int Type, const char *Item)
 {
 ListNode *Node;
 
+//if we get given an include with no previous excludes, then 
+//set CTX_EXCLUDE as the default
 if (! IncludeExclude)
 {
   IncludeExclude=ListCreate();
-  if (Type==FLAG_INCLUDE) Flags |= FLAG_EXCLUDE;
+  if (Type==CTX_INCLUDE) Ctx->Flags |= CTX_EXCLUDE;
 }
 
 Node=ListAddItem(IncludeExclude, CopyStr(NULL, Item));
@@ -65,7 +65,7 @@ DestroyString(Tempstr);
 
 int CommandLineHandleArg(int argc, char *argv[], int pos, int ParseFlags, int SetFlags, char *VarName, char *VarValue, ListNode *Vars)
 {
-	Flags |= (SetFlags & ~(FLAG_INCLUDE | FLAG_EXCLUDE));
+	Flags |= SetFlags;
 	
 	if (ParseFlags & CMDLINE_ARG_NAMEVALUE)
 	{
@@ -78,9 +78,7 @@ int CommandLineHandleArg(int argc, char *argv[], int pos, int ParseFlags, int Se
 	{
 		strcpy(argv[pos],"");
 		pos++;
-		if (SetFlags & FLAG_INCLUDE) AddIncludeExclude(FLAG_INCLUDE, argv[pos]);
-		else if (SetFlags & FLAG_EXCLUDE) AddIncludeExclude(FLAG_EXCLUDE, argv[pos]);
-		else SetVar(Vars,VarName,argv[pos]);
+		SetVar(Vars,VarName,argv[pos]);
 	}
 	}
 	else if (StrLen(VarName)) SetVar(Vars,VarName,VarValue);
@@ -92,11 +90,25 @@ return(ParseFlags);
 
 
 
-void CommandLineSetCtx(int argc, char *argv[], int i, HashratCtx *Ctx, int Flag, int Encoding)
+void CommandLineSetCtx(int argc, char *argv[], int pos, HashratCtx *Ctx, int Flag, int Encoding)
 {
 if (Encoding > 0) Ctx->Encoding=Encoding;
 Ctx->Flags |= Flag;
-strcpy(argv[i],"");
+strcpy(argv[pos],"");
+
+if (Flag == CTX_INCLUDE) 
+{
+	pos++;
+	AddIncludeExclude(Ctx,CTX_INCLUDE, argv[pos]);
+	strcpy(argv[pos],"");
+}
+else if (Flag == CTX_EXCLUDE) 
+{
+	pos++;
+	AddIncludeExclude(Ctx,CTX_EXCLUDE, argv[pos]);
+	strcpy(argv[pos],"");
+}
+
 }
 
 
@@ -125,6 +137,7 @@ strcpy(argv[i],"");
 
 DestroyString(Token);
 }
+
 
 //this is the main parsing function that goes through the command-line args
 HashratCtx *CommandLineParseArgs(int argc,char *argv[])
@@ -209,13 +222,13 @@ else if (
 else if (strcmp(argv[i],"-C")==0)
 {
 	Ctx->Action = ACT_CHECK;
-	ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RECURSE, "", "",Ctx->Vars);
-	strcpy(argv[i],"");
+	CommandLineSetCtx(argc, argv, i, Ctx, CTX_RECURSE,0);
 }
 else if (strcmp(argv[i],"-Cf")==0)
 {
 	Ctx->Action = ACT_CHECK;
-	ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RECURSE | FLAG_OUTPUT_FAILS, "", "",Ctx->Vars);
+	CommandLineSetCtx(argc, argv, i, Ctx, CTX_RECURSE,0);
+	ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_OUTPUT_FAILS, "", "",Ctx->Vars);
 	strcpy(argv[i],"");
 }
 else if (strcmp(argv[i],"-c")==0)
@@ -327,21 +340,21 @@ else if (strcmp(argv[i],"-z85")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, EN
 else if (strcmp(argv[i],"-d")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_DEREFERENCE,0);
 else if (strcmp(argv[i],"-X")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_EXES,0);
 else if (strcmp(argv[i],"-exe")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_EXES,0);
+else if (strcmp(argv[i],"-r")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_RECURSE,0);
+else if (strcmp(argv[i],"-fs")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_ONE_FS,0);
 else if (strcmp(argv[i],"-n")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, 0, "Output:Length", "",Ctx->Vars);
 else if (strcmp(argv[i],"-hmac")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_HMAC, "EncryptionKey", "",Ctx->Vars);
 else if (strcmp(argv[i],"-idfile")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, 0,  "SshIdFile", "",Ctx->Vars);
-else if (strcmp(argv[i],"-r")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RECURSE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-f")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_FROM_LISTFILE, 0, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-i")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_INCLUDE , "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-x")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE, FLAG_EXCLUDE , "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-dirmode")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_DIRMODE | FLAG_RECURSE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-i")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_INCLUDE,0);
+else if (strcmp(argv[i],"-x")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_EXCLUDE,0);
+else if (strcmp(argv[i],"-dirmode")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_DIRMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-devmode")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_DIRMODE | FLAG_DEVMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-lines")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-rawlines")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-hide-input")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_HIDE_INPUT, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-star-input")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_STAR_INPUT, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-rl")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-fs")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_ONE_FS, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-xattr")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_XATTR, 0, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-txattr")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_TXATTR, 0, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-cache")==0) CommandLineSetCtx(argc, argv, i, Ctx,   CTX_XATTR_CACHE,0);
@@ -351,6 +364,7 @@ else if (strcmp(argv[i],"-S")==0) ParseFlags |= CommandLineHandleArg(argc, argv,
 else if (strcmp(argv[i],"-net")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_NET, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-memcached")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE|CMDLINE_MEMCACHED, 0, "Memcached:Server", "",Ctx->Vars);
 else if (strcmp(argv[i],"-mcd")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_ARG_NAMEVALUE| CMDLINE_MEMCACHED, 0, "Memcached:Server", "",Ctx->Vars);
+else if (strcmp(argv[i],"-xsel")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_XSELECT, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-v")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_VERBOSE, "", "",Ctx->Vars);
 else if (
 					(strcmp(argv[i],"-t")==0) ||

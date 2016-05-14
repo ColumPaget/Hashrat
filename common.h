@@ -25,20 +25,17 @@
 #define ACT_CHECKBACKUP 25
 
 
-#define FLAG_RECURSE 1
 //Two flags with the same values, but used in different contexts
 #define FLAG_ERROR 2
 #define FLAG_VERBOSE 2
 #define FLAG_DIRMODE 4
 #define FLAG_DEVMODE 8
-#define FLAG_ONE_FS  16
 #define FLAG_DIR_INFO 32
 #define FLAG_TRAD_OUTPUT 64
 #define FLAG_BSD_OUTPUT  128 
+#define FLAG_XSELECT     256 
 #define FLAG_MEMCACHED  1024
 #define FLAG_OUTPUT_FAILS 2048 
-#define FLAG_INCLUDE      8192
-#define FLAG_EXCLUDE     16384
 #define FLAG_FULLCHECK   32768
 #define FLAG_HMAC        65536
 #define FLAG_HIDE_INPUT 131072
@@ -49,7 +46,9 @@
 #define FLAG_NET       8388608
 #define FLAG_UPDATE   16777216
 
-#define CTX_CACHED		1
+#define CTX_CACHED   1
+#define CTX_RECURSE  2
+#define CTX_ONE_FS  16
 #define CTX_DEREFERENCE 128
 #define CTX_STORE_XATTR 256
 #define CTX_STORE_MEMCACHED 512
@@ -57,6 +56,8 @@
 #define CTX_XATTR_ROOT 2048
 #define CTX_XATTR_CACHE 4096
 #define CTX_EXES 8192
+#define CTX_INCLUDE 16384
+#define CTX_EXCLUDE 32768
 
 #define INEX_INCLUDE 1
 #define INEX_EXCLUDE 2

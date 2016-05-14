@@ -42,6 +42,24 @@ DestroyString(HashStr);
 }
 
 
+void HashStdInOutput(HashratCtx *Ctx, const char *Hash)
+{
+char *Tempstr=NULL, *Base64=NULL;
+
+	Tempstr=MCopyStr(Tempstr,Hash,"\n",NULL);
+	STREAMWriteString(Tempstr,Ctx->Out); 
+
+	if (Flags & FLAG_XSELECT)
+	{
+	Base64=EncodeBytes(Base64, Hash, StrLen(Hash), ENCODE_BASE64);
+	Tempstr=FormatStr(Tempstr,"\x1b]52;cps;%s\x07",Base64);
+	STREAMWriteString(Tempstr,Ctx->Out);
+	}
+
+DestroyString(Tempstr);
+DestroyString(Base64);
+}
+
 
 
 void HashStdIn(HashratCtx *Ctx)
@@ -62,7 +80,8 @@ if (Flags & FLAG_LINEMODE)
 		if (! (Flags & FLAG_RAW)) StripTrailingWhitespace(Tempstr);
 		Hash=CopyStr(Hash,"");
 		ProcessData(&Hash, Ctx, Tempstr, StrLen(Tempstr));
-		STREAMWriteString(Hash,Ctx->Out); STREAMWriteString("\n",Ctx->Out);
+		HashStdInOutput(Ctx, Hash);
+
 		if (Flags & FLAG_HIDE_INPUT) Tempstr=TTYReadSecret(Tempstr, In, 0);
 		else if (Flags & FLAG_STAR_INPUT) Tempstr=TTYReadSecret(Tempstr, In, TEXT_STARS);
 		else Tempstr=STREAMReadLine(Tempstr,In);
@@ -71,7 +90,7 @@ if (Flags & FLAG_LINEMODE)
 else
 {
 	HashratHashSingleFile(Ctx, Ctx->HashType, 0, "-", NULL, &Hash);
-	STREAMWriteString(Hash,Ctx->Out); STREAMWriteString("\n",Ctx->Out);
+	HashStdInOutput(Ctx, Hash);
 }
 STREAMDisassociateFromFD(In);
 

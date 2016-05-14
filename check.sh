@@ -130,6 +130,14 @@ else
 	FailMessage "File hashing BROKEN"
 fi
 
+HR_OUT=`./hashrat -sha1 -trad -r tests | ./hashrat -sha1`
+if [ "$HR_OUT" = "06af1d9f777bbeb1eecd76d71d869089683ded1b" ]
+then
+	OkayMessage "Recursive file hashing works"
+else
+	FailMessage "Recursive file hashing BROKEN"
+fi
+
 HR_INPUT="hash='sha1:5aa622e49b541f9a71409358d2e20feca1fa1f44' mode='100644' uid='0' gid='0' size='621' mtime='1423180289' inode='2359456' path='tests/quotes.txt'"
 HR_OUT=`echo $HR_INPUT | ./hashrat -c 2>&1 | ./hashrat -sha256`
 
