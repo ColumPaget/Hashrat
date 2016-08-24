@@ -114,7 +114,7 @@ TestHash z85 "ZEROMQ85 encoding" "wX%ElWFTQ9+Z=X4h"
 Title "Testing Misc. Features"
 
 HR_OUT=`./hashrat -version`
-if [ "$HR_OUT" = "version: 1.8" ]
+if [ "$HR_OUT" = "version: 1.8.2" ]
 then
 	OkayMessage "Version (-version) works"
 else
@@ -129,6 +129,15 @@ then
 else
 	FailMessage "File hashing BROKEN"
 fi
+
+HR_OUT=`./hashrat -dir -sha1 -trad tests`
+if [ "$HR_OUT" = "b8b4058dc499ee1f330926a5a073a2c598b10c91  tests" ]
+then
+  OkayMessage "Directory hashing works"
+else
+  FailMessage "Directory hashing BROKEN"
+fi
+
 
 HR_OUT=`./hashrat -sha1 -trad -r tests | ./hashrat -sha1`
 if [ "$HR_OUT" = "06af1d9f777bbeb1eecd76d71d869089683ded1b" ]

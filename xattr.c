@@ -145,7 +145,7 @@ FP->Path=CopyStr(FP->Path, Path);
 FP->Hash=SetStrLen(FP->Hash,1024);
 for (j=0; XattrTypes[j]; j++)
 {
-	if (StrLen(Ctx->HashType)) 
+	if (StrValid(Ctx->HashType)) 
 	{
 		found=XAttrGetHash(Ctx, XattrTypes[j], Ctx->HashType, Path, &FP->FStat, &FP->Hash);
 		FP->HashType=CopyStr(FP->HashType,Ctx->HashType);

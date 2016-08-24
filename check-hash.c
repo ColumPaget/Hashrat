@@ -133,7 +133,7 @@ if (strcmp(ptr,"-")==0)
   ListStream=STREAMFromFD(0);
   STREAMSetTimeout(ListStream,0);
 }
-else ListStream=STREAMOpenFile(ptr, STREAM_RDONLY);
+else ListStream=STREAMOpenFile(ptr, SF_RDONLY);
 
 FP=FingerprintRead(ListStream);
 while (FP)

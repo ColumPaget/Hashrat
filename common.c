@@ -87,7 +87,9 @@ else
 	else Tempstr=FormatStr(Tempstr, "inode='%lu' ",Stat->st_ino);
 	Line=CatStr(Line, Tempstr);
 	
-	Line=MCatStr(Line,"path='",Path,"'\n",NULL);
+	//we must quote out apostrophes
+	Tempstr=QuoteCharsInStr(Tempstr, Path, "'");
+	Line=MCatStr(Line,"path='",Tempstr,"'\n",NULL);
 }
 
 STREAMWriteString(Line,Out);

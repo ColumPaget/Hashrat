@@ -129,7 +129,7 @@ while (ptr)
 	else if (strcasecmp(Token, "txattr")==0) Ctx->Flags |= CTX_STORE_XATTR | CTX_XATTR_ROOT;
 	else if (strcasecmp(Token, "memcached")==0) Ctx->Flags |= CTX_STORE_MEMCACHED;
 	else if (strcasecmp(Token, "mcd")==0) Ctx->Flags |= CTX_STORE_MEMCACHED;
-	else if (! Ctx->Aux) Ctx->Aux=STREAMOpenFile(Token,STREAM_WRONLY | STREAM_CREAT | STREAM_TRUNC);
+	else if (! Ctx->Aux) Ctx->Aux=STREAMOpenFile(Token,SF_WRONLY | SF_CREAT | SF_TRUNC);
 
 ptr=GetToken(ptr,",",&Token,0);
 }
@@ -286,6 +286,12 @@ else if (strcmp(argv[i],"-cB")==0)
 	Ctx->Action = ACT_CHECKBACKUP;
 	strcpy(argv[i],"");
 }
+else if ((strcmp(argv[i],"-dir")==0) || (strcmp(argv[i],"-dirmode")==0))
+{
+	Ctx->Action = ACT_HASHDIR;
+	Ctx->Flags |= CTX_RECURSE;
+	strcpy(argv[i],"");
+}
 else if ((strcmp(argv[i],"-hook")==0) || (strcmp(argv[i],"-h")==0))
 {
 	strcpy(argv[i],"");
@@ -348,8 +354,7 @@ else if (strcmp(argv[i],"-idfile")==0) ParseFlags |= CommandLineHandleArg(argc, 
 else if (strcmp(argv[i],"-f")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, CMDLINE_FROM_LISTFILE, 0, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-i")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_INCLUDE,0);
 else if (strcmp(argv[i],"-x")==0) CommandLineSetCtx(argc, argv, i, Ctx, CTX_EXCLUDE,0);
-else if (strcmp(argv[i],"-dirmode")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_DIRMODE, "", "",Ctx->Vars);
-else if (strcmp(argv[i],"-devmode")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_DIRMODE | FLAG_DEVMODE, "", "",Ctx->Vars);
+else if (strcmp(argv[i],"-devmode")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_DEVMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-lines")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-rawlines")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (strcmp(argv[i],"-hide-input")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, FLAG_HIDE_INPUT, "", "",Ctx->Vars);
@@ -534,6 +539,7 @@ printf("  %-15s %s\n","-strict", "Strict mode: when checking, check file mtime, 
 printf("  %-15s %s\n","-S", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
 printf("  %-15s %s\n","-d","dereference (follow) symlinks"); 
 printf("  %-15s %s\n","-fs", "Stay on one file system");
+printf("  %-15s %s\n","-dir", "DirMode: Read all files in directory and create one hash for them!");
 printf("  %-15s %s\n","-dirmode", "DirMode: Read all files in directory and create one hash for them!");
 printf("  %-15s %s\n","-devmode", "DevMode: read from a file EVEN OF IT'S A DEVNODE");
 printf("  %-15s %s\n","-lines", "Read lines from stdin and hash each line independantly.");

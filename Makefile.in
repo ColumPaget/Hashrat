@@ -13,8 +13,8 @@ EXE=hashrat
 all: hashrat
 
 hashrat: $(OBJ) main.c
-	@cd libUseful-2.1; $(MAKE)
-	$(CC) $(FLAGS) -o$(EXE) $(OBJ) main.c libUseful-2.1/libUseful-2.1.a $(LIBS) 
+	@cd libUseful-2.5; $(MAKE)
+	$(CC) $(FLAGS) -o$(EXE) $(OBJ) main.c libUseful-2.5/libUseful-2.5.a $(LIBS) 
 
 common.o: common.h common.c
 	$(CC) $(FLAGS) -c common.c

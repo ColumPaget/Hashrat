@@ -54,8 +54,8 @@ void *vptr;
 	if (Flags & FLAG_MEMCACHED)
 	{
 		ptr=FP->Data;
-		if (StrLen(ptr)==0) ptr=FP->Path;
-		if (StrLen(ptr)==0) ptr=Path;
+		if (StrEnd(ptr)) ptr=FP->Path;
+		if (StrEnd(ptr)) ptr=Path;
 		if (MemcachedSet(FP->Hash, 0, ptr)) result=TRUE;
 	}
 	else
@@ -106,14 +106,14 @@ TFingerprint *CheckForMatch(HashratCtx *Ctx, const char *Path, struct stat *FSta
 TFingerprint *Lookup, *Head=NULL, *Prev=NULL, *Item=NULL, *Result=NULL;
 void *ptr;
 
-if (! StrLen(Path)) return(NULL);
+if (! StrValid(Path)) return(NULL);
 
 Lookup=TFingerprintCreate(HashStr,"","",Path);
 switch (Ctx->Action)
 {
 	case ACT_FINDMATCHES_MEMCACHED:
 	Lookup->Data=MemcachedGet(Lookup->Data, Lookup->Hash);
-	if (StrLen(Lookup->Data)) Result=TFingerprintCreate(Lookup->Hash, Lookup->HashType, Lookup->Data, "");
+	if (StrValid(Lookup->Data)) Result=TFingerprintCreate(Lookup->Hash, Lookup->HashType, Lookup->Data, "");
 	break;
 
 	case ACT_FINDDUPLICATES:
@@ -175,7 +175,7 @@ void OutputUnmatchedItem(const void *p_Item, const VISIT which, const int depth)
 			//if a root node of the linked list has been deleted, its path is
 			//set blank, rather than actually deleting it, as we need it to 
 			//continue acting as the head node
-			if (StrLen(Item->Path))
+			if (StrValid(Item->Path))
 			{
 			if (access(Item->Path, F_OK) !=0) HandleCheckFail(Item->Path, "Missing");
 			}
@@ -235,7 +235,7 @@ int count=0;
 S=STREAMFromFD(0);
 STREAMSetTimeout(S,100);
 Line=STREAMReadLine(Line,S);
-if (! StrLen(Line)) return(NULL);
+if (! StrValid(Line)) return(NULL);
 
 if (strncasecmp(Line,"<?xml ",6)==0) 
 {

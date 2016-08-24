@@ -2,12 +2,13 @@
 #ifndef HASHRAT_COMMON_H
 #define HASHRAT_COMMON_H
 
-#include "libUseful-2.1/libUseful.h"
+#include "libUseful-2.5/libUseful.h"
 #include "glob.h"
 
 
 #define ACT_NONE 0
 #define ACT_HASH 1
+#define ACT_HASHDIR 2
 #define ACT_HASH_LISTFILE 3
 #define ACT_PRINTUSAGE 4
 #define ACT_CGI 6
@@ -28,7 +29,6 @@
 //Two flags with the same values, but used in different contexts
 #define FLAG_ERROR 2
 #define FLAG_VERBOSE 2
-#define FLAG_DIRMODE 4
 #define FLAG_DEVMODE 8
 #define FLAG_DIR_INFO 32
 #define FLAG_TRAD_OUTPUT 64
@@ -75,7 +75,7 @@
 
 #define BLOCKSIZE 4096
 
-#define VERSION "1.8.1"
+#define VERSION "1.8.2"
 
 
 typedef struct

@@ -184,11 +184,11 @@ switch (Type)
 	break;
 
 	default:
-		if ((! StrLen(Path)) || (strcmp(Path,"-")==0)) S=STREAMFromFD(0);
+		if ((! StrValid(Path)) || (strcmp(Path,"-")==0)) S=STREAMFromFD(0);
 		else
 		{
-			if (Ctx->Flags & CTX_DEREFERENCE) S=STREAMOpenFile(Path,STREAM_RDONLY|STREAM_SYMLINK_OK);
-			else S=STREAMOpenFile(Path,STREAM_RDONLY);
+			if (Ctx->Flags & CTX_DEREFERENCE) S=STREAMOpenFile(Path,SF_RDONLY|SF_SYMLINK_OK);
+			else S=STREAMOpenFile(Path,SF_RDONLY);
 		}
 	break;
 }
@@ -240,7 +240,7 @@ char *ptr;
 		Hash->Finish(Hash,Ctx->Encoding,RetStr);
 
 		ptr=GetVar(Ctx->Vars,"Output:Length");
-		if (StrLen(ptr))
+		if (StrValid(ptr))
 		{
 			val=atoi(ptr);
 			if ((val > 0) && (StrLen(*RetStr) > val)) (*RetStr)[val]='\0';
@@ -268,7 +268,7 @@ int size=0;
 		}
 
 
-		if (StrLen(*RetStr)==0)
+		if (! StrValid(*RetStr))
 		#endif
 		{
 			Hash=HashInit(HashType);
@@ -345,7 +345,6 @@ char *Tempstr=NULL;
 
 
 	Type=FileType(Path, Flags, FStat);
-
 	switch (Type)
 	{
 		case FT_HTTP:
@@ -401,7 +400,7 @@ char *Tempstr=NULL;
 		break;
 	}
 
-  if (StrLen(DiffHook))
+  if (StrValid(DiffHook))
   {
     Tempstr=MCopyStr(Tempstr,DiffHook," '",Path,"'",NULL);
     system(Tempstr);
@@ -420,9 +419,15 @@ void HashratAction(HashratCtx *Ctx, char *Path, struct stat *Stat)
 {
 char *HashStr=NULL;
 TFingerprint *FP;
+int Type;
 
 switch (Ctx->Action)
 {
+case ACT_HASHDIR:
+			Type=FileType(Path, Flags, Stat);
+			HashratHashFile(Ctx, Ctx->Hash, Type, Path, Stat->st_size);
+break;
+
 case ACT_HASH:
 	HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
 	HashratOutputInfo(Ctx, Ctx->Out, Path, Stat, HashStr);
@@ -490,7 +495,8 @@ case ACT_FINDMATCHES_MEMCACHED:
 		FP=CheckForMatch(Ctx, Path, Stat, HashStr);
 		if (FP)
 		{
-			printf("LOCATED: %s '%s %s' at %s\n",FP->Hash,FP->Path,FP->Data,Path);
+			if (StrValid(FP->Path) || StrValid(FP->Data)) printf("LOCATED: %s '%s %s' at %s\n",FP->Hash, FP->Path, FP->Data, Path);
+			else printf("LOCATED: %s at %s\n",FP->Hash, Path);
 			MatchCount++;
 		}
 		else DiffCount++;
@@ -564,17 +570,18 @@ return(result);
 int HashratRecurse(HashratCtx *Ctx, char *Path, char **HashStr, int result)
 {
 char *ptr;
-THash *Hash;
+struct stat FStat;
 
-
-		if ((Flags & FLAG_DIRMODE) && (! Ctx->Hash)) 
+		if ((Ctx->Action == ACT_HASHDIR) && (! Ctx->Hash)) 
 		{
-				Hash=HashInit(Ctx->HashType);
+				Ctx->Hash=HashInit(Ctx->HashType);
 				ptr=GetVar(Ctx->Vars,"EncryptionKey");
-				if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
+				if (ptr) HMACSetKey(Ctx->Hash, ptr, StrLen(ptr));
 
 				if (! ProcessDir(Ctx, Path, Ctx->HashType)) result=FALSE;
-				HashratFinishHash(HashStr, Ctx, Hash);
+				HashratFinishHash(HashStr, Ctx, Ctx->Hash);
+				stat(Path, &FStat);
+				HashratOutputInfo(Ctx, Ctx->Out, Path, &FStat, *HashStr);
 		}
 		else if (! ProcessDir(Ctx, Path, Ctx->HashType)) result=FALSE;
 

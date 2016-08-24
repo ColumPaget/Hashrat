@@ -52,7 +52,7 @@ int result=TRUE;
 	if (Flags & SSH_ASK_PASSWD) 
 	{
 		*Passwd=CopyStr(*Passwd, GetVar(Ctx->Vars,"SshPasswd"));
-		if (! StrLen(*Passwd))
+		if (! StrValid(*Passwd))
 		{
 		SSHRequestPasswd(Passwd);
 		SetVar(Ctx->Vars,"SshPasswd", *Passwd);
@@ -68,7 +68,7 @@ int result=TRUE;
   ExpectDialogAdd(Dialog, "Are you sure you want to continue connecting (yes/no)?", "yes\n", DIALOG_OPTIONAL);
   ExpectDialogAdd(Dialog, "Permission denied", "", DIALOG_OPTIONAL | DIALOG_FAIL);
   ExpectDialogAdd(Dialog, Tempstr, "", DIALOG_END);
-	if (StrLen(*Passwd))
+	if (StrValid(*Passwd))
 	{
   Tempstr=MCopyStr(Tempstr,*Passwd,"\n",NULL);
   ExpectDialogAdd(Dialog, "assword:", Tempstr, DIALOG_END);
@@ -123,17 +123,17 @@ if (! Ctx->NetCon)
 {
 Ctx->NetCon=STREAMCreate();
 
-if (StrLen(PortStr)) Port=atoi(PortStr);
+if (StrValid(PortStr)) Port=atoi(PortStr);
 
 Tempstr=FormatStr(Tempstr,"/usr/bin/ssh -2 -T %s@%s -p %d",User,Host,Port);
 
 ptr=GetVar(Ctx->Vars,"SshIdFile");
-if (StrLen(ptr)) Tempstr=MCatStr(Tempstr," -i ",ptr, NULL);
+if (StrValid(ptr)) Tempstr=MCatStr(Tempstr," -i ",ptr, NULL);
 
 //Never use TTYFLAG_CANON here
-Ctx->NetCon=STREAMSpawnCommand(Tempstr,COMMS_BY_PTY|TTYFLAG_CRLF|TTYFLAG_IGNSIG);
+Ctx->NetCon=STREAMSpawnCommand(Tempstr,"","",COMMS_BY_PTY|TTYFLAG_CRLF|TTYFLAG_IGNSIG);
 
-if ((! StrLen(ptr)) && (! StrLen(Passwd)))  Flags |= SSH_ASK_PASSWD;
+if ((! StrValid(ptr)) && (! StrValid(Passwd)))  Flags |= SSH_ASK_PASSWD;
 SSHFinalizeConnection(Ctx, Flags, &Passwd);
 
 STREAMSetTimeout(Ctx->NetCon,10000);
@@ -142,7 +142,7 @@ STREAMSetTimeout(Ctx->NetCon,10000);
 StripTrailingWhitespace(Tempstr);
 StripTrailingWhitespace(User);
 
-if ( (StrLen(User)==0) || (strcmp(Tempstr,User) !=0) )
+if ( (StrValid(User)==0) || (strcmp(Tempstr,User) !=0) )
 {
 	STREAMClose(S);
 	S=NULL;
@@ -209,7 +209,7 @@ char *Token=NULL, *ptr, *tptr;
 
 		ptr=GetToken(ptr,"\\S",&Token,0);
 
-		if (StrLen(Token) > 9)
+		if (StrValid(Token) > 9)
 		{
 		tptr=Token;
     switch (*tptr)
@@ -309,7 +309,7 @@ if (S)
 		ptr=strchr(ptr,'/');
 		if (ptr) *ptr='\0';
 
-		if (StrLen(Path))
+		if (StrValid(Path))
 		{
 			Tempstr=MCatStr(Tempstr,"/",Path,NULL);
 			if (Files) ListAddNamedItem(Files,Tempstr, Stat);

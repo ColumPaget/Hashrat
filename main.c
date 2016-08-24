@@ -16,7 +16,7 @@ STREAM *S;
 struct stat Stat;
 
 if (strcmp(Ctx->ListPath,"-")==0) S=STREAMFromFD(0);
-else S=STREAMOpenFile(Ctx->ListPath,STREAM_RDONLY);
+else S=STREAMOpenFile(Ctx->ListPath,SF_RDONLY);
 Tempstr=STREAMReadLine(Tempstr, S);
 while (Tempstr)
 {
@@ -107,7 +107,7 @@ int i, count=0;
 
 	for (i=1; i < argc; i++)
 	{
-	if (StrLen(argv[i]))
+	if (StrValid(argv[i]))
 	{
 			if (StatFile(Ctx, argv[i],&Stat)==0)
 			{
@@ -152,6 +152,10 @@ switch (Ctx->Action)
 	if (count==0) HashStdIn(Ctx);
 	break;
 
+	case ACT_HASHDIR:
+	count=ProcessCommandLine(Ctx, argc, argv);
+	break;
+	
 	case ACT_CHECK_LIST:
 		result=CheckHashesFromList(Ctx);
 	break;
@@ -174,7 +178,7 @@ switch (Ctx->Action)
 	//Load matches to an mcached server
 	case ACT_LOADMATCHES:
 	ptr=GetVar(Ctx->Vars, "Memcached:Server");
-	if (StrLen(ptr) ==0) printf("ERROR: No memcached server specified. Use the -memcached <server> command-line argument to specify one\n");
+	if (StrEnd(ptr)) printf("ERROR: No memcached server specified. Use the -memcached <server> command-line argument to specify one\n");
 	else MatchesLoad(FLAG_MEMCACHED);
 	break;
 
@@ -204,7 +208,7 @@ switch (Ctx->Action)
 	Ctx->Encoding = ENCODE_BASE64;
 	for (i=1; i < argc; i++)
 	{
-	if (StrLen(argv[i]))
+	if (StrValid(argv[i]))
 	{
 			if (StatFile(Ctx, argv[i],&Stat)==0)
 			{
@@ -221,7 +225,7 @@ switch (Ctx->Action)
 	Ctx->Encoding |= ENCODE_BASE64;
 	for (i=1; i < argc; i++)
 	{
-	if (StrLen(argv[i]))
+	if (StrValid(argv[i]))
 	{
 			if (StatFile(Ctx, argv[i],&Stat)==0)
 			{

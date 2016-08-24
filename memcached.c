@@ -10,7 +10,7 @@ if (StrLen(Server))
 if (MCS) STREAMClose(MCS);
 
 MCS=STREAMCreate();
-if (! STREAMConnectToHost(MCS, Server, 11211, 0))
+if (! STREAMTCPConnect(MCS, Server, 11211,0,0, 0))
 {
 	STREAMClose(MCS);
 	MCS=NULL;
