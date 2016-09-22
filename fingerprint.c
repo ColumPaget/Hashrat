@@ -9,14 +9,19 @@ int result=FALSE;
 char *ptr;
 
 ptr=GetToken(Data,"\\S",Type,0);
-while (isspace(*ptr)) ptr++;
-if (*ptr=='(') ptr++;
-ptr=GetToken(ptr,")",Path,0);
-while (isspace(*ptr)) ptr++;
-if (*ptr=='=') ptr++;
-while (isspace(*ptr)) ptr++;
-
-*Hash=CopyStr(*Hash,ptr);
+if (ptr)
+{
+	while (isspace(*ptr)) ptr++;
+	if (*ptr=='(') ptr++;
+	ptr=GetToken(ptr,")",Path,0);
+	if (ptr)
+	{
+		while (isspace(*ptr)) ptr++;
+		if (*ptr=='=') ptr++;
+		while (isspace(*ptr)) ptr++;
+	}
+	*Hash=CopyStr(*Hash,ptr);
+}
 
 }
 
@@ -26,9 +31,12 @@ void ParseTradFormat(const char *Data, char **Hash, char **Path)
 char *ptr;
 
 ptr=GetToken(Data,"\\S",Hash,0);
-if (*ptr=='*') ptr++;
-while (isspace(*ptr)) ptr++;
-*Path=CopyStr(*Path,ptr);
+if (ptr)
+{
+	if (*ptr=='*') ptr++;
+	while (isspace(*ptr)) ptr++;
+	*Path=CopyStr(*Path,ptr);
+}
 }
 
 

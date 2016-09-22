@@ -33,6 +33,10 @@ Print this help.
 Print program version.
 .TP
 .B
+\fB-type <type>\fP
+Use \fIhash\fP algorithm <type>. Hash types can be chained as a comma-seperated list.
+.TP
+.B
 \fB-md5\fP
 Use md5 \fIhash\fP algorithm. This is the default \fIhash\fP.
 .TP
@@ -334,6 +338,10 @@ from the end \fIof\fP the line (including \\r and/or \\n line terminators).
 Read lines from stdin, and generate a md5 \fIhash\fP in traditional format for every line INCLUDING TRAILING WHITESPACE.
 This is compatible with 'echo text | md5sum', where text is one line, as echo adds a newline \fIto\fP the end \fIof\fP the
 text it outputs.
+.TP
+.B
+\fBhashrat\fP \fB-type sha256,whirl,md5\fP \fB-64\fP
+Generate a sha-256 \fIhash\fP \fIof\fP data read from stdin, then hash the result with whirlpool, then with md5.
 .TP
 .B
 \fBhashrat\fP *

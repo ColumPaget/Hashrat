@@ -237,7 +237,7 @@ void HashratFinishHash(char **RetStr, HashratCtx *Ctx, THash *Hash)
 int val;
 char *ptr;
 
-		Hash->Finish(Hash,Ctx->Encoding,RetStr);
+		HashFinish(Hash,Ctx->Encoding,RetStr);
 
 		ptr=GetVar(Ctx->Vars,"Output:Length");
 		if (StrValid(ptr))
@@ -245,7 +245,6 @@ char *ptr;
 			val=atoi(ptr);
 			if ((val > 0) && (StrLen(*RetStr) > val)) (*RetStr)[val]='\0';
 		}
-		HashDestroy(Hash);
 }
 
 
@@ -297,11 +296,14 @@ THash *Hash;
 		if (! Ctx->Hash) 
 		{
 			Hash=HashInit(Ctx->HashType);
+			if (Hash)
+			{
 			ptr=GetVar(Ctx->Vars,"EncryptionKey");
 			if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
 			Hash->Update(Hash ,Data, DataLen);
 			HashratFinishHash(RetStr, Ctx, Hash);
+			}
 		} 
 		else Ctx->Hash->Update(Ctx->Hash ,Data, DataLen);
 }
@@ -414,24 +416,28 @@ return(0);
 
 
 
-
-void HashratAction(HashratCtx *Ctx, char *Path, struct stat *Stat)
+//HashratAction returns true on a significant event, which is either an item found in search
+//or a check failing in hash-checking mode
+int HashratAction(HashratCtx *Ctx, char *Path, struct stat *Stat)
 {
 char *HashStr=NULL;
+int Type, result=FALSE;
 TFingerprint *FP;
-int Type;
 
 switch (Ctx->Action)
 {
 case ACT_HASHDIR:
 			Type=FileType(Path, Flags, Stat);
-			HashratHashFile(Ctx, Ctx->Hash, Type, Path, Stat->st_size);
+			//we return TRUE if hash succeeded
+			if (HashratHashFile(Ctx, Ctx->Hash, Type, Path, Stat->st_size)) result=TRUE;
 break;
 
 case ACT_HASH:
 	HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
 	HashratOutputInfo(Ctx, Ctx->Out, Path, Stat, HashStr);
 	HashratStoreHash(Ctx, Path, Stat, HashStr);
+	//we return TRUE if hash succeeded
+	result=TRUE;
 break;
 
 case ACT_CHECK:
@@ -441,11 +447,13 @@ case ACT_CHECK:
 		{
 			HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
 			FP=CheckForMatch(Ctx, Path, Stat, HashStr);
-			if (FP)
+			if (FP && HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) MatchCount++;
+			else 
 			{
-				if (HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) MatchCount++;
+					HandleCheckFail(Path, "Changed or new");
+					//we return TRUE on FAILURE, as we are signaling a significant event
+					result=TRUE;
 			}
-			else HandleCheckFail(Path, "Changed or new");
 			TFingerprintDestroy(FP);	
 		}
 		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
@@ -455,20 +463,27 @@ break;
 case ACT_CHECK_XATTR:
 	if (S_ISREG(Stat->st_mode))
 	{
+		//result == TRUE by default (TRUE==Signficant event, here meaning 'check failed')
+		result=TRUE;
 		FP=XAttrLoadHash(Ctx, Path);
 		if (FP) 
 		{
 			HashItem(Ctx, FP->HashType, Path, Stat, &HashStr);
-			if (FP->Flags & FP_HASSTAT) HashratCheckFile(Ctx, Path, Stat, HashStr, FP);
-			else HashratCheckFile(Ctx, Path, Stat, HashStr, FP);
+			if (FP->Flags & FP_HASSTAT) if (HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) result=FALSE;
+			else if (HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) result=FALSE;
 		}
 		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
 	}
+	else fprintf(stderr,"ERROR: Not regular file '%s'. Not checking in xattr mode.\n",Path);
 break;
+
 
 case ACT_CHECK_MEMCACHED:
 	if (S_ISREG(Stat->st_mode))
 	{
+		//result == TRUE by default (TRUE==Signficant event, here meaning 'check failed')
+		result=TRUE;
+
 		if (Stat->st_size > 0)
 		{
 		HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
@@ -477,12 +492,13 @@ case ACT_CHECK_MEMCACHED:
 		else FP->Path=MCopyStr(FP->Path,"hashrat://",LocalHost,Path,NULL);
 		FP->Hash=MemcachedGet(FP->Hash, FP->Path);
 
-		if (FP) HashratCheckFile(Ctx, Path, NULL, HashStr, FP);
+		if (FP && HashratCheckFile(Ctx, Path, NULL, HashStr, FP)) result=FALSE;
 		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
 		TFingerprintDestroy(FP);
 		}
 		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
 	}
+	else fprintf(stderr,"ERROR: Not regular file '%s'. Not checking in memcached mode.\n",Path);
 break;
 
 case ACT_FINDMATCHES:
@@ -498,6 +514,8 @@ case ACT_FINDMATCHES_MEMCACHED:
 			if (StrValid(FP->Path) || StrValid(FP->Data)) printf("LOCATED: %s '%s %s' at %s\n",FP->Hash, FP->Path, FP->Data, Path);
 			else printf("LOCATED: %s at %s\n",FP->Hash, Path);
 			MatchCount++;
+			//here we return true if a match found
+			result=TRUE;
 		}
 		else DiffCount++;
 		TFingerprintDestroy(FP);	
@@ -518,6 +536,8 @@ case ACT_FINDDUPLICATES:
 			{
 				printf("DUPLICATE: %s of %s %s\n",Path,FP->Path,FP->Data);
 				MatchCount++;
+			//here we return true if a match found
+				result=TRUE;
 				TFingerprintDestroy(FP);	
 			}
 			else 
@@ -534,16 +554,19 @@ break;
 }
 
 DestroyString(HashStr);
+
+return(result);
 }
 
 
-
+//ProcessItem returns TRUE on a significant event, so any instance of TRUE
+//from items checked makes return value here TRUE
 int ProcessDir(HashratCtx *Ctx, char *Dir, char *HashType)
 {
 char *Tempstr=NULL, *HashStr=NULL;
 ListNode *FileList, *Curr;
+int result=FALSE;
 int Type;
-int result=TRUE;
 
 		Type=FileType(Dir, Flags, NULL);
 
@@ -553,7 +576,7 @@ int result=TRUE;
 		Curr=ListGetNext(FileList);
 		while (Curr)
 		{
-			ProcessItem(Ctx, Curr->Tag, (struct stat *) Curr->Item);
+			if (ProcessItem(Ctx, Curr->Tag, (struct stat *) Curr->Item)) result=TRUE;
 			Curr=ListGetNext(Curr);
 		}
 
@@ -566,11 +589,13 @@ return(result);
 }
 
 
-
-int HashratRecurse(HashratCtx *Ctx, char *Path, char **HashStr, int result)
+//ProcessDir returns TRUE on a significant event, so any instance of TRUE
+//from items checked makes return value here TRUE
+int HashratRecurse(HashratCtx *Ctx, char *Path, char **HashStr)
 {
 char *ptr;
 struct stat FStat;
+int result=FALSE;
 
 		if ((Ctx->Action == ACT_HASHDIR) && (! Ctx->Hash)) 
 		{
@@ -582,8 +607,9 @@ struct stat FStat;
 				HashratFinishHash(HashStr, Ctx, Ctx->Hash);
 				stat(Path, &FStat);
 				HashratOutputInfo(Ctx, Ctx->Out, Path, &FStat, *HashStr);
+				result=TRUE;
 		}
-		else if (! ProcessDir(Ctx, Path, Ctx->HashType)) result=FALSE;
+		else if (ProcessDir(Ctx, Path, Ctx->HashType)) result=TRUE;
 
 	return(result);
 }
@@ -591,26 +617,30 @@ struct stat FStat;
 
 
 
-void ProcessItem(HashratCtx *Ctx, char *Path, struct stat *Stat)
+int ProcessItem(HashratCtx *Ctx, char *Path, struct stat *Stat)
 {
 char *HashStr=NULL;
+int result=FALSE;
 
 				switch (ConsiderItem(Ctx, Path, Stat))
 				{
 					case CTX_EXCLUDE:
 					case CTX_ONE_FS:
+						result=IGNORE;
 					break;
 
 					case CTX_RECURSE:
-					HashratRecurse(Ctx, Path, &HashStr, 0);
+					result=HashratRecurse(Ctx, Path, &HashStr);
 					break;
 
 					default:
-					HashratAction(Ctx, Path, Stat);
+					result=HashratAction(Ctx, Path, Stat);
 					break;
 				}
 
 DestroyString(HashStr);
+
+return(result);
 }
 
 

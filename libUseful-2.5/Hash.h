@@ -13,7 +13,7 @@ typedef struct t_hash THash;
 
 typedef void (*HASH_UPDATE)(THash *Hash, char *Data, int DataLen);
 typedef THash *(*HASH_CLONE)(THash *Hash);
-typedef int (*HASH_FINISH)(THash *Hash, int Encoding, char **RetStr);
+typedef int (*HASH_FINISH)(THash *Hash, char **RetStr);
 
 struct t_hash
 {
@@ -29,7 +29,8 @@ HASH_CLONE Clone;
 };
 
 void HashAvailableTypes(ListNode *Vars);
-THash *HashInit(char *Type);
+THash *HashInit(const char *Type);
+int HashFinish(THash *Hash, int Encoding, char **Return);
 void HMACSetKey(THash *HMAC, char *Key, int Len);
 void HashDestroy(THash *Hash);
 int HashBytes(char **Return, char *Type, char *text, int len, int Encoding);

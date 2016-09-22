@@ -71,6 +71,7 @@ int CheckFileHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *ActualHa
 int result=FALSE;
 
 	if (strcasecmp(FP->Hash,ActualHash) != 0) HandleCheckFail(Path, "Hash mismatch");
+	else
 	{
 		if (! (Flags & FLAG_OUTPUT_FAILS))
 		{
@@ -118,6 +119,7 @@ return(result);
 }
 
 
+//returns true on a significant event, meaning on FAIL
 int CheckHashesFromList(HashratCtx *Ctx)
 {
 char *HashStr=NULL, *ptr;
@@ -150,7 +152,8 @@ while (FP)
 fprintf(stderr,"\nChecked %d files. %d Failures\n",Checked,Errors);
 
 DestroyString(HashStr);
-if (Errors) return(FALSE);
-return(TRUE);
+
+if (Errors) return(TRUE);
+return(FALSE);
 }
 

@@ -71,6 +71,29 @@ else
 fi
 }
 
+TestExitCodes()
+{
+if [ "$4" = "FindDuplicates" ]
+then
+	HR_OUT=`./hashrat -r -dups $1`
+	EXIT_FOUND=$?
+	HR_OUT=`./hashrat -r -dups $2`
+	EXIT_NOTFOUND=$?
+else
+	HR_OUT=`echo $1 $2 | ./hashrat $3 2>/dev/null`
+	EXIT_FOUND=$?
+	HR_OUT=`echo $1x $2 | ./hashrat $3 2>/dev/null`
+	EXIT_NOTFOUND=$?
+fi
+
+if [ "$EXIT_FOUND" = "0" -a "$EXIT_NOTFOUND" = "1" ]
+then
+	OkayMessage "$4 exit codes correct"
+else 
+	FailMessage "$4 exit codes BROKEN."
+fi
+}
+
 
 
 ##################### MAIN STARTS HERE ##########################
@@ -114,7 +137,7 @@ TestHash z85 "ZEROMQ85 encoding" "wX%ElWFTQ9+Z=X4h"
 Title "Testing Misc. Features"
 
 HR_OUT=`./hashrat -version`
-if [ "$HR_OUT" = "version: 1.8.2" ]
+if [ "$HR_OUT" = "version: 1.8.3" ]
 then
 	OkayMessage "Version (-version) works"
 else
@@ -157,7 +180,7 @@ else
 	FailMessage "Checking files BROKEN"
 fi
 
-HR_OUT=`./hashrat -r -dups tests`                      
+HR_OUT=`./hashrat -r -dups tests`
 if [ "$HR_OUT" = "DUPLICATE: tests/quotes.txt of tests/duplicate.txt " ]
 then
 	OkayMessage "Finding duplicate files works"
@@ -175,5 +198,11 @@ TestLocate "MD5 (test file) = 6ec9de513a8ff1768eb4768236198cf3" "LOCATED: 6ec9de
 HR_INPUT=`cat tests/test.ioc`
 TestLocate "$HR_INPUT" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 ' Hashrat Test IOC' at ./tests/help.txt" "Locating files with OpenIOC input"
 
+
+Title "Testing exit codes for different operations"
+
+TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-cf" "CheckHash"
+TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-m -r ." "Locate"
+TestExitCodes "tests" "libUseful-2.5" "-r -dups" "FindDuplicates"
 
 exit $EXIT

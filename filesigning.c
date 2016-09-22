@@ -103,10 +103,9 @@ while (Tempstr)
 	if (strncmp(Tempstr, "hashrat-integrity-mark: ",24)==0)
 	{
 		tmpHash=Hash->Clone(Hash);
-		tmpHash->Finish(tmpHash,ENCODE_BASE64,&HashStr);
+		HashFinish(tmpHash,ENCODE_BASE64,&HashStr);
 
 		HashratOutputSigningCheck(Ctx, HashStr, Tempstr, LineCount);
-		HashDestroy(tmpHash);
 	}
   Hash->Update(Hash ,Tempstr, StrLen(Tempstr));
 

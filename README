@@ -41,6 +41,7 @@ Options:
   -?              Print this help
   --version       Print program version
   -version        Print program version
+	-type <type>    Use hash algorithmn <type>. Types can be chained together as a comma-seperated list.
   -md5            Use md5 hash algorithmn
   -sha1           Use sha1 hash algorithmn
   -sha256         Use sha256 hash algorithmn
@@ -148,6 +149,10 @@ USE EXAMPLES:
 	hashrat -md5 -trad -rawlines
 
 		Read lines from stdin, and generate an md5 hash in 'traditional' format for every line INCLUDING TRAILING WHITESPACE. This is compatible with 'echo text | md5sum' where 'text' is one line, as 'echo' adds a newline to the end of the text it outputs.
+
+	hashrat -type sha256,whirl,md5
+
+		Read data from stdin, hash it with sha256, then hash the resulting hash with whirlpool, then with md5
 
 	hashrat *
 

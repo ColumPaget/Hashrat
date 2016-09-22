@@ -103,7 +103,7 @@ DestroyString(Hash);
 int ProcessCommandLine(HashratCtx *Ctx, int argc, char *argv[])
 {
 struct stat Stat;
-int i, count=0;
+int i, result=IGNORE;
 
 	for (i=1; i < argc; i++)
 	{
@@ -111,14 +111,13 @@ int i, count=0;
 	{
 			if (StatFile(Ctx, argv[i],&Stat)==0)
 			{
-				ProcessItem(Ctx, argv[i], &Stat);
+				result=ProcessItem(Ctx, argv[i], &Stat);
 			}
 			else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
-			count++;
 	}
 	}
 
-return(count);
+return(result);
 }
 
 
@@ -126,7 +125,7 @@ return(count);
 main(int argc, char *argv[])
 {
 char *Tempstr=NULL, *ptr;
-int i, result=FALSE, count=0;
+int i, result=FALSE;
 struct stat Stat;
 HashratCtx *Ctx;	
 
@@ -147,13 +146,13 @@ MemcachedConnect(GetVar(Ctx->Vars, "Memcached:Server"));
 switch (Ctx->Action)
 {
 	case ACT_HASH:
-	count=ProcessCommandLine(Ctx, argc, argv);
-	//if we didn't find anything on the command-line then read from stdin
-	if (count==0) HashStdIn(Ctx);
+		result=ProcessCommandLine(Ctx, argc, argv);
+		//if we didn't find anything on the command-line then read from stdin
+		if (result==IGNORE) HashStdIn(Ctx);
 	break;
 
 	case ACT_HASHDIR:
-	count=ProcessCommandLine(Ctx, argc, argv);
+		result=ProcessCommandLine(Ctx, argc, argv);
 	break;
 	
 	case ACT_CHECK_LIST:
@@ -166,35 +165,34 @@ switch (Ctx->Action)
 
 	case ACT_CHECK:
 	case ACT_FINDMATCHES:
-	if (! MatchesLoad(0))
-	{
-		printf("No hashes supplied on stdin.\n");
-		exit(1);
-	}
-	ProcessCommandLine(Ctx, argc, argv);
-	if (Ctx->Action==ACT_CHECK) OutputUnmatched(Ctx);
+		if (! MatchesLoad(0))
+		{
+			printf("No hashes supplied on stdin.\n");
+			exit(1);
+		}
+		result=ProcessCommandLine(Ctx, argc, argv);
+		if (Ctx->Action==ACT_CHECK) OutputUnmatched(Ctx);
 	break;
 
 	//Load matches to an mcached server
 	case ACT_LOADMATCHES:
-	ptr=GetVar(Ctx->Vars, "Memcached:Server");
-	if (StrEnd(ptr)) printf("ERROR: No memcached server specified. Use the -memcached <server> command-line argument to specify one\n");
-	else MatchesLoad(FLAG_MEMCACHED);
+		ptr=GetVar(Ctx->Vars, "Memcached:Server");
+		if (StrEnd(ptr)) printf("ERROR: No memcached server specified. Use the -memcached <server> command-line argument to specify one\n");
+		else MatchesLoad(FLAG_MEMCACHED);
 	break;
 
 	case ACT_FINDMATCHES_MEMCACHED:
 	case ACT_FINDDUPLICATES:
-	ProcessCommandLine(Ctx, argc, argv);
+		result=ProcessCommandLine(Ctx, argc, argv);
 	break;
 
 	case ACT_CHECK_XATTR:
-		ProcessCommandLine(Ctx, argc, argv);
+		result=ProcessCommandLine(Ctx, argc, argv);
 	break;
 
 	case ACT_CHECK_MEMCACHED:
-		ProcessCommandLine(Ctx, argc, argv);
+		result=ProcessCommandLine(Ctx, argc, argv);
 	break;
-
 
 	case ACT_CGI:
 		CGIDisplayPage();
@@ -205,47 +203,64 @@ switch (Ctx->Action)
 	break;
 
 	case ACT_SIGN:
-	Ctx->Encoding = ENCODE_BASE64;
-	for (i=1; i < argc; i++)
-	{
-	if (StrValid(argv[i]))
-	{
-			if (StatFile(Ctx, argv[i],&Stat)==0)
-			{
-				if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
-				else HashratSignFile(argv[i],Ctx);
-			}
-			else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
-			count++;
-	}
-	}
+		Ctx->Encoding = ENCODE_BASE64;
+		for (i=1; i < argc; i++)
+		{
+		if (StrValid(argv[i]))
+		{
+				if (StatFile(Ctx, argv[i],&Stat)==0)
+				{
+					if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
+					else HashratSignFile(argv[i],Ctx);
+				}
+				else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
+		}
+		}
 	break;
 
 	case ACT_CHECKSIGN:
-	Ctx->Encoding |= ENCODE_BASE64;
-	for (i=1; i < argc; i++)
-	{
-	if (StrValid(argv[i]))
-	{
-			if (StatFile(Ctx, argv[i],&Stat)==0)
-			{
-				if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
-				else HashratCheckSignedFile(argv[i], Ctx);
-			}
-			else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
-			count++;
-	}
-	}
+		Ctx->Encoding |= ENCODE_BASE64;
+		for (i=1; i < argc; i++)
+		{
+		if (StrValid(argv[i]))
+		{
+				if (StatFile(Ctx, argv[i],&Stat)==0)
+				{
+					if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
+					else HashratCheckSignedFile(argv[i], Ctx);
+				}
+				else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
+		}
+		}
 	break;
 }
 
 fflush(NULL);
 if (Ctx->Out) STREAMClose(Ctx->Out);
 if (Ctx->Aux) STREAMClose(Ctx->Aux);
+
+switch (Ctx->Action)
+{
+	case ACT_FINDMATCHES:
+	case ACT_FINDMATCHES_MEMCACHED:
+	case ACT_FINDDUPLICATES:
+			//result==TRUE for these means 'yes we found something'
+			if (result==TRUE) exit(0);
+			else exit(1);
+	break;
+
+	case ACT_CHECK:
+	case ACT_CHECK_LIST:
+	case ACT_CHECK_MEMCACHED:
+	case ACT_CHECK_XATTR:
+			//result==TRUE for these means 'CHECK FAILED'
+			if (result==TRUE) exit(1);
+			else exit(0);
+	break;
+}
 }
 
 DestroyString(Tempstr);
 
-if (result) exit(0);
 exit(1);
 }

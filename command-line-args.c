@@ -328,6 +328,12 @@ else if (strcmp(argv[i],"-jh256")==0) ParseFlags |= CommandLineHandleArg(argc, a
 else if (strcmp(argv[i],"-jh384")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-384",Ctx->Vars);
 else if (strcmp(argv[i],"-jh512")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-512",Ctx->Vars);
 else if (strcmp(argv[i],"-jh")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "jh-512",Ctx->Vars);
+else if (strcmp(argv[i],"-type")==0) 
+{
+	strcpy(argv[i],"");
+	i++;
+	ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", argv[i],Ctx->Vars);
+}
 //else if (strcmp(argv[i],"-crc32")==0) ParseFlags |= CommandLineHandleArg(argc, argv, i, 0, 0, "HashType", "crc32",Ctx->Vars);
 else if (strcmp(argv[i],"-8")==0)  CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_OCTAL);
 else if (strcmp(argv[i],"-10")==0) CommandLineSetCtx(argc, argv, i, Ctx,  0, ENCODE_DECIMAL);
