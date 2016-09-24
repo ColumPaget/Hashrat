@@ -131,7 +131,6 @@ for (ptr=Bytes; ptr < end; )
 	//so for the last chracter
 	RetStr=CatStrLen(RetStr,Buff,ptr-block);
 } 
-printf("\n");
 
 return(RetStr);
 }
