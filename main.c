@@ -109,11 +109,12 @@ int i, result=IGNORE;
 	{
 	if (StrValid(argv[i]))
 	{
-			if (StatFile(Ctx, argv[i],&Stat)==0)
+			if (StatFile(Ctx, argv[i],&Stat)==0) result=ProcessItem(Ctx, argv[i], &Stat);
+			else 
 			{
-				result=ProcessItem(Ctx, argv[i], &Stat);
+				if (result==IGNORE) result=0;
+				fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
 			}
-			else fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
 	}
 	}
 
