@@ -12,6 +12,8 @@
 void AddIncludeExclude(HashratCtx *Ctx, int Type, const char *Item)
 {
 ListNode *Node;
+char *Token=NULL;
+const char *ptr;
 
 //if we get given an include with no previous excludes, then 
 //set CTX_EXCLUDE as the default
@@ -21,8 +23,15 @@ if (! IncludeExclude)
   if (Type==CTX_INCLUDE) Ctx->Flags |= CTX_EXCLUDE;
 }
 
-Node=ListAddItem(IncludeExclude, CopyStr(NULL, Item));
-Node->ItemType=Type;
+ptr=GetToken(Item, ",",&Token, GETTOKEN_QUOTES);
+while (ptr)
+{
+	Node=ListAddItem(IncludeExclude, CopyStr(NULL, Token));
+	Node->ItemType=Type;
+	ptr=GetToken(ptr, ",",&Token, GETTOKEN_QUOTES);
+}
+
+DestroyString(Token);
 }
 
 
