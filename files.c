@@ -52,7 +52,7 @@ char *mptr, *dptr;
 int result=TRUE;
 
 if (Ctx->Flags & CTX_EXCLUDE) result=FALSE;
-if (S_ISDIR(FStat->st_mode)) result=TRUE;
+if (FStat && S_ISDIR(FStat->st_mode)) result=TRUE;
 
 Curr=ListGetNext(IncludeExclude);
 while (Curr)
@@ -60,34 +60,47 @@ while (Curr)
 	mptr=(char *) Curr->Item;
 	dptr=Path;
 
-	if (*mptr!='/') 
+	//if match pattern doesn't start with '/' then we want to strip that off the current path
+	//so that we can match against it. However if the match pattern contains no '/' at all, then
+	//it's a file name rather than a path, in which case we should use basename on both it and 
+	//the current path
+	if (*mptr != '/') 
 	{
+		if (strchr(mptr,'/'))
+		{
+			if (*dptr=='/') dptr++;
+		}
+		else
+		{
 		mptr=GetBasename(mptr);
 		dptr=GetBasename(Path);
+		}
 	}
 	
 	switch (Curr->ItemType)
 	{
-	case INEX_INCLUDE:
+	case CTX_INCLUDE:
 	if (fnmatch(mptr,dptr,0)==0) result=TRUE;
 	break;
 
-	case INEX_EXCLUDE:
+	case CTX_EXCLUDE:
 	if (fnmatch(mptr,dptr,0)==0) result=FALSE;
 	break;
 
+/*
 	case INEX_INCLUDE_DIR:
 	if (strncmp(mptr,dptr,StrLen(mptr))==0) result=TRUE;
 	break;
 
 	case INEX_EXCLUDE_DIR:
 	if (strncmp(mptr,dptr,StrLen(mptr))==0) result=FALSE;
+	printf("FNMD: [%s] [%s] %d\n",mptr,dptr,result);
 	break;
+*/
 	}
 
 	Curr=ListGetNext(Curr);
 }
-
 
 return(result);
 }
@@ -314,6 +327,8 @@ int ConsiderItem(HashratCtx *Ctx, char *Path, struct stat *FStat)
 	int Type;
 
 	Type=FileType(Path, Flags, FStat);
+	if (! IsIncluded(Ctx, Path, FStat)) return(CTX_EXCLUDE);
+
 	switch (Type)
 	{
 		case FT_SSH:
@@ -333,7 +348,6 @@ int ConsiderItem(HashratCtx *Ctx, char *Path, struct stat *FStat)
 		else if (FStat->st_dev != StartingFS) return(CTX_ONE_FS);
 	}
 	if ((Ctx->Flags & CTX_EXES) && (! (FStat->st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)))) return(CTX_EXCLUDE);
-	if (! IsIncluded(Ctx,Path, FStat)) return(CTX_EXCLUDE);
 	}
 
 	return(0);
@@ -620,7 +634,7 @@ int result=FALSE;
 int ProcessItem(HashratCtx *Ctx, char *Path, struct stat *Stat)
 {
 char *HashStr=NULL;
-int result=FALSE;
+int result=FALSE, Flags;
 
 				switch (ConsiderItem(Ctx, Path, Stat))
 				{

@@ -59,11 +59,6 @@
 #define CTX_INCLUDE 16384
 #define CTX_EXCLUDE 32768
 
-#define INEX_INCLUDE 1
-#define INEX_EXCLUDE 2
-#define INEX_INCLUDE_DIR 3
-#define INEX_EXCLUDE_DIR 4
-
 #define RESULT_PASS 1
 #define RESULT_FAIL 2
 #define RESULT_WARN 4
@@ -77,7 +72,7 @@
 
 #define IGNORE -1
 
-#define VERSION "1.8.6"
+#define VERSION "1.8.7"
 
 
 typedef struct

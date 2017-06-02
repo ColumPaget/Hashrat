@@ -102,22 +102,15 @@ return(ParseFlags);
 void CommandLineSetCtx(int argc, char *argv[], int pos, HashratCtx *Ctx, int Flag, int Encoding)
 {
 if (Encoding > 0) Ctx->Encoding=Encoding;
-Ctx->Flags |= Flag;
 strcpy(argv[pos],"");
 
-if (Flag == CTX_INCLUDE) 
+if ((Flag==CTX_INCLUDE) || (Flag==CTX_EXCLUDE))
 {
 	pos++;
-	AddIncludeExclude(Ctx,CTX_INCLUDE, argv[pos]);
+	AddIncludeExclude(Ctx, Flag, argv[pos]);
 	strcpy(argv[pos],"");
 }
-else if (Flag == CTX_EXCLUDE) 
-{
-	pos++;
-	AddIncludeExclude(Ctx,CTX_EXCLUDE, argv[pos]);
-	strcpy(argv[pos],"");
-}
-
+else Ctx->Flags |= Flag;
 }
 
 
