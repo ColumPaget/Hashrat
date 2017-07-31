@@ -59,7 +59,7 @@ printf("</td>\r\n");
 }
 
 
-int CGIParseArgs(char **HashType, char **Encoding, char *LineEnding, char **Text)
+int CGIParseArgs(char **HashType, char **Encoding, char **LineEnding, char **Text)
 {
 char *QName=NULL, *QValue=NULL, *Name=NULL, *Value=NULL, *ptr;
 int Flags=0;
@@ -165,9 +165,12 @@ if (Flags & CGI_DOHASH)
 	val=MatchTokenFromList(Encoding, EncodingNames, 0);
 	if (val > -1) Ctx->Encoding=Encodings[i];
 	
+	if (StrLen(LineEnding))
+	{
 	if (strcmp(LineEnding, "crlf")==0) Text=CatStr(Text,"\r\n");
 	if (strcmp(LineEnding, "lf")==0) Text=CatStr(Text,"\n");
 	if (strcmp(LineEnding, "cr")==0) Text=CatStr(Text,"\r");
+	}
 
 	ProcessData(&Hash, Ctx, Text, StrLen(Text));
 
