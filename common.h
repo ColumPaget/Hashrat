@@ -72,7 +72,7 @@
 
 #define IGNORE -1
 
-#define VERSION "1.8.7"
+#define VERSION "1.8.9"
 
 
 typedef struct

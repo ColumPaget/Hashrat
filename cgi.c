@@ -24,7 +24,7 @@ printf("<select name=%s>\r\n", Name);
 Curr=ListGetNext(Items);
 while(Curr)
 {
-	if (StrLen(CurrType) && (strcmp(Curr->Tag,CurrType)==0)) printf("<option selected> %s\r\n",Curr->Tag);
+	if (StrLen(CurrType) && (strcmp(Curr->Tag,CurrType)==0)) printf("<option selected value=%s> %s\r\n",Curr->Tag, Curr->Item);
 	else printf("<option value=%s> %s\r\n",Curr->Tag, Curr->Item);
 	Curr=ListGetNext(Curr);
 }
@@ -131,7 +131,7 @@ void CGIDisplayPage()
 char *HashType=NULL, *Encoding=NULL, *LineEnding=NULL,  *Text=NULL, *Hash=NULL;
 HashratCtx *Ctx;
 ListNode *Items;
-int Flags, val, i;
+int Flags, i;
 
 Items=ListCreate();
 
@@ -162,8 +162,8 @@ if (Flags & CGI_DOHASH)
 	Ctx->HashType=CopyStr(Ctx->HashType,HashType);
 	Ctx->Encoding |=ENCODE_HEX;
 
-	val=MatchTokenFromList(Encoding, EncodingNames, 0);
-	if (val > -1) Ctx->Encoding=Encodings[i];
+	i=MatchTokenFromList(Encoding, EncodingNames, 0);
+	if (i > -1) Ctx->Encoding=Encodings[i];
 	
 	if (StrLen(LineEnding))
 	{
@@ -193,14 +193,14 @@ printf("</tr>\r\n");
 printf("<tr>\r\n");
 printf("<td>Encoding:</td>\r\n");
 for (i=0; EncodingNames[i] !=NULL; i++) SetVar(Items, EncodingNames[i], EncodingDescriptions[i]);
-CGIPrintSelect("Encoding", HashType, Items);
+CGIPrintSelect("Encoding", Encoding, Items);
 ListClear(Items, DestroyString);
 printf("</tr>\r\n");
 
 printf("<tr>\r\n");
 printf("<td>Line Ending:</td>\r\n");
 for (i=0; LineEndingNames[i] !=NULL; i++) SetVar(Items, LineEndingNames[i], LineEndingDescriptions[i]);
-CGIPrintSelect("LineEnding", HashType, Items);
+CGIPrintSelect("LineEnding", LineEnding, Items);
 ListClear(Items, DestroyString);
 printf("</tr>\r\n");
 
@@ -212,6 +212,9 @@ printf("</form></html></body>\r\n");
 fflush(NULL);
 
 ListDestroy(Items, DestroyString);
+
+DestroyString(LineEnding);
+DestroyString(Encoding);
 DestroyString(HashType);
 DestroyString(Hash);
 DestroyString(Text);
