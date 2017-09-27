@@ -182,7 +182,7 @@ int HashratHashFile(HashratCtx *Ctx, THash *Hash, int Type, char *Path, off_t Fi
 STREAM *S;
 char *Tempstr=NULL, *User=NULL, *Pass=NULL;
 int result, val, RetVal=FALSE;
-off_t bytes_read=0;
+off_t bytes_read=0, oval;
 
 switch (Type)
 {
@@ -210,8 +210,9 @@ if (S)
 {
 Tempstr=SetStrLen(Tempstr,BUFSIZ);
 
-val=FileSize;
-if ((val==0) || ( val > BUFSIZ)) val=BUFSIZ;
+oval=FileSize;
+if ((oval==0) || ( oval > BUFSIZ)) val=BUFSIZ;
+else val=(int)oval;
 result=STREAMReadBytes(S,Tempstr,val);
 while (result > 0)
 {
@@ -223,8 +224,9 @@ while (result > 0)
 	if (FileSize > 0)
 	{
 	if ((Type != FT_HTTP) && (bytes_read >= FileSize)) break;
-	val=FileSize - bytes_read;
-	if (val > BUFSIZ) val=BUFSIZ;
+	oval=FileSize - bytes_read;
+	if (oval > BUFSIZ) val=BUFSIZ;
+	else val=(int)oval;
 	}
 	result=STREAMReadBytes(S,Tempstr,val);
 }
@@ -267,7 +269,7 @@ int HashratHashSingleFile(HashratCtx *Ctx, char *HashType, int FileType, char *P
 THash *Hash;
 struct stat XattrStat;
 char *ptr;
-int size=0;
+off_t size=0;
 
 		*RetStr=CopyStr(*RetStr,"");
 
