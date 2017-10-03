@@ -127,30 +127,32 @@ char *Tempstr=NULL;
 }
 
 
-void HandleCompareResult(char *Path, char *Status, int Flags, char *ErrorMessage)
+void RunHookScript(const char *Hook, const char *Path)
 {
-char *Tempstr=NULL;
-int Color=0;
+char *Tempstr=NULL, *Quoted=NULL;
+STREAM *S;
 
-  if (Flags & FLAG_COLOR) 
-	{
-		switch (Flags & FLAG_RESULT_MASK)
-		{
-			case RESULT_FAIL: Color=ANSI_RED; break;
-			case RESULT_PASS: Color=ANSI_GREEN; break;
-			case RESULT_WARN: Color=ANSI_YELLOW; break;
-		}
-	}
-
-	if (Color > 0) printf("%s%s: %s. '%s'.%s\n",ANSICode(ANSI_RED, 0, 0),Status, Path, ErrorMessage, ANSI_NORM);
-  else printf("%s: %s. %s.\n",Status, Path,ErrorMessage);
-
-  if ((Flags & RESULT_RUNHOOK) && StrLen(DiffHook))
+  if (StrValid(Hook))
   {
-    Tempstr=MCopyStr(Tempstr,DiffHook," '",Path,"'",NULL);
-    system(Tempstr);
+		//must quote twice to get through system comamnd
+    Quoted=QuoteCharsInStr(Quoted, Path,"\"'`!|;<> 	");
+		S=STREAMSpawnCommand("/bin/sh","","",0);
+		if (S)
+		{
+    	Tempstr=MCopyStr(Tempstr, DiffHook," ",Quoted,";exit\n",NULL);
+			STREAMWriteLine(Tempstr,S);
+			STREAMFlush(S);
+
+			Tempstr=STREAMReadLine(Tempstr,S);
+			while (Tempstr)
+			{
+			printf("%s\n",Tempstr);
+			Tempstr=STREAMReadLine(Tempstr,S);
+			}
+		}
   }
 
-  DestroyString(Tempstr);
+DestroyString(Tempstr);
+DestroyString(Quoted);
 }
 

@@ -2,6 +2,7 @@
 #include "fingerprint.h"
 #include "files.h"
 
+
 void HandleCheckFail(char *Path, char *ErrorMessage)
 {
 char *Tempstr=NULL;
@@ -9,12 +10,7 @@ char *Tempstr=NULL;
   if (Flags & FLAG_COLOR) printf("%s%s: FAILED. '%s'.%s\n",ANSICode(ANSI_RED, 0, 0),Path, ErrorMessage, ANSI_NORM);
 	else printf("%s: FAILED. %s.\n",Path,ErrorMessage);
 
-  if (StrLen(DiffHook))
-  {
-    Tempstr=MCopyStr(Tempstr,DiffHook," '",Path,"'",NULL);
-    system(Tempstr);
-  }
-
+	RunHookScript(DiffHook, Path);
   DestroyString(Tempstr);
 }
 

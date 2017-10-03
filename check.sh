@@ -71,6 +71,22 @@ else
 fi
 }
 
+
+TestLocateHook()
+{
+rm -f locatehook.out
+HR_OUT=`echo $1 | ./hashrat -m -r . -hook "echo found > locatehook.out"`
+
+if [ -e locatehook.out ]
+then
+	OkayMessage "$3 works."
+else 
+	FailMessage "$3 BROKEN."
+fi
+}
+
+
+
 TestExitCodes()
 {
 if [ "$4" = "FindDuplicates" ]
@@ -137,7 +153,7 @@ TestHash z85 "ZEROMQ85 encoding" "wX%ElWFTQ9+Z=X4h"
 Title "Testing Misc. Features"
 
 HR_OUT=`./hashrat -version`
-if [ "$HR_OUT" = "version: 1.8.7" ]
+if [ "$HR_OUT" = "version: 1.8.10" ]
 then
 	OkayMessage "Version (-version) works"
 else
@@ -154,7 +170,7 @@ else
 fi
 
 HR_OUT=`./hashrat -dir -sha1 -trad tests`
-if [ "$HR_OUT" = "b8b4058dc499ee1f330926a5a073a2c598b10c91  tests" ]
+if [ "$HR_OUT" = "9521674698e62496698c42f63c9cde9bc6399a03  tests" ]
 then
   OkayMessage "Directory hashing works"
 else
@@ -163,7 +179,7 @@ fi
 
 
 HR_OUT=`./hashrat -sha1 -trad -r tests | ./hashrat -sha1`
-if [ "$HR_OUT" = "06af1d9f777bbeb1eecd76d71d869089683ded1b" ]
+if [ "$HR_OUT" = "a31f3b27b58f8b26a3c2237beb9de410d1117fba" ]
 then
 	OkayMessage "Recursive file hashing works"
 else
@@ -198,6 +214,9 @@ TestLocate "MD5 (test file) = 6ec9de513a8ff1768eb4768236198cf3" "LOCATED: 6ec9de
 HR_INPUT=`cat tests/test.ioc`
 TestLocate "$HR_INPUT" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 ' Hashrat Test IOC' at ./tests/help.txt" "Locating files with OpenIOC input"
 
+Title "Test hook functions"
+TestLocateHook "hash='md5:6ec9de513a8ff1768eb4768236198cf3' mode='100644' uid='0' gid='0' size='621' mtime='1423180289' inode='2359456' path='test file'" "" "Hook function for file locate"
+TestLocateHook "hash='md5:6933ee7eb504d29312b23a47d2dac374' mode='100644' uid='0' gid='0' size='621' mtime='1423180289' inode='2359456' path='test file'" "" "Hook function for file locate of files with bad characters in name"
 
 Title "Testing exit codes for different operations"
 

@@ -418,12 +418,6 @@ char *Tempstr=NULL;
 		break;
 	}
 
-  if (StrValid(DiffHook))
-  {
-    Tempstr=MCopyStr(Tempstr,DiffHook," '",Path,"'",NULL);
-    system(Tempstr);
-  }
-
 
 DestroyString(Tempstr);
 
@@ -532,6 +526,7 @@ case ACT_FINDMATCHES_MEMCACHED:
 			MatchCount++;
 			//here we return true if a match found
 			result=TRUE;
+			RunHookScript(DiffHook, Path);
 		}
 		else DiffCount++;
 		TFingerprintDestroy(FP);	
