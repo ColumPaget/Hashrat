@@ -127,19 +127,20 @@ char *Tempstr=NULL;
 }
 
 
-void RunHookScript(const char *Hook, const char *Path)
+void RunHookScript(const char *Hook, const char *Path, const char *Other)
 {
-char *Tempstr=NULL, *Quoted=NULL;
+char *Tempstr=NULL, *QuotedPath=NULL, *QuotedOther=NULL;
 STREAM *S;
 
   if (StrValid(Hook))
   {
 		//must quote twice to get through system comamnd
-    Quoted=QuoteCharsInStr(Quoted, Path,"\"'`!|;<> 	");
+    QuotedPath=QuoteCharsInStr(QuotedPath, Path,"\"'`!|;<> 	");
+    QuotedOther=QuoteCharsInStr(QuotedOther, Other,"\"'`!|;<> 	");
 		S=STREAMSpawnCommand("/bin/sh","","",0);
 		if (S)
 		{
-    	Tempstr=MCopyStr(Tempstr, DiffHook," ",Quoted,";exit\n",NULL);
+    	Tempstr=MCopyStr(Tempstr, DiffHook," ",QuotedPath, " ", QuotedOther, ";exit\n",NULL);
 			STREAMWriteLine(Tempstr,S);
 			STREAMFlush(S);
 
@@ -153,6 +154,7 @@ STREAM *S;
   }
 
 DestroyString(Tempstr);
-DestroyString(Quoted);
+DestroyString(QuotedPath);
+DestroyString(QuotedOther);
 }
 

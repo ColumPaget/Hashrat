@@ -10,7 +10,7 @@ char *Tempstr=NULL;
   if (Flags & FLAG_COLOR) printf("%s%s: FAILED. '%s'.%s\n",ANSICode(ANSI_RED, 0, 0),Path, ErrorMessage, ANSI_NORM);
 	else printf("%s: FAILED. %s.\n",Path,ErrorMessage);
 
-	RunHookScript(DiffHook, Path);
+	RunHookScript(DiffHook, Path, "");
   DestroyString(Tempstr);
 }
 

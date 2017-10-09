@@ -432,7 +432,7 @@ int HashratAction(HashratCtx *Ctx, char *Path, struct stat *Stat)
 {
 char *HashStr=NULL;
 int Type, result=FALSE;
-TFingerprint *FP;
+TFingerprint *FP=NULL;
 
 switch (Ctx->Action)
 {
@@ -464,7 +464,6 @@ case ACT_CHECK:
 					//we return TRUE on FAILURE, as we are signaling a significant event
 					result=TRUE;
 			}
-			TFingerprintDestroy(FP);	
 		}
 		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
 	}
@@ -504,7 +503,6 @@ case ACT_CHECK_MEMCACHED:
 
 		if (FP && HashratCheckFile(Ctx, Path, NULL, HashStr, FP)) result=FALSE;
 		else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
-		TFingerprintDestroy(FP);
 		}
 		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
 	}
@@ -526,10 +524,8 @@ case ACT_FINDMATCHES_MEMCACHED:
 			MatchCount++;
 			//here we return true if a match found
 			result=TRUE;
-			RunHookScript(DiffHook, Path);
 		}
 		else DiffCount++;
-		TFingerprintDestroy(FP);	
 		}
 		else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
 	}
@@ -549,13 +545,14 @@ case ACT_FINDDUPLICATES:
 				MatchCount++;
 			//here we return true if a match found
 				result=TRUE;
-				TFingerprintDestroy(FP);	
 			}
 			else 
 			{
 				FP=TFingerprintCreate(HashStr, Ctx->HashType, "", Path);
 				DiffCount++;
 				MatchAdd(FP, Path, 0);
+				//as we've added FP to an internal list we don't want it destroyed
+				FP=NULL;
 			}
 		}
 	}
@@ -564,6 +561,13 @@ case ACT_FINDDUPLICATES:
 break;
 }
 
+if (result==TRUE) 
+{
+	if (FP) RunHookScript(DiffHook, Path, FP->Path);
+	else RunHookScript(DiffHook, Path, "");
+}
+
+if (FP) TFingerprintDestroy(FP);	
 DestroyString(HashStr);
 
 return(result);

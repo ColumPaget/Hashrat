@@ -188,11 +188,8 @@ Specify memcached server. This option overrides reading list from stdin if used 
 .TP
 .B
 \fB-h\fP <script>
-Script \fIto\fP run when a \fIfile\fP fails CHECK mode, or is found in MATCH mode.
-.TP
-.B
 \fB-hook\fP <script>
-Script \fIto\fP run when a \fIfile\fP fails CHECK mode, or is found in FIND mode
+Script \fIto\fP run when a \fIfile\fP fails CHECK mode, or is found in MATCH mode. Script is passed the filename as an argument. In 'find duplicates' mode a second file name (the duplicate) will be passed as the second argument.
 .TP
 .B
 \fB-color\fP

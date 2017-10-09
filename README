@@ -87,8 +87,8 @@ Options:
   -dups           Search for duplicate files.
   -memcached <server> Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
   -mcd <server>   Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
-  -h <script>     Script to run when a file fails CHECK mode, or is found in MATCH mode.
-  -hook <script>  Script to run when a file fails CHECK mode, or is found in FIND mode
+  -h <script>     Script to run when a file fails CHECK mode, or is found in MATCH mode. (see 'Hookscripts' below)
+  -hook <script>  Script to run when a file fails CHECK mode, or is found in MATCH mode. (see 'Hookscripts' below)
   -color          Use ANSI color codes on output when checking hashes.
   -strict         Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
   -S              Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
@@ -110,6 +110,11 @@ Options:
   -u <types>      Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.
   -hide-input     When reading data from stdin in linemode, set the terminal to not echo characters, thus hiding typed input.
   -star-input     When reading data from stdin in linemode replace characters with stars.
+
+
+Hookscripts
+
+	hookscripts are passed the path of the  appropriate file as an argument. In 'find duplicates' mode a second argument is passed, which is the duplicate file.
 
 
 Hashrat can also detect if it's being run under any of the following names (e.g., via symlinks)
