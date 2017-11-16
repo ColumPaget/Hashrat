@@ -199,7 +199,7 @@ int LogFileInternalWrite(TLogFile *LF, STREAM *S, int Flags, const char *Str)
 
 		if (ParentPID==0) ParentPID=getpid();
 		if (LF) S=LogFileInternalDoRotate(LF);
-		if (! S) return;
+		if (! S) return(FALSE);
 
 		gettimeofday(&Now,NULL);
 		if (Flags & LOGFILE_TIMESTAMP)

@@ -72,7 +72,7 @@
 
 #define IGNORE -1
 
-#define VERSION "1.8.11"
+#define VERSION "1.8.12"
 
 
 typedef struct
@@ -107,14 +107,14 @@ extern int Flags;
 extern char *DiffHook;
 extern char *Key;
 extern char *LocalHost;
-extern char *HashratHashTypes[];
+extern const char *HashratHashTypes[];
 extern ListNode *IncludeExclude;
 extern int MatchCount, DiffCount;
 
 TFingerprint *TFingerprintCreate(const char *Hash, const char *HashType, const char *Data, const char *Path);
 void HashratCtxDestroy(void *p_Ctx);
-void HashratStoreHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash);
-int HashratOutputInfo(HashratCtx *Ctx, STREAM *S, char *Path, struct stat *Stat, char *Hash);
+void HashratStoreHash(HashratCtx *Ctx, const char *Path, struct stat *Stat, const char *Hash);
+int HashratOutputInfo(HashratCtx *Ctx, STREAM *S, const char *Path, struct stat *Stat, const char *Hash);
 void RunHookScript(const char *Hook, const char *Path, const char *Other);
 
 #endif

@@ -15,7 +15,7 @@ dev_t StartingFS=0;
 
 
 
-int FileType(char *Path, int FTFlags, struct stat *Stat)
+int FileType(const char *Path, int FTFlags, struct stat *Stat)
 {
 
 	if ((FTFlags & FLAG_NET))
@@ -45,10 +45,10 @@ int FileType(char *Path, int FTFlags, struct stat *Stat)
 }
 
 
-int IsIncluded(HashratCtx *Ctx, char *Path, struct stat *FStat)
+int IsIncluded(HashratCtx *Ctx, const char *Path, struct stat *FStat)
 {
 ListNode *Curr;
-char *mptr, *dptr;
+const char *mptr, *dptr;
 int result=TRUE;
 
 if (Ctx->Flags & CTX_EXCLUDE) result=FALSE;
@@ -108,7 +108,7 @@ return(result);
 
 
 
-int StatFile(HashratCtx *Ctx, char *Path, struct stat *Stat)
+int StatFile(HashratCtx *Ctx, const char *Path, struct stat *Stat)
 {
 int val;
 
@@ -128,7 +128,7 @@ int val;
 
 
 
-int GlobFiles(HashratCtx *Ctx, char *Path, int FType, ListNode *Dirs)
+int GlobFiles(HashratCtx *Ctx, const char *Path, int FType, ListNode *Dirs)
 {
 char *Tempstr=NULL;
 glob_t Glob;
@@ -177,7 +177,7 @@ return(count);
 
 
 
-int HashratHashFile(HashratCtx *Ctx, THash *Hash, int Type, char *Path, off_t FileSize)
+int HashratHashFile(HashratCtx *Ctx, THash *Hash, int Type, const char *Path, off_t FileSize)
 {
 STREAM *S;
 char *Tempstr=NULL, *User=NULL, *Pass=NULL;
@@ -250,7 +250,7 @@ return(RetVal);
 void HashratFinishHash(char **RetStr, HashratCtx *Ctx, THash *Hash)
 {
 int val;
-char *ptr;
+const char *ptr;
 
 		HashFinish(Hash,Ctx->Encoding,RetStr);
 
@@ -264,11 +264,11 @@ char *ptr;
 
 
 
-int HashratHashSingleFile(HashratCtx *Ctx, char *HashType, int FileType, char *Path, struct stat *FStat, char **RetStr)
+int HashratHashSingleFile(HashratCtx *Ctx, const char *HashType, int FileType, const char *Path, struct stat *FStat, char **RetStr)
 {
 THash *Hash;
 struct stat XattrStat;
-char *ptr;
+const char *ptr;
 off_t size=0;
 
 		*RetStr=CopyStr(*RetStr,"");
@@ -286,7 +286,8 @@ off_t size=0;
 		#endif
 		{
 			Hash=HashInit(HashType);
-
+			if (Hash)
+			{
 			//If we're not doing HMAC then this doesn't do anything
 			ptr=GetVar(Ctx->Vars,"EncryptionKey");
 			if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
@@ -295,17 +296,19 @@ off_t size=0;
 			if (! HashratHashFile(Ctx,Hash,FileType,Path, size)) return(FALSE);
 
 			HashratFinishHash(RetStr, Ctx, Hash);
+			}
 		}
 
-		return(TRUE);
+		if (StrValid(*RetStr)) return(TRUE);
+		return(FALSE);
 }
 
 
 
 //This is used to processs small pieces of data like device IDs
-void ProcessData(char **RetStr, HashratCtx *Ctx, char *Data, int DataLen)
+void ProcessData(char **RetStr, HashratCtx *Ctx, const char *Data, int DataLen)
 {
-char *ptr;
+const char *ptr;
 THash *Hash;
 
 		if (! Ctx->Hash) 
@@ -324,7 +327,7 @@ THash *Hash;
 }
 
 
-int ConsiderItem(HashratCtx *Ctx, char *Path, struct stat *FStat)
+int ConsiderItem(HashratCtx *Ctx, const char *Path, struct stat *FStat)
 {
 	int Type;
 
@@ -356,7 +359,7 @@ int ConsiderItem(HashratCtx *Ctx, char *Path, struct stat *FStat)
 }
 
 
-int HashItem(HashratCtx *Ctx, char *HashType, char *Path, struct stat *FStat, char **HashStr)
+int HashItem(HashratCtx *Ctx, const char *HashType, const char *Path, struct stat *FStat, char **HashStr)
 {
 int Type=FT_FILE, val;
 char *Tempstr=NULL;
@@ -366,34 +369,32 @@ char *Tempstr=NULL;
 	switch (Type)
 	{
 		case FT_HTTP:
-			HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr);
-			return(0);
+			return(HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr));
 		break;
 
 		case FT_SSH:
-			HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr);
-			return(0);
+			return(HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr));
 		break;
 
 		case FT_DIR:
 		if (Ctx->Flags & CTX_RECURSE) return(CTX_RECURSE);
-		else ProcessData(HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
+		else ProcessData(HashStr, Ctx, (const char *) &FStat->st_ino, sizeof(ino_t));
 		break;
 
 		case FT_CHR:
-			ProcessData(HashStr, Ctx, (char *) &FStat->st_rdev, sizeof(dev_t));
+			ProcessData(HashStr, Ctx, (const char *) &FStat->st_rdev, sizeof(dev_t));
 		break;
 
 		case FT_BLK:
-			ProcessData(HashStr, Ctx, (char *) &FStat->st_rdev, sizeof(dev_t));
+			ProcessData(HashStr, Ctx, (const char *) &FStat->st_rdev, sizeof(dev_t));
 		break;
 
 		case FT_FIFO:
-			ProcessData(HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
+			ProcessData(HashStr, Ctx, (const char *) &FStat->st_ino, sizeof(ino_t));
 		break;
 
 		case FT_SOCK:
-		 ProcessData(HashStr, Ctx, (char *) &FStat->st_ino, sizeof(ino_t));
+		 ProcessData(HashStr, Ctx, (const char *) &FStat->st_ino, sizeof(ino_t));
 		break;
 
 		case FT_LNK:
@@ -413,22 +414,21 @@ char *Tempstr=NULL;
 		default:
 		if (! Ctx->Hash) 
 		{
-			if (! HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr)) return(FLAG_ERROR);
-		} else if (! HashratHashFile(Ctx, Ctx->Hash,Type,Path, FStat->st_size)) return(FLAG_ERROR);
+			if (! HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr)) return(FALSE);
+		} else if (! HashratHashFile(Ctx, Ctx->Hash,Type,Path, FStat->st_size)) return(FALSE);
 		break;
 	}
 
-
 DestroyString(Tempstr);
 
-return(0);
+return(TRUE);
 }
 
 
 
 //HashratAction returns true on a significant event, which is either an item found in search
 //or a check failing in hash-checking mode
-int HashratAction(HashratCtx *Ctx, char *Path, struct stat *Stat)
+int HashratAction(HashratCtx *Ctx, const char *Path, struct stat *Stat)
 {
 char *HashStr=NULL;
 int Type, result=FALSE;
@@ -443,11 +443,12 @@ case ACT_HASHDIR:
 break;
 
 case ACT_HASH:
-	HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
+	if (HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr))
+	{
 	HashratOutputInfo(Ctx, Ctx->Out, Path, Stat, HashStr);
 	HashratStoreHash(Ctx, Path, Stat, HashStr);
-	//we return TRUE if hash succeeded
 	result=TRUE;
+	}
 break;
 
 case ACT_CHECK:
@@ -473,6 +474,7 @@ case ACT_CHECK_XATTR:
 	if (S_ISREG(Stat->st_mode))
 	{
 		//result == TRUE by default (TRUE==Signficant event, here meaning 'check failed')
+		//we set it here so we get the right result even if the stored hash fails to load
 		result=TRUE;
 		FP=XAttrLoadHash(Ctx, Path);
 		if (FP) 
@@ -536,7 +538,7 @@ case ACT_FINDDUPLICATES:
 	{
 	if (Stat->st_size > 0)
 	{
-		if (HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr) != FLAG_ERROR)
+		if (HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr))
 		{
 			FP=CheckForMatch(Ctx, Path, Stat, HashStr);
 			if (FP)
@@ -576,7 +578,7 @@ return(result);
 
 //ProcessItem returns TRUE on a significant event, so any instance of TRUE
 //from items checked makes return value here TRUE
-int ProcessDir(HashratCtx *Ctx, char *Dir, char *HashType)
+int ProcessDir(HashratCtx *Ctx, const char *Dir, const char *HashType)
 {
 char *Tempstr=NULL, *HashStr=NULL;
 ListNode *FileList, *Curr;
@@ -606,9 +608,9 @@ return(result);
 
 //ProcessDir returns TRUE on a significant event, so any instance of TRUE
 //from items checked makes return value here TRUE
-int HashratRecurse(HashratCtx *Ctx, char *Path, char **HashStr)
+int HashratRecurse(HashratCtx *Ctx, const char *Path, char **HashStr)
 {
-char *ptr;
+const char *ptr;
 struct stat FStat;
 int result=FALSE;
 
@@ -632,7 +634,7 @@ int result=FALSE;
 
 
 
-int ProcessItem(HashratCtx *Ctx, char *Path, struct stat *Stat)
+int ProcessItem(HashratCtx *Ctx, const char *Path, struct stat *Stat)
 {
 char *HashStr=NULL;
 int result=FALSE, Flags;

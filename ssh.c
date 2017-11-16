@@ -164,9 +164,10 @@ return(Ctx->NetCon);
 
 
 
-STREAM *SSHGet(HashratCtx *Ctx, char *URL)
+STREAM *SSHGet(HashratCtx *Ctx, const char *URL)
 {
-char *Tempstr=NULL, *Path=NULL, *ptr;
+char *Tempstr=NULL, *Path=NULL;
+const char *ptr;
 STREAM *S;
 struct timeval tv;
 
@@ -195,9 +196,10 @@ return(S);
 }
 
 
-void Decode_LS_Output(char *Line, char **Path, struct stat *Stat)
+void Decode_LS_Output(const char *Line, char **Path, struct stat *Stat)
 {
-char *Token=NULL, *ptr, *tptr;
+char *Token=NULL;
+const char *ptr, *tptr;
 
 //219884 -rw-r--r-- 1 root        root     56980 Feb 13 18:06 filestore.o
 		memset(Stat,0,sizeof(struct stat));
@@ -277,9 +279,11 @@ char *Token=NULL, *ptr, *tptr;
 
 
 
-int SSHGlob(HashratCtx *Ctx, char *URL, ListNode *Files)
+int SSHGlob(HashratCtx *Ctx, const char *URL, ListNode *Files)
 {
-char *Tempstr=NULL, *Path=NULL, *TermLine=NULL, *ptr;
+char *Tempstr=NULL, *Path=NULL, *TermLine=NULL;
+//don't make this const, we change a char with it
+char *ptr;
 STREAM *S;
 int count=0;
 struct stat *Stat;

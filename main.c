@@ -9,29 +9,44 @@
 #include "filesigning.h"
 #include "cgi.h"
 
-void HashFromListFile(HashratCtx *Ctx)
+int HashFromListFile(HashratCtx *Ctx)
 {
 char *Tempstr=NULL, *HashStr=NULL;
 STREAM *S;
 struct stat Stat;
+int result=FALSE;
 
-if (strcmp(Ctx->ListPath,"-")==0) S=STREAMFromFD(0);
+if (
+			(StrLen(Ctx->ListPath)==0) || 
+			(strcmp(Ctx->ListPath,"-")==0) 
+) S=STREAMFromFD(0);
 else S=STREAMOpenFile(Ctx->ListPath,SF_RDONLY);
+
+//if we managed to open the list, return TRUE
+if (S) result=TRUE;
+
 Tempstr=STREAMReadLine(Tempstr, S);
 while (Tempstr)
 {
 	StripTrailingWhitespace(Tempstr);
 	if (StatFile(Ctx,Tempstr,&Stat)==0) 
 	{
-		//HashItem returns '0' on success
-		if (HashItem(Ctx, Ctx->HashType, Tempstr, &Stat, &HashStr) ==0)
+		if (HashItem(Ctx, Ctx->HashType, Tempstr, &Stat, &HashStr))
 		{
 		HashratOutputInfo(Ctx, Ctx->Out, Tempstr, &Stat, HashStr);
 		HashratStoreHash(Ctx, Tempstr, &Stat, HashStr);
 		}
-		else fprintf(stderr,"ERROR: Failed to open file %s\n",Tempstr);
+		else 
+		{
+			fprintf(stderr,"ERROR: Failed to open file %s\n",Tempstr);
+			result=FALSE;
+		}
 	}
-	else fprintf(stderr,"ERROR: Failed to open file %s\n",Tempstr);
+	else 
+	{
+		fprintf(stderr,"ERROR: Failed to open file %s\n",Tempstr);
+		result=FALSE;
+	}
 	Tempstr=STREAMReadLine(Tempstr, S);
 }
 
@@ -39,6 +54,8 @@ STREAMClose(S);
 
 DestroyString(Tempstr);
 DestroyString(HashStr);
+
+return(result);
 }
 
 
@@ -242,10 +259,14 @@ if (Ctx->Aux) STREAMClose(Ctx->Aux);
 
 switch (Ctx->Action)
 {
+	case ACT_HASH:
+	case ACT_HASHDIR:
+	case ACT_HASH_LISTFILE:
+	
 	case ACT_FINDMATCHES:
 	case ACT_FINDMATCHES_MEMCACHED:
 	case ACT_FINDDUPLICATES:
-			//result==TRUE for these means 'yes we found something'
+			//result==TRUE for these means 'yes we found something' or 'yes that worked'
 			if (result==TRUE) exit(0);
 			else exit(1);
 	break;

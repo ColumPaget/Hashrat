@@ -17,9 +17,10 @@ char **XAttrList=NULL;
 
 
 
-void SetupXAttrList(char *Arg)
+void SetupXAttrList(const char *Arg)
 {
-char *Token=NULL, *ptr;
+char *Token=NULL;
+const char *ptr;
 //count starts at 1 because even if the first string is an empty string, we need to alloc space
 //for it.
 int count=1;
@@ -50,7 +51,7 @@ DestroyString(Token);
 }
 
 
-void HashRatSetXAttr(HashratCtx *Ctx, char *Path, struct stat *Stat, char *HashType, char *Hash)
+void HashRatSetXAttr(HashratCtx *Ctx, const char *Path, struct stat *Stat, const char *HashType, const char *Hash)
 {
 char *Tempstr=NULL, *Attr=NULL;
 char **ptr;
@@ -95,11 +96,11 @@ DestroyString(Attr);
 }
 
 
-int XAttrGetHash(HashratCtx *Ctx, char *XattrType, char *HashType, char *Path, struct stat *FStat, char **Hash)
+int XAttrGetHash(HashratCtx *Ctx, const char *XattrType, const char *HashType, const char *Path, struct stat *FStat, char **Hash)
 {
 int result=FALSE;
-
-char *Tempstr=NULL, *ptr;
+char *Tempstr=NULL;
+char *ptr;
 int len;
 
 *Hash=SetStrLen(*Hash,255);
@@ -132,7 +133,7 @@ return(result);
 
 
 
-TFingerprint *XAttrLoadHash(HashratCtx *Ctx, char *Path)
+TFingerprint *XAttrLoadHash(HashratCtx *Ctx, const char *Path)
 {
 char *XattrTypes[]={"trusted","user",NULL};
 TFingerprint *FP=NULL;

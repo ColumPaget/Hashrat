@@ -5,7 +5,7 @@
 
 
 int CheckHashesFromList(HashratCtx *Ctx);
-void HandleCheckFail(char *Path, char *ErrorMessage);
-int HashratCheckFile(HashratCtx *Ctx, char *Path, struct stat *ActualStat, char *ActualHash, TFingerprint *FP);
+void HandleCheckFail(const char *Path, const char *ErrorMessage);
+int HashratCheckFile(HashratCtx *Ctx, const char *Path, struct stat *ActualStat, const char *ActualHash, TFingerprint *FP);
 
 #endif

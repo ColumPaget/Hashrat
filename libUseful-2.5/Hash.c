@@ -7,10 +7,10 @@
 typedef void (*HASH_INIT_FUNC)(THash *Hash, int Len);
 
 
-char *HashTypes[]={"md5","sha1","sha256","sha512","whirlpool","jh-224","jh-256","jh-384","jh-512",NULL};
+const char *HashTypes[]={"md5","sha1","sha256","sha512","whirlpool","jh-224","jh-256","jh-384","jh-512",NULL};
 
 
-void HMACUpdate(THash *HMAC, char *Data, int Len)
+void HMACUpdate(THash *HMAC, const char *Data, int Len)
 {
 THash *Hash;
 
@@ -96,7 +96,7 @@ Hash->Finish=HMACFinish;
 }
 
 
-void HMACSetKey(THash *HMAC, char *Key, int Len)
+void HMACSetKey(THash *HMAC, const char *Key, int Len)
 {
 HMAC->Key1=SetStrLen(HMAC->Key1,Len);
 memcpy(HMAC->Key1,Key,Len);
@@ -107,7 +107,7 @@ HMAC->Key1Len=Len;
 
 #include "crc32.h"
 
-void HashUpdateCRC(THash *Hash, char *Data, int Len)
+void HashUpdateCRC(THash *Hash, const char *Data, int Len)
 {
 crc32Update((unsigned long *) &Hash->Ctx, (unsigned char *) Data, Len);
 }
@@ -154,7 +154,7 @@ Hash->Clone=HashCloneCRC;
 #include "md5.h"
 #define MD5LEN 16
 
-void HashUpdateMD5(THash *Hash, char *Data, int Len)
+void HashUpdateMD5(THash *Hash, const char *Data, int Len)
 {
 MD5Update((MD5_CTX *) Hash->Ctx, Data, Len);
 }
@@ -206,7 +206,7 @@ Hash->Clone=HashCloneMD5;
 #include "sha1.h"
 #define SHA1LEN 20
 
-void HashUpdateSHA1(THash *Hash, char *Data, int Len)
+void HashUpdateSHA1(THash *Hash, const char *Data, int Len)
 {
 sha1_process_bytes(Data,Len,(struct sha1_ctx *) Hash->Ctx);
 }
@@ -277,7 +277,7 @@ return(NewHash);
 }
 
 
-void HashUpdateSHA256(THash *Hash, char *Data, int Len)
+void HashUpdateSHA256(THash *Hash, const char *Data, int Len)
 {
 SHA2_SHA256_Update((SHA2_SHA256_CTX *) Hash->Ctx, (unsigned char *) Data, Len);
 }
@@ -301,7 +301,7 @@ return(len);
 }
 
 
-void HashUpdateSHA512(THash *Hash, char *Data, int Len)
+void HashUpdateSHA512(THash *Hash, const char *Data, int Len)
 {
 SHA2_SHA512_Update((SHA2_SHA512_CTX *) Hash->Ctx, (unsigned char *) Data, Len);
 }
@@ -376,7 +376,7 @@ return(len);
 }
 
 
-void HashUpdateWhirlpool(THash *Hash, char *Data, int Len)
+void HashUpdateWhirlpool(THash *Hash, const char *Data, int Len)
 {
 WHIRLPOOLadd((unsigned char *) Data, Len * 8, (WHIRLPOOLstruct *) Hash->Ctx);
 }
@@ -426,7 +426,7 @@ return(len);
 
 
 
-void HashUpdateJH(THash *Hash, char *Data, int Len)
+void HashUpdateJH(THash *Hash, const char *Data, int Len)
 {
 	JHUpdate( (hashState *) Hash->Ctx, (unsigned char *) Data, Len);
 }

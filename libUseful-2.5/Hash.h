@@ -11,7 +11,7 @@ extern "C" {
 
 typedef struct t_hash THash;
 
-typedef void (*HASH_UPDATE)(THash *Hash, char *Data, int DataLen);
+typedef void (*HASH_UPDATE)(THash *Hash, const char *Data, int DataLen);
 typedef THash *(*HASH_CLONE)(THash *Hash);
 typedef int (*HASH_FINISH)(THash *Hash, char **RetStr);
 
@@ -31,7 +31,7 @@ HASH_CLONE Clone;
 void HashAvailableTypes(ListNode *Vars);
 THash *HashInit(const char *Type);
 int HashFinish(THash *Hash, int Encoding, char **Return);
-void HMACSetKey(THash *HMAC, char *Key, int Len);
+void HMACSetKey(THash *HMAC, const char *Key, int Len);
 void HashDestroy(THash *Hash);
 int HashBytes(char **Return, char *Type, char *text, int len, int Encoding);
 int HashFile(char **Return, char *Type, char *Path, int Encoding);

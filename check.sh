@@ -89,18 +89,28 @@ fi
 
 TestExitCodes()
 {
-if [ "$4" = "FindDuplicates" ]
-then
+case "$4" in 
+FindDuplicates)
 	HR_OUT=`./hashrat -r -dups $1`
 	EXIT_FOUND=$?
 	HR_OUT=`./hashrat -r -dups $2`
 	EXIT_NOTFOUND=$?
-else
+;;
+
+HashFile)
+	HR_OUT=`./hashrat $2`
+	EXIT_FOUND=$?
+	HR_OUT=`./hashrat nonexistent 2>/dev/null`
+	EXIT_NOTFOUND=$?
+;;
+
+*) 
 	HR_OUT=`echo $1 $2 | ./hashrat $3 2>/dev/null`
 	EXIT_FOUND=$?
 	HR_OUT=`echo $1x $2 | ./hashrat $3 2>/dev/null`
 	EXIT_NOTFOUND=$?
-fi
+;;
+esac
 
 if [ "$EXIT_FOUND" = "0" -a "$EXIT_NOTFOUND" = "1" ]
 then
@@ -133,10 +143,10 @@ TestHash jh384 "" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca4
 TestHash jh512 "" 05feebb3148d9b0d12025759e4e054fe851dc6ad5bf58d3f79afb7d61caf8ce9983b7a0c6adab5dc2f186849ca0ea0236541ce4c659a6b4e1dd9748fc28eaf45
 
 Title "Testing Repeated Iterations (may take some time)"
-TestHash md5 "1000 md5" 68e88e7b46a0fbd8a54c8932d2a9710d 1000
-TestHash sha1 "1000 sha1" d27f161a82d2834afccda6bfc1d10b2024fc6ec0 1000
-TestHash whirlpool "1000 whirlpool" b690486285b18a9cbea3105a8f7e8ee439ef878530fe2e389e0b5ab17658df79ad6c83c1f836f81f51ce5c73a6899f0355fdad9f257526fc718ea04f7aa1b792 1000
-TestHash jh384 "1000 jh384" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca47141b09136daaada9fa3f10522456484db 1000
+#TestHash md5 "1000 md5" 68e88e7b46a0fbd8a54c8932d2a9710d 1000
+#TestHash sha1 "1000 sha1" d27f161a82d2834afccda6bfc1d10b2024fc6ec0 1000
+#TestHash whirlpool "1000 whirlpool" b690486285b18a9cbea3105a8f7e8ee439ef878530fe2e389e0b5ab17658df79ad6c83c1f836f81f51ce5c73a6899f0355fdad9f257526fc718ea04f7aa1b792 1000
+#TestHash jh384 "1000 jh384" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca47141b09136daaada9fa3f10522456484db 1000
 
 Title "Testing Encoding"
 TestHash 8 "base 8 (octal) encoding" 150350216173106240373330245114211062322251161015
@@ -153,7 +163,7 @@ TestHash z85 "ZEROMQ85 encoding" "wX%ElWFTQ9+Z=X4h"
 Title "Testing Misc. Features"
 
 HR_OUT=`./hashrat -version`
-if [ "$HR_OUT" = "version: 1.8.10" ]
+if [ "$HR_OUT" = "version: 1.8.12" ]
 then
 	OkayMessage "Version (-version) works"
 else
@@ -170,7 +180,7 @@ else
 fi
 
 HR_OUT=`./hashrat -dir -sha1 -trad tests`
-if [ "$HR_OUT" = "9521674698e62496698c42f63c9cde9bc6399a03  tests" ]
+if [ "$HR_OUT" = "7511574f667e48df0811635b110a1774a804d40f  tests" ]
 then
   OkayMessage "Directory hashing works"
 else
@@ -179,12 +189,30 @@ fi
 
 
 HR_OUT=`./hashrat -sha1 -trad -r tests | ./hashrat -sha1`
-if [ "$HR_OUT" = "a31f3b27b58f8b26a3c2237beb9de410d1117fba" ]
+if [ "$HR_OUT" = "258751f77f7d0c22d50ff1a26ccbd90e03390653" ]
 then
 	OkayMessage "Recursive file hashing works"
 else
 	FailMessage "Recursive file hashing BROKEN"
 fi
+
+HR_OUT=`./hashrat -f tests/test.lst | ./hashrat -trad -md5`
+if [ "$HR_OUT" = "134f72f7add93845524b24c938e3d1c5" ]
+then
+	OkayMessage "File hashing from a listfile works"
+else
+	FailMessage "File hashing from a listfile BROKEN"
+fi
+
+
+HR_OUT=`cat tests/test.lst | ./hashrat -f - | ./hashrat -trad -md5`
+if [ "$HR_OUT" = "134f72f7add93845524b24c938e3d1c5" ]
+then
+	OkayMessage "File hashing from a list on stdin works"
+else
+	FailMessage "File hashing from a list on stdin BROKEN"
+fi
+
 
 HR_INPUT="hash='sha1:5aa622e49b541f9a71409358d2e20feca1fa1f44' mode='100644' uid='0' gid='0' size='621' mtime='1423180289' inode='2359456' path='tests/quotes.txt'"
 HR_OUT=`echo $HR_INPUT | ./hashrat -c 2>&1 | ./hashrat -sha256`
@@ -219,9 +247,19 @@ TestLocateHook "hash='md5:6ec9de513a8ff1768eb4768236198cf3' mode='100644' uid='0
 TestLocateHook "hash='md5:6933ee7eb504d29312b23a47d2dac374' mode='100644' uid='0' gid='0' size='621' mtime='1423180289' inode='2359456' path='test file'" "" "Hook function for file locate of files with bad characters in name"
 
 Title "Testing exit codes for different operations"
-
+TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "" "HashFile"
+TestExitCodes "tests" "libUseful-2.5" "-r -dups" "FindDuplicates"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-cf" "CheckHash"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-m -r ." "Locate"
 TestExitCodes "tests" "libUseful-2.5" "-r -dups" "FindDuplicates"
+
+echo
+echo
+if [ $EXIT -eq 0 ]
+then
+	OkayMessage "ALL CHECKS PASSED"
+else
+	FailMessage "SOME CHECKS FAILED"
+fi
 
 exit $EXIT

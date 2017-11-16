@@ -4,8 +4,8 @@
 
 #include "common.h"
 
-STREAM *SSHGet(HashratCtx *Ctx, char *URL);
-int SSHGlob(HashratCtx *Ctx, char *URL, ListNode *Files);
+STREAM *SSHGet(HashratCtx *Ctx, const char *URL);
+int SSHGlob(HashratCtx *Ctx, const char *URL, ListNode *Files);
 
 #endif
 

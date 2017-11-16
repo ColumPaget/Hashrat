@@ -48,7 +48,7 @@ int MatchAdd(TFingerprint *FP, const char *Path, int Flags)
 {
 TFingerprint *Item;
 int result=FALSE;
-char *ptr;
+const char *ptr;
 void *vptr;
 
 	if (Flags & FLAG_MEMCACHED)

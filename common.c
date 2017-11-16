@@ -9,7 +9,7 @@ char *LocalHost=NULL;
 ListNode *IncludeExclude=NULL;
 int MatchCount=0, DiffCount=0;
 
-char *HashratHashTypes[]={"md5","sha1","sha256","sha512","whirl","whirlpool","jh-224","jh-256","jh-384","jh-512",NULL};
+const char *HashratHashTypes[]={"md5","sha1","sha256","sha512","whirl","whirlpool","jh-224","jh-256","jh-384","jh-512",NULL};
 
 
 
@@ -29,10 +29,10 @@ free(Ctx);
 
 
 
-int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, char *Path, struct stat *Stat, char *Hash)
+int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, const char *Path, struct stat *Stat, const char *Hash)
 {
 char *Line=NULL, *Tempstr=NULL, *ptr; 
-char *p_Type="unknown";
+const char *p_Type="unknown";
 
 if (Flags & FLAG_TRAD_OUTPUT) Line=MCopyStr(Line,Hash, "  ", Path,"\n",NULL);
 else if (Flags & FLAG_BSD_OUTPUT) 
@@ -103,7 +103,7 @@ return(TRUE);
 
 
 
-void HashratStoreHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *Hash)
+void HashratStoreHash(HashratCtx *Ctx, const char *Path, struct stat *Stat, const char *Hash)
 {
 char *Tempstr=NULL;
 

@@ -87,8 +87,6 @@ FP->Hash=CopyStr(FP->Hash,"");
 FP->Flags=0;
 memset(&FP->FStat,0,sizeof(struct stat));
 
-
-StripTrailingWhitespace(Data);
 if (strncmp(Data,"hash=",5) ==0)
 {
 //Native format
@@ -161,6 +159,7 @@ TFingerprint *FP;
 Tempstr=STREAMReadLine(Tempstr,S);
 if (! Tempstr) return(NULL);
 
+StripTrailingWhitespace(Tempstr);
 FP=TFingerprintParse(Tempstr);
 
 DestroyString(Tempstr);

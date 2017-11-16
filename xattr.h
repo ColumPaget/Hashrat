@@ -3,9 +3,9 @@
 
 #include "common.h"
 
-void SetupXAttrList(char *Arg);
-TFingerprint *XAttrLoadHash(HashratCtx *Ctx, char *Path);
-int XAttrGetHash(HashratCtx *Ctx, char *XattrType, char *HashType, char *Path, struct stat *FStat, char **Hash);
-void HashRatSetXAttr(HashratCtx *Ctx, char *Path, struct stat *Stat, char *HashType, char *Hash);
+void SetupXAttrList(const char *Arg);
+TFingerprint *XAttrLoadHash(HashratCtx *Ctx, const char *Path);
+int XAttrGetHash(HashratCtx *Ctx, const char *XattrType, const char *HashType, const char *Path, struct stat *FStat, char **Hash);
+void HashRatSetXAttr(HashratCtx *Ctx, const char *Path, struct stat *Stat, const char *HashType, const char *Hash);
 
 #endif

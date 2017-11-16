@@ -3,7 +3,7 @@
 #include "files.h"
 
 
-void HandleCheckFail(char *Path, char *ErrorMessage)
+void HandleCheckFail(const char *Path, const char *ErrorMessage)
 {
 char *Tempstr=NULL;
 
@@ -16,7 +16,7 @@ char *Tempstr=NULL;
 
 
 
-int CheckStat(char *Path, struct stat *ExpectedStat, struct stat *Stat)
+int CheckStat(const char *Path, struct stat *ExpectedStat, struct stat *Stat)
 {
 
 	if ((ExpectedStat->st_size > 0) && ((size_t) Stat->st_size != (size_t) ExpectedStat->st_size)) 
@@ -62,7 +62,7 @@ int CheckStat(char *Path, struct stat *ExpectedStat, struct stat *Stat)
 //FP here is the expected fingerprint of the file, ActualHash and Path are
 // its actual path and hash value
 
-int CheckFileHash(HashratCtx *Ctx, char *Path, struct stat *Stat, char *ActualHash, TFingerprint *FP) 
+int CheckFileHash(HashratCtx *Ctx, const char *Path, struct stat *Stat, const char *ActualHash, TFingerprint *FP) 
 {
 int result=FALSE;
 
@@ -83,7 +83,7 @@ return(result);
 }
 
 
-int HashratCheckFile(HashratCtx *Ctx, char *Path, struct stat *ActualStat, char *ActualHash, TFingerprint *FP)
+int HashratCheckFile(HashratCtx *Ctx, const char *Path, struct stat *ActualStat, const char *ActualHash, TFingerprint *FP)
 {
 int result=FALSE;
 char *Tempstr=NULL;
