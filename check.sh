@@ -196,8 +196,8 @@ else
 	FailMessage "Recursive file hashing BROKEN"
 fi
 
-HR_OUT=`./hashrat -f tests/test.lst | ./hashrat -trad -md5`
-if [ "$HR_OUT" = "134f72f7add93845524b24c938e3d1c5" ]
+HR_OUT=`./hashrat -trad -f tests/test.lst | ./hashrat -trad -md5`
+if [ "$HR_OUT" = "85842879a67baa126b105130ed3f7683" ]
 then
 	OkayMessage "File hashing from a listfile works"
 else
@@ -205,8 +205,8 @@ else
 fi
 
 
-HR_OUT=`cat tests/test.lst | ./hashrat -f - | ./hashrat -trad -md5`
-if [ "$HR_OUT" = "134f72f7add93845524b24c938e3d1c5" ]
+HR_OUT=`cat tests/test.lst | ./hashrat -trad -f - | ./hashrat -trad -md5`
+if [ "$HR_OUT" = "85842879a67baa126b105130ed3f7683" ]
 then
 	OkayMessage "File hashing from a list on stdin works"
 else
