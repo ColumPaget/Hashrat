@@ -143,6 +143,8 @@ Only \fIhash\fP items matching a comma-seperated list of shell patterns. Please 
 .B
 \fB-x\fP <pattern>
 Exclude items matching a comma-seperated list of shell patterns. Works on both directories and files.
+\fB-X\fP <path>
+Exclude items listed in file <path>. Items in the file can be wildcards.
 .TP
 .B
 \fB-n\fP <length>
@@ -173,7 +175,7 @@ MATCH files from a list read from stdin.
 Read \fIhashes\fP from stdin, upload them to a memcached server (requires the \fB-memcached\fP option).
 .TP
 .B
-\fB-X\fP, \fB-exec\fP
+\fB-exec\fP
 In CHECK or MATCH mode only examine executable files.
 .TP
 .B

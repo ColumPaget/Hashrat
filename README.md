@@ -84,6 +84,7 @@ OPTIONS
   -f <listfile>   Hash files listed in <listfile>
   -i <pattern>    Only hash items matching <pattern>
   -x <pattern>    Exclude items matching <pattern>
+  -X <path>       Exclude items listed in file <path>. Items in the file can be wildcards.
   -n <length>     Truncate hashes to <length> bytes
   -c              CHECK hashes against list from file (or stdin)
   -cf             CHECK hashes but only show failures
@@ -91,7 +92,6 @@ OPTIONS
   -Cf             CHECK files but only show failures
   -m              MATCH files from a list read from stdin.
   -lm             Read hashes from stdin, upload them to a memcached server (requires the -memcached option).
-  -X              In CHECK or MATCH mode only examine executable files.
   -exec           In CHECK or MATCH mode only examine executable files.
   -dups           Search for duplicate files.
   -memcached <server> Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
