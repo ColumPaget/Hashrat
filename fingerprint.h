@@ -3,6 +3,9 @@
 
 #include "common.h"
 
+/*
+The 'fingerprint' concept here is the combination of a path, its hash, the hash type, etc.
+*/
 
 
 void TFingerprintDestroy(void *p_Fingerprint);

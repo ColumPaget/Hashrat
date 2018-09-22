@@ -1,12 +1,17 @@
 #include "fingerprint.h"
 #include <ctype.h>
 
+/*
+
+The 'fingerprint' concept here is the combination of a path, its hash, the hash type, etc.
+
+*/
 
     
 void ParseBSDFormat(const char *Data, char **Type, char **Hash, char **Path)
 {
 int result=FALSE;
-char *ptr;
+const char *ptr;
 
 ptr=GetToken(Data,"\\S",Type,0);
 if (ptr)
@@ -28,7 +33,7 @@ if (ptr)
 
 void ParseTradFormat(const char *Data, char **Hash, char **Path)
 {
-char *ptr;
+const char *ptr;
 
 ptr=GetToken(Data,"\\S",Hash,0);
 if (ptr)
@@ -49,10 +54,10 @@ void TFingerprintDestroy(void *p_Fingerprint)
 
 	if (! p_Fingerprint) return;
   Fingerprint=(TFingerprint *) p_Fingerprint;
-  DestroyString(Fingerprint->Hash);
-  DestroyString(Fingerprint->Data);
-  DestroyString(Fingerprint->Path);
-  DestroyString(Fingerprint->HashType);
+  Destroy(Fingerprint->Hash);
+  Destroy(Fingerprint->Data);
+  Destroy(Fingerprint->Path);
+  Destroy(Fingerprint->HashType);
 
   free(Fingerprint);
 }
@@ -78,7 +83,8 @@ TFingerprint *Item;
 
 TFingerprint *TFingerprintParse(const char *Data)
 {
-char *Name=NULL, *Value=NULL, *ptr;
+char *Name=NULL, *Value=NULL;
+const char *ptr;
 TFingerprint *FP;
 
 FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
@@ -144,8 +150,8 @@ else
 }
 
 if (StrLen(FP->Hash)) strlwr(FP->Hash);
-DestroyString(Name);
-DestroyString(Value);
+Destroy(Name);
+Destroy(Value);
 
 return(FP);
 }
@@ -162,7 +168,7 @@ if (! Tempstr) return(NULL);
 StripTrailingWhitespace(Tempstr);
 FP=TFingerprintParse(Tempstr);
 
-DestroyString(Tempstr);
+Destroy(Tempstr);
 return(FP);
 }
 

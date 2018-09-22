@@ -2,19 +2,21 @@
 CC = @CC@
 VERSION = @VERSION@
 CFLAGS = @CFLAGS@
-LIBS = @LIBS@
+LIBS = @LIBS@ @STATIC_LIBS@
 INSTALL=@INSTALL@
 prefix=@prefix@
 bindir=$(prefix)@bindir@
 FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) @DEFS@
-OBJ=common.o command-line-args.o ssh.o fingerprint.o files.o filesigning.o xattr.o cgi.o check-hash.o find.o memcached.o
+OBJ=common.o command-line-args.o ssh.o http.o fingerprint.o files.o filesigning.o xattr.o cgi.o check-hash.o find.o memcached.o
 EXE=hashrat
 
 all: hashrat
 
-hashrat: $(OBJ) main.c
-	@cd libUseful-2.5; $(MAKE)
-	$(CC) $(FLAGS) -o$(EXE) $(OBJ) main.c libUseful-2.5/libUseful-2.5.a $(LIBS) 
+hashrat: $(OBJ) main.c @STATIC_LIBS@
+	$(CC) $(FLAGS) -o$(EXE) $(OBJ) main.c $(LIBS) 
+
+libUseful-3/libUseful.a:
+	@cd libUseful-3; $(MAKE)
 
 common.o: common.h common.c
 	$(CC) $(FLAGS) -c common.c
@@ -39,6 +41,10 @@ xattr.o: xattr.h xattr.c
 
 ssh.o: ssh.h ssh.c
 	$(CC) $(FLAGS) -c ssh.c
+
+http.o: http.h http.c
+	$(CC) $(FLAGS) -c http.c
+
 
 cgi.o: cgi.h cgi.c
 	$(CC) $(FLAGS) -c cgi.c

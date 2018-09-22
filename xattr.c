@@ -47,7 +47,7 @@ while (ptr)
   count++;
 }
 
-DestroyString(Token);
+Destroy(Token);
 }
 
 
@@ -57,7 +57,7 @@ char *Tempstr=NULL, *Attr=NULL;
 char **ptr;
 int result;
 
-	Tempstr=FormatStr(Tempstr,"%lu:%llu:%s",(unsigned long) time(NULL),(unsigned long long) Stat->st_size,Hash);
+	Tempstr=FormatStr(Tempstr,"%llu:%llu:%s",(unsigned long) time(NULL),(unsigned long long) Stat->st_size,Hash);
 
 
 #ifdef USE_XATTR
@@ -90,8 +90,8 @@ int result;
 		}
 	}
 
-DestroyString(Tempstr);
-DestroyString(Attr);
+Destroy(Tempstr);
+Destroy(Attr);
 
 }
 
@@ -117,16 +117,16 @@ if (len > 0)
 {
 	(*Hash)[len]='\0';
 	ptr=*Hash;
-	FStat->st_mtime=(time_t) strtol(ptr,&ptr,10);
+	FStat->st_mtime=(time_t) strtoll(ptr,&ptr,10);
 	if (*ptr==':') ptr++;
-	FStat->st_size=(off_t) strtol(ptr,&ptr,10);
+	FStat->st_size=(off_t) strtoll(ptr,&ptr,10);
 	if (*ptr==':') ptr++;
 	len=StrLen(ptr);
 	memmove(*Hash,ptr,len+1);
 	result=TRUE;
 }
 
-DestroyString(Tempstr);
+Destroy(Tempstr);
 
 return(result);
 }
@@ -163,7 +163,7 @@ for (j=0; XattrTypes[j]; j++)
 	if (found) break;
 }
 
-DestroyString(Tempstr);
+Destroy(Tempstr);
 
 if (! found)
 {

@@ -6,22 +6,20 @@
 .SH SYNOPSIS
 .nf
 .fam C
-\fBhashrat\fP [\fIoptions\fP] [\fIpaths\fP \fIto\fP \fIhash\fP]
+\fBhashrat\fP [\fIoptions\fP] [\fIpaths\fP to \fIhash\fP]
 
-\fBhashrat\fP \fB-c\fP [\fIoptions\fP] [\fIinput\fP \fIfile\fP \fIof\fP \fIhashes\fP]
+\fBhashrat\fP \fB-c\fP [\fIoptions\fP] [\fIinput\fP \fIfile\fP of \fIhashes\fP]
 
-.fam T
-.fi
 .fam T
 .fi
 .SH DESCRIPTION
 Hashrat is a \fIhash\fP-generation utility that supports the md5, sha1, sha256, sha512, whirlpool, jh-224, jh256, jh-384 and jh-512 \fIhash\fP functions, and
-also the HMAC versions \fIof\fP those functions. It can output in traditional format (same as md5sum and shasum and the like) or it's own format.
+also the HMAC versions of those functions. It can output in traditional format (same as md5sum and shasum and the like) or it's own format.
 .PP
 Hashes can be output in octal, decimal, hexadecimal, uppercase hexadecimal or base64.
 .PP
 Hashrat also supports directory recursion, hashing entire devices, and generating a \fIhash\fP for an entire directory. It has a CGI mode that can
-be used as a web-page \fIto\fP lookup \fIhashes\fP.
+be used as a web-page to lookup \fIhashes\fP.
 .SH OPTIONS
 .TP
 .B
@@ -82,11 +80,11 @@ HMAC using specified \fIhash\fP algorithm.
 .TP
 .B
 \fB-8\fP
-Encode with octal instead \fIof\fP hex.
+Encode with octal instead of hex.
 .TP
 .B
 \fB-10\fP
-Encode with decimal instead \fIof\fP hex.
+Encode with decimal instead of hex.
 .TP
 .B
 \fB-H\fP, \fB-HEX\fP
@@ -148,7 +146,7 @@ Exclude items matching a comma-seperated list of shell patterns. Works on both d
 .TP
 .B
 \fB-n\fP <length>
-Truncate \fIhashes\fP \fIto\fP <length> bytes.
+Truncate \fIhashes\fP to <length> bytes.
 .TP
 .B
 \fB-c\fP
@@ -172,7 +170,7 @@ MATCH files from a list read from stdin.
 .TP
 .B
 \fB-lm\fP
-Read \fIhashes\fP from stdin, upload them \fIto\fP a memcached server (requires the \fB-memcached\fP option).
+Read \fIhashes\fP from stdin, upload them to a memcached server (requires the \fB-memcached\fP option).
 .TP
 .B
 \fB-X\fP, \fB-exec\fP
@@ -189,7 +187,7 @@ Specify memcached server. This option overrides reading list from stdin if used 
 .B
 \fB-h\fP <script>
 \fB-hook\fP <script>
-Script \fIto\fP run when a \fIfile\fP fails CHECK mode, or is found in MATCH mode. Script is passed the filename as an argument. In 'find duplicates' mode a second file name (the duplicate) will be passed as the second argument.
+Script to run when a \fIfile\fP fails CHECK mode, or is found in MATCH mode. Script is passed the filename as an argument. In 'find duplicates' mode a second file name (the duplicate) will be passed as the second argument.
 .TP
 .B
 \fB-color\fP
@@ -230,12 +228,12 @@ Run in HTTP CGI mode.
 .TP
 .B
 \fB-net\fP
-Treat '\fIfile\fP' arguments as either ssh or http URLs, and pull files over the network and then \fIhash\fP them (allows hashing \fIof\fP files on remote machines).
+Treat '\fIfile\fP' arguments as either ssh or http URLs, and pull files over the network and then \fIhash\fP them (allows hashing of files on remote machines).
 URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port].
 .TP
 .B
 \fB-idfile\fP <path>
-Path \fIto\fP a ssh private key \fIfile\fP \fIto\fP use \fIto\fP authenticate INSTEAD OF A PASSWORD when pulling files via ssh.
+Path to a ssh private key \fIfile\fP to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.
 .TP
 .B
 \fB-xattr\fP
@@ -247,16 +245,16 @@ Use TRUSTED eXtended \fIfile\fP ATTRibutes. In \fIhash\fP mode, store \fIhashes\
 .TP
 .B
 \fB-cache\fP
-Use \fIhashes\fP stored in user xattr if they're younger than the mtime \fIof\fP the \fIfile\fP. This speeds up outputting \fIhashes\fP.
+Use \fIhashes\fP stored in user xattr if they're younger than the mtime of the \fIfile\fP. This speeds up outputting \fIhashes\fP.
 .TP
 .B
 \fB-u\fP <types>
-Update. In checking mode, update \fIhashes\fP for the files as you go. The <types> is a comma-separated list \fIof\fP things \fIto\fP update, which can be xattr memcached
-or a \fIfile\fP name. This will update these targets with the \fIhash\fP that was found at the time \fIof\fP checking.
+Update. In checking mode, update \fIhashes\fP for the files as you go. The <types> is a comma-separated list of things to update, which can be xattr memcached
+or a \fIfile\fP name. This will update these targets with the \fIhash\fP that was found at the time of checking.
 .TP
 .B
 \fB-hide\fP-\fIinput\fP
-When reading data from stdin in linemode, set the terminal \fIto\fP not echo characters, thus hiding typed \fIinput\fP.
+When reading data from stdin in linemode, set the terminal to not echo characters, thus hiding typed \fIinput\fP.
 .TP
 .B
 \fB-xsel\fP
@@ -266,7 +264,7 @@ Update X11 clipboard and primary selections to the current hash. This works usin
 \fB-star\fP-\fIinput\fP
 When reading data from stdin in linemode replace characters with stars.
 .SH NOTES
-Hashrat can also detect if it's being run under any \fIof\fP the following names (e.g., via symlinks):
+Hashrat can also detect if it's being run under any of the following names (e.g., via symlinks):
 .TP
 .B
 md5sum
@@ -315,38 +313,38 @@ Run in web-enabled 'cgi mode'.
 .TP
 .B
 \fBhashrat\fP
-Generate a md5 \fIhash\fP \fIof\fP data read from stdin  (default \fIhash\fP type is md5).
+Generate a md5 \fIhash\fP of data read from stdin  (default \fIhash\fP type is md5).
 .TP
 .B
 \fBhashrat\fP \fB-jh256\fP
-Generate a jh-256 \fIhash\fP \fIof\fP data read from stdin.
+Generate a jh-256 \fIhash\fP of data read from stdin.
 .TP
 .B
 \fBhashrat\fP \fB-sha256\fP \fB-64\fP
-Generate a sha-256 \fIhash\fP \fIof\fP data read from stdin, output with base64 encoding.
+Generate a sha-256 \fIhash\fP of data read from stdin, output with base64 encoding.
 .TP
 .B
 \fBhashrat\fP \fB-sha256\fP \fB-64\fP \fB-lines\fP
 Read lines from stdin, and generate a sha-256 with base64 encoding FOR EVERY LINE. This strips any whitespace
-from the end \fIof\fP the line (including \\r and/or \\n line terminators).
+from the end of the line (including \\r and/or \\n line terminators).
 .TP
 .B
 \fBhashrat\fP \fB-md5\fP \fB-trad\fP \fB-rawlines\fP
 Read lines from stdin, and generate a md5 \fIhash\fP in traditional format for every line INCLUDING TRAILING WHITESPACE.
-This is compatible with 'echo text | md5sum', where text is one line, as echo adds a newline \fIto\fP the end \fIof\fP the
+This is compatible with 'echo text | md5sum', where text is one line, as echo adds a newline to the end of the
 text it outputs.
 .TP
 .B
 \fBhashrat\fP \fB-type sha256,whirl,md5\fP \fB-64\fP
-Generate a sha-256 \fIhash\fP \fIof\fP data read from stdin, then hash the result with whirlpool, then with md5.
+Generate a sha-256 \fIhash\fP of data read from stdin, then hash the result with whirlpool, then with md5.
 .TP
 .B
 \fBhashrat\fP *
-Generate a list \fIof\fP \fIhashes\fP for files in the current directory (default \fIhash\fP type is md5).
+Generate a list of \fIhashes\fP for files in the current directory (default \fIhash\fP type is md5).
 .TP
 .B
 \fBhashrat\fP \fB-r\fP \fB-sha1\fP * > hashes.sha1
-Generate a list \fIof\fP \fIhashes\fP for files in the current directory, AND ALL SUBDIRECTORIES, using sha1 hashing.
+Generate a list of \fIhashes\fP for files in the current directory, AND ALL SUBDIRECTORIES, using sha1 hashing.
 .TP
 .B
 cat hashes.sha1 > \fBhashrat\fP \fB-c\fP
@@ -355,7 +353,7 @@ Check \fIhashes\fP listed in hashes.sha1.
 .B
 cat hashes.sha1 > \fBhashrat\fP \fB-c\fP \fB-strict\fP
 Check \fIhashes\fP listed in hashes.sha1. If \fIhashes\fP are NOT in traditional format than the \fB-strict\fP flag will cause
-\fBhashrat\fP \fIto\fP check the files uid, gid, size, mtime and inode and print a failure message if any \fIof\fP those don't match.
+\fBhashrat\fP to check the files uid, gid, size, mtime and inode and print a failure message if any of those don't match.
 .TP
 .B
 cat hashes.sha1 > \fBhashrat\fP \fB-cf\fP
@@ -363,11 +361,11 @@ Check \fIhashes\fP listed in hashes.sha1 but only output failures.
 .TP
 .B
 cat APT1.md5 | \fBhashrat\fP \fB-m\fP \fB-r\fP /
-Read a list \fIof\fP \fIhashes\fP from stdin and search recursively for files matching them.
+Read a list of \fIhashes\fP from stdin and search recursively for files matching them.
 .TP
 .B
 cat APT1.md5 | \fBhashrat\fP \fB-lm\fP \fB-memcached\fP 127.0.0.1
-Read a list \fIof\fP \fIhashes\fP from stdin, and register them in a memcached server.
+Read a list of \fIhashes\fP from stdin, and register them in a memcached server.
 .TP
 .B
 \fBhashrat\fP \fB-m\fP \fB-memcached\fP 127.0.0.1 \fB-r\fP /
@@ -375,11 +373,11 @@ Search recursively for files whose \fIhashes\fP are stored in a memcached server
 .TP
 .B
 \fBhashrat\fP \fB-devmode\fP \fB-whirlpool\fP \fB-64\fP /dev/sda1
-Generate a whirlpool \fIhash\fP \fIof\fP the entire device /dev/sda1. Output result in base 64.
+Generate a whirlpool \fIhash\fP of the entire device /dev/sda1. Output result in base 64.
 .TP
 .B
 \fBhashrat\fP \fB-sha1\fP \fB-net\fP ssh:user:password@myhost/bin/*
-Generate sha1 \fIhashes\fP \fIof\fP files in /bin/* on the remote machine 'myhost'.
+Generate sha1 \fIhashes\fP of files in /bin/* on the remote machine 'myhost'.
 .TP
 .B
 \fBhashrat\fP \fB-whirlpool\fP \fB-net\fP http://myhost.com/webpage.html
@@ -393,9 +391,9 @@ Search for duplicate files under /home. Update \fIhashes\fP stored in filesystem
 .IP 1) 4
 Strong Passwords
 .PP
-Hashrat can be used \fIto\fP generate strong passwords for websites. So, you don't have \fIto\fP remember the strong password, if it be always regenerate with \fBhashrat\fP.
-You need \fIto\fP remember a handful \fIof\fP moderately decent passwords, i.e., things that I can't find by grepping in the '10,000 most popular passwords' list[1],
-and an additional personal pin. Now, you need \fIto\fP combine the website name, one \fIof\fP passwords, and the personal pin, into a string and feed them into \fBhashrat\fP:
+Hashrat can be used to generate strong passwords for websites. So, you don't have to remember the strong password, if it be always regenerate with \fBhashrat\fP.
+You need to remember a handful of moderately decent passwords, i.e., things that I can't find by grepping in the '10,000 most popular passwords' list[1],
+and an additional personal pin. Now, you need to combine the website name, one of passwords, and the personal pin, into a string and feed them into \fBhashrat\fP:
 .PP
 .nf
 .fam C
@@ -404,12 +402,12 @@ and an additional personal pin. Now, you need \fIto\fP combine the website name,
 .fam T
 .fi
 Obviously, a good password isn't 'password' and a good pin isn't '1234', but you get the idea. This gives a 28-character string that should take "8.02 trillion
-centuries" \fIto\fP crack with a "massive cracking array", according \fIto\fP Steve Gibson's Password haystacks utility[2]. This is what I then use as my password. Unfortunately
-some websites won't take a 28-character password, and for these you can truncate \fIto\fP the appropriate length (using the \fB-n\fP flag), but the results are still stronger
+centuries" to crack with a "massive cracking array", according to Steve Gibson's Password haystacks utility[2]. This is what I then use as my password. Unfortunately
+some websites won't take a 28-character password, and for these you can truncate to the appropriate length (using the \fB-n\fP flag), but the results are still stronger
 than anything you could remember, and nothing needs storing on disk (as with password managers).
 .PP
-There are some dangers \fIto\fP using the 'echo' method shown above if you are on a shared machine, or if someone gets hold \fIof\fP your computer/harddrive. On a shared machine
-someone could type 'ps ax' \fIto\fP see all commands running, and if they time it right, they might see your command-line with your password in it. Another danger lies in
+There are some dangers to using the 'echo' method shown above if you are on a shared machine, or if someone gets hold of your computer/harddrive. On a shared machine
+someone could type 'ps ax' to see all commands running, and if they time it right, they might see your command-line with your password in it. Another danger lies in
 using a shell (like bash) that will record your typed commands so you can recall them later. Bash stores this information on disk in the \fIfile\fP .bash_history, so if
 you use the 'echo' method shown above your password will be saved on disk. To combat this \fBhashrat\fP has line mode:
 .PP
@@ -419,11 +417,11 @@ you use the 'echo' method shown above your password will be saved on disk. To co
 
 .fam T
 .fi
-This reads lines from stdin, so type into \fBhashrat\fP and then press ENTER, and you'll be given the \fIhash\fP \fIof\fP the line you typed. By this method your password is neither
+This reads lines from stdin, so type into \fBhashrat\fP and then press ENTER, and you'll be given the \fIhash\fP of the line you typed. By this method your password is neither
 visible in 'ps ax', nor is ever stored on disk.
 .PP
-A \fB-lines\fP will produce a different \fIhash\fP \fIto\fP the 'echo' method listed above, because it strips any trailing whiespace off the lines read. If you want strict compatiblity
-with 'echo' (by default echo adds a newline \fIto\fP the end \fIof\fP the text \fIto\fP output) then use rawlines mode:
+A \fB-lines\fP will produce a different \fIhash\fP to the 'echo' method listed above, because it strips any trailing whiespace off the lines read. If you want strict compatiblity
+with 'echo' (by default echo adds a newline to the end of the text to output) then use rawlines mode:
 .PP
 .nf
 .fam C
@@ -431,7 +429,7 @@ with 'echo' (by default echo adds a newline \fIto\fP the end \fIof\fP the text \
 
 .fam T
 .fi
-Finally, you can prevent shoulder-surfers seeing you type your password by using the \fB-hide\fP-\fIinput\fP or \fB-star\fP-\fIinput\fP \fIoptions\fP \fIto\fP hide what you type.
+Finally, you can prevent shoulder-surfers seeing you type your password by using the \fB-hide\fP-\fIinput\fP or \fB-star\fP-\fIinput\fP \fIoptions\fP to hide what you type.
 .PP
 .nf
 .fam C
@@ -444,11 +442,11 @@ Finally, you can prevent shoulder-surfers seeing you type your password by using
 .IP 2) 4
 Watching for \fIfile\fP changes
 .PP
-Like md5sum/shasum etc, \fBhashrat\fP can be used \fIto\fP detect changes in files that might indicate malicious activity. For instance, in order \fIto\fP get early warning \fIof\fP malware
+Like md5sum/shasum etc, \fBhashrat\fP can be used to detect changes in files that might indicate malicious activity. For instance, in order to get early warning of malware
 like cryptolocker (that encrypts files on a users disk, or on network shares, and then demands a ransom for \fIfile\fP recovery) you can scatter about the disk a number
-\fIof\fP Canary files that should not change. You need record their \fIhashes\fP and regularly check them. If they change, you will know something is going on.
+of Canary files that should not change. You need record their \fIhashes\fP and regularly check them. If they change, you will know something is going on.
 .PP
-Hashes generated by \fBhashrat\fP can be output \fIto\fP a \fIfile\fP, or stored in extended \fIfile\fP attributes, or in a memcached server.
+Hashes generated by \fBhashrat\fP can be output to a \fIfile\fP, or stored in extended \fIfile\fP attributes, or in a memcached server.
 .PP
 .nf
 .fam C
@@ -460,7 +458,7 @@ Hashes generated by \fBhashrat\fP can be output \fIto\fP a \fIfile\fP, or stored
 
 .fam T
 .fi
-Similarly these can then be used \fIto\fP check files later:
+Similarly these can then be used to check files later:
 .PP
 .nf
 .fam C
@@ -476,11 +474,11 @@ Note that -c checks only check the files in the supplied list. The -C flag inste
 .fi
 There is a slight difference between xattr/memcached checks and checks where a list is read from stdin. Currently when reading from stdin \fBhashrat\fP will ONLY check the
 files in the list. However, in \fB-xattr\fP and \fB-memcached\fP mode, it will check all files, outputting and error for those where no stored \fIhash\fP can be found. This is likely
-\fIto\fP change in the a future release, with the stdin method being brought into line with the others.
+to change in the a future release, with the stdin method being brought into line with the others.
 .IP 3) 4
 Finding files that match \fIhashes\fP
 .PP
-Using the \fB-m\fP flag \fBhashrat\fP can be told \fIto\fP read a range \fIof\fP \fIhashes\fP from stdin, and then search for files matching those \fIhashes\fP. For Example:
+Using the \fB-m\fP flag \fBhashrat\fP can be told to read a range of \fIhashes\fP from stdin, and then search for files matching those \fIhashes\fP. For Example:
 .PP
 .nf
 .fam C
@@ -489,7 +487,7 @@ Using the \fB-m\fP flag \fBhashrat\fP can be told \fIto\fP read a range \fIof\fP
 .fam T
 .fi
 The last command will search recursively under /usr for files with \fIhashes\fP matching those in APT1-AppendixE-MD5s.txt. The \fIinput\fP on stdin must begin with a \fIhash\fP, anything
-written after the \fIhash\fP will be treated as a comment \fIto\fP be displayed if a \fIfile\fP matching the \fIhash\fP is found.
+written after the \fIhash\fP will be treated as a comment to be displayed if a \fIfile\fP matching the \fIhash\fP is found.
 .PP
 Hashtypes other than md5 can be used thusly:
 .PP
@@ -499,7 +497,7 @@ Hashtypes other than md5 can be used thusly:
 
 .fam T
 .fi
-Hashes can also be loaded into a memcached server, so that the same \fIfile\fP list can be checked on a number \fIof\fP machines, without needing \fIto\fP store the hashlist on those
+Hashes can also be loaded into a memcached server, so that the same \fIfile\fP list can be checked on a number of machines, without needing to store the hashlist on those
 machines. First you need load the \fIhashes\fP:
 .PP
 .nf
@@ -508,7 +506,7 @@ machines. First you need load the \fIhashes\fP:
 
 .fam T
 .fi
-The last line loads the \fIhashes\fP \fIto\fP a memcached server at 192.168.1.5. You can then search against the memcached server by:
+The last line loads the \fIhashes\fP to a memcached server at 192.168.1.5. You can then search against the memcached server by:
 .PP
 .nf
 .fam C
@@ -519,19 +517,74 @@ The last line loads the \fIhashes\fP \fIto\fP a memcached server at 192.168.1.5.
 .IP 4) 4
 Find duplicate files
 .PP
-Using the \fB-dups\fP flag (usually in combination with the \fB-r\fP recursive flag) \fBhashrat\fP can be set \fIto\fP search for duplicate files and output any found \fIto\fP stdout.
-.IP 5) 4
-CGI Mode
+Using the \fB-dups\fP flag (usually in combination with the \fB-r\fP recursive flag) \fBhashrat\fP can be set to search for duplicate files and output any found to stdout.
+
+.SH HOOKSCRIPTS
 .PP
-If \fBhashrat\fP is run with the \fB-cgi\fP flag, or if it's run with a name \fIof\fP hashrat.cgi (either by renaming the \fBhashrat\fP executable, or via a symbolic link) it will output a
-webpage that allows users \fIto\fP look up \fIhashes\fP over the web. This allows \fIto\fP look-up your strong passwords even if youI don't have access \fIto\fP a local version \fIof\fP \fBhashrat\fP.
+  Hookscripts, defined using the \fB-h\fP or \fB-hook\fP command-line options, are scripts that are run for each hashed item. \fB-h\fP and \fB-hook\fP options take an argument that is the path to the script. Hookscripts behave differently in different modes:
+
+.TP
+\fBCheck Hashes\fP mode.
+The hookscript is called if a file doesn't match it's expected hash, or is not listed in the expected hashes. It is passed the path of the file.
+.TP
+\fBLocate files\fP mode  
+The hookscript is called if a file matches the hash to locate. It is passed the path of the file.
+.TP
+\fBFind duplicates\fP mode
+The hookscript is called if a file is a duplicate of another file. It is passed the paths of both files.
+
+.SH CGI Mode
+.PP
+If \fBhashrat\fP is run with the \fB-cgi\fP flag, or if it's run with a name of \fBhashrat.cgi\fP (either by renaming the \fBhashrat\fP executable, or via a symbolic link) it will output a webpage that allows users to look up \fIhashes\fP over the web. This allows to look-up your strong passwords even if you don't have access to a local version of \fBhashrat\fP.
+.PP
+CGI Mode can be configured using an options file. The file path is passed in the url, like this:
+.nf
+.fam C
+hashrat.cgi?OptionsFile=/etc/hashrat.options
+.fam T
+.fi
+
+If an options file is used, then CGI mode uses the options in the file as its defaults. The options file contains the following :
+.TP
+HashType <type>      Type of hash to generate
+.TP
+Encoding <type>      Type of encoding to use for outputted hash
+.TP
+Line Ending <type>   Line ending to append to input text. This is for compatability with command-line usage with "-rawlines". Options are "none", "lf", "crlf" or "cr", meaning "none", "newline", "carriage-return newline" and "carriage-return" respectively.
+.TP
+OutputLength <len>   Crop output hash to length len "len"
+.TP
+SegmentLength <len>  Break output up into segments of length "len"
+.TP
+SegmentChar <char>   Seperate output segments with character "char"
+.TP
+NoOptions            Do not offer the user the options so they can change them. Just show an entry box to enter text.
+.TP
+HideText             Hide inputted text (overrides any other config)
+.TP
+ShowText             Show inputted text (overrides any other config)
+.PP
+.TP
+Example:
+.nf
+.fam C
+HashType=sha256
+Encoding=base64
+LineEnding=none
+OutputLength=12
+SegmentLength=4
+SegmentChar=+
+NoOptions=Y
+.fam T
+.fi
+
 .SH EXTENDED FILESYSTEM ATTRIBUTES
 
-Hashrat can use extended filesystem attributes where these are supported. This allows a \fIhash\fP \fIto\fP be stored in the filesystem metadata \fIof\fP the target \fIfile\fP. This can
-then be used for checking \fIhashes\fP, or for caching \fIhashes\fP \fIto\fP produce faster output during hashing runs. There are two types \fIof\fP filesystem attribute, trusted attributes,
+Hashrat can use extended filesystem attributes where these are supported. This allows a \fIhash\fP to be stored in the filesystem metadata of the target \fIfile\fP. This can
+then be used for checking \fIhashes\fP, or for caching \fIhashes\fP to produce faster output during hashing runs. There are two types of filesystem attribute, trusted attributes,
 which can only be set and read by root, and user attributes, which can be set and read by any user that has the appropriate permissions for the \fIfile\fP.
 .PP
-Hashes can be stored against files by using the \fB-xattr\fP option \fIto\fP set user attributes:
+Hashes can be stored against files by using the \fB-xattr\fP option to set user attributes:
 .PP
 .nf
 .fam C
@@ -539,7 +592,7 @@ Hashes can be stored against files by using the \fB-xattr\fP option \fIto\fP set
 
 .fam T
 .fi
-And using the \fB-txattr\fP flag \fIto\fP set trusted attributes (you must be root \fIto\fP set trusted attributes):
+And using the \fB-txattr\fP flag to set trusted attributes (you must be root to set trusted attributes):
 .PP
 .nf
 .fam C
@@ -548,7 +601,7 @@ And using the \fB-txattr\fP flag \fIto\fP set trusted attributes (you must be ro
 .fam T
 .fi
 When checking either flag can be used, but \fBhashrat\fP will always use trusted attributes when running as root, if those are avaialable, otherwise it will fall
-back \fIto\fP user attributes.
+back to user attributes.
 .PP
 .nf
 .fam C
@@ -564,10 +617,10 @@ The \fB-cache\fP option allows using stored \fIhashes\fP rather than regeneratin
 
 .fam T
 .fi
-This makes getting a report \fIof\fP \fIhashes\fP considerably faster, but it runs the risk that the \fIhashes\fP may not be accurate. Hashrat will only output a \fIhash\fP stored in \fIfile\fP
-attributes if the storage time \fIof\fP the \fIhash\fP is younger than the modify time (mtime) \fIof\fP the \fIfile\fP, however, this means an attacker could change the modify time \fIof\fP the \fIfile\fP
-\fIto\fP hide changes they've made. Thus this feature should not be used for security checking purposes (but should be safe for uses like finding files that have changed and
-need \fIto\fP be backed up, for instance).
+This makes getting a report of \fIhashes\fP considerably faster, but it runs the risk that the \fIhashes\fP may not be accurate. Hashrat will only output a \fIhash\fP stored in \fIfile\fP
+attributes if the storage time of the \fIhash\fP is younger than the modify time (mtime) of the \fIfile\fP, however, this means an attacker could change the modify time of the \fIfile\fP
+to hide changes they've made. Thus this feature should not be used for security checking purposes (but should be safe for uses like finding files that have changed and
+need to be backed up, for instance).
 .SH AUTHOR
 The \fBhashrat\fP was written by Colum Paget <colums.projects@gmail.com>.
 .PP

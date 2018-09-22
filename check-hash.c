@@ -11,7 +11,7 @@ char *Tempstr=NULL;
 	else printf("%s: FAILED. %s.\n",Path,ErrorMessage);
 
 	RunHookScript(DiffHook, Path, "");
-  DestroyString(Tempstr);
+  Destroy(Tempstr);
 }
 
 
@@ -110,7 +110,7 @@ char *Tempstr=NULL;
 			else result=CheckFileHash(Ctx, Path, ActualStat, ActualHash, FP); 
 		}
 
-DestroyString(Tempstr);
+Destroy(Tempstr);
 return(result);
 }
 
@@ -118,7 +118,8 @@ return(result);
 //returns true on a significant event, meaning on FAIL
 int CheckHashesFromList(HashratCtx *Ctx)
 {
-char *HashStr=NULL, *ptr;
+char *HashStr=NULL;
+const char *ptr;
 int Checked=0, Errors=0;
 STREAM *ListStream;
 TFingerprint *FP;
@@ -131,13 +132,13 @@ if (strcmp(ptr,"-")==0)
   ListStream=STREAMFromFD(0);
   STREAMSetTimeout(ListStream,0);
 }
-else ListStream=STREAMOpenFile(ptr, SF_RDONLY);
+else ListStream=STREAMOpen(ptr, "r");
 
 FP=FingerprintRead(ListStream);
 while (FP)
 {
   if (StrLen(FP->HashType)) Ctx->HashType=CopyStr(Ctx->HashType, FP->HashType);
-	if (StatFile(Ctx,FP->Path,&Stat)==0) HashItem(Ctx, Ctx->HashType, FP->Path, &Stat, &HashStr);
+	if (StatFile(Ctx,FP->Path,&Stat) != -1) HashItem(Ctx, Ctx->HashType, FP->Path, &Stat, &HashStr);
 
   if (! HashratCheckFile(Ctx, FP->Path, &Stat, HashStr, FP)) Errors++;
   TFingerprintDestroy(FP);
@@ -147,7 +148,7 @@ while (FP)
 
 fprintf(stderr,"\nChecked %d files. %d Failures\n",Checked,Errors);
 
-DestroyString(HashStr);
+Destroy(HashStr);
 
 if (Errors) return(TRUE);
 return(FALSE);

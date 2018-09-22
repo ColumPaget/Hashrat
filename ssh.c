@@ -1,4 +1,5 @@
 #include "ssh.h"
+#include "files.h"
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <ctype.h>
@@ -22,7 +23,7 @@ char inchar;
 S=STREAMFromFD(0);
 
 //Turn off echo (and other things)
-InitTTY(0,0,0);
+TTYConfig(0,0,0);
 fprintf(stderr,"Password: "); fflush(NULL);
 inchar=STREAMReadChar(S);
 while ((inchar != EOF) && (inchar != '\n') && (inchar != '\r'))
@@ -33,133 +34,32 @@ while ((inchar != EOF) && (inchar != '\n') && (inchar != '\r'))
 }
 StripCRLF(*Passwd);
 //turn echo back on
-ResetTTY(0);
+TTYReset(0);
 
 printf("\n");
-STREAMDisassociateFromFD(S);
+STREAMDestroy(S);
 }
 
 
-
-int SSHFinalizeConnection(HashratCtx *Ctx, int Flags, char **Passwd)
+STREAM *SSHOpen(HashratCtx *Ctx, const char *URL, char **Path)
 {
-char *Tempstr=NULL, *Line=NULL;
-ListNode *Dialog=NULL;
-int result=TRUE;
+char *Tempstr=NULL;
+const char *ptr;
 
+ptr=URL+4; //past ssh:
+while (*ptr=='/') ptr++;
+ptr=strchr(ptr,'/');
+if (! ptr) return(NULL);
 
-	STREAMSetFlushType(Ctx->NetCon,FLUSH_ALWAYS,0,0);
-	if (Flags & SSH_ASK_PASSWD) 
-	{
-		*Passwd=CopyStr(*Passwd, GetVar(Ctx->Vars,"SshPasswd"));
-		if (! StrValid(*Passwd))
-		{
-		SSHRequestPasswd(Passwd);
-		SetVar(Ctx->Vars,"SshPasswd", *Passwd);
-		}
-	}
+Tempstr=CopyStrLen(Tempstr,URL,ptr-URL);
+if (strncmp(ptr,"/./",3)==0) ptr+=3;
+*Path=QuoteCharsInStr(*Path,ptr," 	;&'`\"");
 
-	Tempstr=SSHGenerateReplayTerminator(Tempstr, "CONNECTED1");
-	STREAMWriteLine("echo ",Ctx->NetCon);
-	STREAMWriteLine(Tempstr,Ctx->NetCon);
-	STREAMWriteLine("\n",Ctx->NetCon);
-
-  Dialog=ListCreate();
-  ExpectDialogAdd(Dialog, "Are you sure you want to continue connecting (yes/no)?", "yes\n", DIALOG_OPTIONAL);
-  ExpectDialogAdd(Dialog, "Permission denied", "", DIALOG_OPTIONAL | DIALOG_FAIL);
-  ExpectDialogAdd(Dialog, Tempstr, "", DIALOG_END);
-	if (StrValid(*Passwd))
-	{
-  Tempstr=MCopyStr(Tempstr,*Passwd,"\n",NULL);
-  ExpectDialogAdd(Dialog, "assword:", Tempstr, DIALOG_END);
-	}
-  else ExpectDialogAdd(Dialog, "assword:", "", DIALOG_OPTIONAL | DIALOG_FAIL);
-
-  STREAMExpectDialog(Ctx->NetCon, Dialog);
-  ListDestroy(Dialog,ExpectDialogDestroy);
-
-
-	STREAMSetFlushType(Ctx->NetCon,FLUSH_LINE,0,0);
-
-	//allow time for stty to take effect!
-	STREAMWriteLine("PS1=\n",Ctx->NetCon); 
-	STREAMWriteLine("PS2=\n",Ctx->NetCon);
-	STREAMWriteLine("stty -echo\necho\n",Ctx->NetCon);
-	STREAMFlush(Ctx->NetCon);
-
-
-	//Do this again so we know we're beyond any crap produced by our setup of the terminal	
-	Tempstr=SSHGenerateReplayTerminator(Tempstr, "CONNECTED2");
-	STREAMWriteLine("echo ",Ctx->NetCon);
-	STREAMWriteLine(Tempstr,Ctx->NetCon);
-	STREAMWriteLine("\n",Ctx->NetCon);
-
-
-	Line=STREAMReadLine(Line,Ctx->NetCon);
-	while (Line)
-	{
-	StripTrailingWhitespace(Line);
-	if (strcmp(Line,Tempstr)==0) break;
-	Line=STREAMReadLine(Line,Ctx->NetCon);
-	}
-
+if (! Ctx->NetCon) Ctx->NetCon=STREAMOpen(Tempstr, "r");
 
 DestroyString(Tempstr);
-DestroyString(Line);
-return(result);
-}
-
-
-
-
-STREAM *SSHConnect(const char *URL, char **Path, HashratCtx *Ctx)
-{
-char *Tempstr=NULL, *Host=NULL, *PortStr=NULL, *User=NULL, *Passwd=NULL, *ptr;
-int Port=22, Flags=0;
-
-ParseURL(URL, NULL, &Host, &PortStr, &User, &Passwd, &Tempstr, NULL);
-*Path=MCopyStr(*Path,"/",Tempstr,NULL);
-if (! Ctx->NetCon) 
-{
-Ctx->NetCon=STREAMCreate();
-
-if (StrValid(PortStr)) Port=atoi(PortStr);
-
-Tempstr=FormatStr(Tempstr,"/usr/bin/ssh -2 -T %s@%s -p %d",User,Host,Port);
-
-ptr=GetVar(Ctx->Vars,"SshIdFile");
-if (StrValid(ptr)) Tempstr=MCatStr(Tempstr," -i ",ptr, NULL);
-
-//Never use TTYFLAG_CANON here
-Ctx->NetCon=STREAMSpawnCommand(Tempstr,"","",COMMS_BY_PTY|TTYFLAG_CRLF|TTYFLAG_IGNSIG);
-
-if ((! StrValid(ptr)) && (! StrValid(Passwd)))  Flags |= SSH_ASK_PASSWD;
-SSHFinalizeConnection(Ctx, Flags, &Passwd);
-
-STREAMSetTimeout(Ctx->NetCon,10000);
-
-/*
-StripTrailingWhitespace(Tempstr);
-StripTrailingWhitespace(User);
-
-if ( (StrValid(User)==0) || (strcmp(Tempstr,User) !=0) )
-{
-	STREAMClose(S);
-	S=NULL;
-}
-*/
-
-}
-
-DestroyString(User);
-DestroyString(Passwd);
-DestroyString(Host);
-DestroyString(Tempstr);
-DestroyString(PortStr);
-
 return(Ctx->NetCon);
 }
-
 
 
 
@@ -176,12 +76,10 @@ while (waitpid(-1,NULL,WNOHANG) > 0);
 
 //clean up bytes in the stream
 
-S=SSHConnect(URL, &Path, Ctx);
+S=SSHOpen(Ctx, URL, &Path);
 if (S)
 {
-	ptr=Path;
-	if (*ptr=='/') ptr++;
-	Tempstr=MCopyStr(Tempstr,"cat '",ptr,"' 2>/dev/null \n",NULL);
+	Tempstr=MCopyStr(Tempstr,"cat '",Path,"' 2>/dev/null \n",NULL);
 	STREAMWriteLine(Tempstr,S); 
 	STREAMFlush(S);
 	tv.tv_usec=0;
@@ -189,8 +87,8 @@ if (S)
 	FDSelect(S->in_fd, SELECT_READ, &tv);
 }
 
-DestroyString(Path);
-DestroyString(Tempstr);
+Destroy(Path);
+Destroy(Tempstr);
 
 return(S);
 }
@@ -274,28 +172,23 @@ const char *ptr, *tptr;
 
 		*Path=CopyStr(*Path,ptr);
 
-	DestroyString(Token);
+	Destroy(Token);
 }
 
 
 
 int SSHGlob(HashratCtx *Ctx, const char *URL, ListNode *Files)
 {
-char *Tempstr=NULL, *Path=NULL, *TermLine=NULL;
+char *Tempstr=NULL, *Path=NULL, *TermLine=NULL, *wptr;
 //don't make this const, we change a char with it
-char *ptr;
+const char *ptr;
 STREAM *S;
-int count=0;
+int RetVal=FT_FILE;
 struct stat *Stat;
 
-
-S=SSHConnect(URL, &Tempstr, Ctx);
+S=SSHOpen(Ctx, URL, &Path);
 if (S)
 {
-	ptr=Tempstr;
-	if (*ptr == '/') ptr++;
-	
-	Path=QuoteCharsInStr(Path,ptr," 	;&'`\"");
 	TermLine=SSHGenerateReplayTerminator(TermLine, "LIST");
 	Tempstr=MCopyStr(Tempstr,"ls -Llidn ",Path," 2> /dev/null\necho ",TermLine,"\n",NULL);
 	STREAMWriteLine(Tempstr,S); STREAMFlush(S);
@@ -307,18 +200,12 @@ if (S)
 		if (strcmp(Tempstr,TermLine)==0) break;
 		Stat=(struct stat *) calloc(1,sizeof(struct stat));
 		Decode_LS_Output(Tempstr, &Path, Stat);
-		Tempstr=CopyStr(Tempstr,URL);
-		ptr=Tempstr+4; //go past 'ssh:'
-		while (*ptr=='/') ptr++;
-		ptr=strchr(ptr,'/');
-		if (ptr) *ptr='\0';
-
+		if (S_ISDIR(Stat->st_mode)) RetVal=FT_DIR;
 		if (StrValid(Path))
 		{
 			Tempstr=MCatStr(Tempstr,"/",Path,NULL);
-			if (Files) ListAddNamedItem(Files,Tempstr, Stat);
+			if (Files) ListAddNamedItem(Files,Tempstr,Stat);
 			else free(Stat);
-			count++;
 		}
 		else free(Stat);
 		Tempstr=STREAMReadLine(Tempstr,S);
@@ -328,9 +215,9 @@ if (S)
 
 //Don't close 'S', it is reused as Ctx->NetCon
 //STREAMClose(S);
-DestroyString(Path);
-DestroyString(Tempstr);
-DestroyString(TermLine);
+Destroy(Path);
+Destroy(Tempstr);
+Destroy(TermLine);
 
-return(count);
+return(RetVal);
 }

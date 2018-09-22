@@ -36,7 +36,7 @@ if (STREAMIsConnected(MCS))
 	if (StrLen(Tempstr) && (strcmp(Tempstr,"STORED")==0)) result=TRUE;
 }
 
-DestroyString(Tempstr);
+Destroy(Tempstr);
 
 return(result);
 }
@@ -63,7 +63,7 @@ Tempstr=STREAMReadLine(Tempstr,MCS);
 }
 }
 
-DestroyString(Tempstr);
+Destroy(Tempstr);
 
 return(RetStr);
 }

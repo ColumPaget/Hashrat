@@ -20,9 +20,9 @@ HashratCtx *Ctx;
 
 Ctx=(HashratCtx *) p_Ctx;
 STREAMClose(Ctx->Out);
-DestroyString(Ctx->HashType);
-DestroyString(Ctx->ListPath);
-DestroyString(Ctx->HashStr);
+Destroy(Ctx->HashType);
+Destroy(Ctx->HashStr);
+Destroy(Ctx->Targets);
 HashDestroy(Ctx->Hash);
 free(Ctx);
 }
@@ -94,8 +94,8 @@ else
 
 STREAMWriteString(Line,Out);
 
-DestroyString(Tempstr);
-DestroyString(Line);
+Destroy(Tempstr);
+Destroy(Line);
 
 return(TRUE);
 }
@@ -123,7 +123,7 @@ char *Tempstr=NULL;
 	}
 
 	if (Ctx->Aux) HashratOutputInfo(Ctx, Ctx->Aux, Path, Stat, Hash);
-	DestroyString(Tempstr);
+	Destroy(Tempstr);
 }
 
 
@@ -137,7 +137,7 @@ STREAM *S;
 		//must quote twice to get through system comamnd
     QuotedPath=QuoteCharsInStr(QuotedPath, Path,"\"'`!|;<> 	");
     QuotedOther=QuoteCharsInStr(QuotedOther, Other,"\"'`!|;<> 	");
-		S=STREAMSpawnCommand("/bin/sh","","",0);
+		S=STREAMSpawnCommand("/bin/sh",0);
 		if (S)
 		{
     	Tempstr=MCopyStr(Tempstr, DiffHook," ",QuotedPath, " ", QuotedOther, ";exit\n",NULL);
@@ -153,8 +153,30 @@ STREAM *S;
 		}
   }
 
-DestroyString(Tempstr);
-DestroyString(QuotedPath);
-DestroyString(QuotedOther);
+Destroy(Tempstr);
+Destroy(QuotedPath);
+Destroy(QuotedOther);
 }
 
+
+char *ReformatHash(char *RetStr, const char *Str, int OutputLen, int SegmentSize, char SegmentChar)
+{
+int ipos=0, opos=0;
+
+if (OutputLen==0) OutputLen=StrLen(Str);
+
+for (ipos=0; ipos < OutputLen; ipos++)
+{
+	//don't increment pos, the loop does this one
+	RetStr=AddCharToBuffer(RetStr, opos++, Str[ipos]);
+	if (Str[ipos]=='\0') break;
+
+	if ((SegmentSize > 0) && (ipos > 0) && (OutputLen-ipos > 1) && (((ipos+1) % SegmentSize)==0)) 
+	{
+		RetStr=AddCharToBuffer(RetStr, opos++, SegmentChar);
+	}
+
+}
+
+return(RetStr);
+}

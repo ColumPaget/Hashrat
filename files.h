@@ -18,14 +18,14 @@
 
 
 int StatFile(HashratCtx *Ctx, const char *Path, struct stat *Stat);
+void GlobFiles(HashratCtx *Ctx, const char *Path, int FType, ListNode *Dirs);
 int HashSingleFile(char **RetStr, HashratCtx *Ctx, int Type,char *Path);
 void ProcessData(char **RetStr, HashratCtx *Ctx, const char *Data, int DataLen);
 int HashItem(HashratCtx *Ctx, const char *HashType, const char *Path, struct stat *FStat, char **HashStr);
-int ProcessItem(HashratCtx *Ctx, const char *Path, struct stat *Stat);
-int ProcessDir(HashratCtx *Ctx, const char *Dir, const char *HashType);
+int ProcessItem(HashratCtx *Ctx, const char *Path, struct stat *Stat, int IsTopLevel);
 
-void HashratFinishHash(char **RetStr, HashratCtx *Ctx, THash *Hash);
-int HashratHashFile(HashratCtx *Ctx, THash *Hash, int Type, const char *Path, off_t FileSize);
+void HashratFinishHash(char **RetStr, HashratCtx *Ctx, HASH *Hash);
+int HashratHashFile(HashratCtx *Ctx, HASH *Hash, int Type, const char *Path, struct stat *FStat);
 int HashratHashSingleFile(HashratCtx *Ctx, const char *HashType, int FileType, const char *Path, struct stat *FStat, char **RetStr);
 
 #endif

@@ -1,5 +1,6 @@
 #include "files.h"
 #include "ssh.h"
+#include "http.h"
 #include "memcached.h"
 #include "fingerprint.h"
 #include "xattr.h"
@@ -8,6 +9,9 @@
 #include <string.h>
 #include <fnmatch.h>
 
+//this is a map of all directories/collections visited, (webpages in the case of http). It's used to
+//prevent getting trapped in loops
+ListNode *Visited=NULL;
 
 dev_t StartingFS=0;
 
@@ -15,7 +19,7 @@ dev_t StartingFS=0;
 
 
 
-int FileType(const char *Path, int FTFlags, struct stat *Stat)
+static int FileType(const char *Path, int FTFlags, struct stat *Stat)
 {
 
 	if ((FTFlags & FLAG_NET))
@@ -45,7 +49,7 @@ int FileType(const char *Path, int FTFlags, struct stat *Stat)
 }
 
 
-int IsIncluded(HashratCtx *Ctx, const char *Path, struct stat *FStat)
+static int IsIncluded(HashratCtx *Ctx, const char *Path, struct stat *FStat)
 {
 ListNode *Curr;
 const char *mptr, *dptr;
@@ -112,32 +116,42 @@ int StatFile(HashratCtx *Ctx, const char *Path, struct stat *Stat)
 {
 int val;
 
+	memset(Stat, 0, sizeof(struct stat));
   //Pass NULL for stat, because we are only checking for 'net' type paths
-  val=FileType(Path,Flags, NULL);
+  val=FileType(Path, Flags, NULL);
   if ((val !=FT_FILE) && (val !=FT_DIR) && (val != FT_LNK))
   {
-    return(0);
+    return(val);
   }
 
   if (Ctx->Flags & CTX_DEREFERENCE) val=stat(Path,Stat);
   else val=lstat(Path,Stat);
 
+	if (val==0) return(FileType(Path,Flags, Stat));
   return(val);
 }
 
 
 
-
-int GlobFiles(HashratCtx *Ctx, const char *Path, int FType, ListNode *Dirs)
+void GlobFiles(HashratCtx *Ctx, const char *Path, int FType, ListNode *Dirs)
 {
 char *Tempstr=NULL;
 glob_t Glob;
-int i, count=0;
+int i;
 struct stat *Stat;
 
+ListClear(Dirs, Destroy);
 switch (FType)
 {
-	case FT_SSH: return(SSHGlob(Ctx, Path, Dirs)); break;
+	case FT_SSH:
+		 SSHGlob(Ctx, Path, Dirs);
+		 return; 
+	break;
+
+	case FT_HTTP:
+		HTTPGlob(Ctx, Path, Dirs);
+		return;
+	break;
 }
 
 Tempstr=MCopyStr(Tempstr,Path,"/*",NULL);
@@ -162,14 +176,11 @@ for (i=0; i < Glob.gl_pathc; i++)
 				free(Stat);
 			}
 		}
-		count++;
 	}
 }
 
-DestroyString(Tempstr);
+Destroy(Tempstr);
 globfree(&Glob);
-
-return(count);
 }
 
 
@@ -177,19 +188,27 @@ return(count);
 
 
 
-int HashratHashFile(HashratCtx *Ctx, THash *Hash, int Type, const char *Path, off_t FileSize)
+int HashratHashFile(HashratCtx *Ctx, HASH *Hash, int Type, const char *Path, struct stat *FStat)
 {
 STREAM *S;
 char *Tempstr=NULL, *User=NULL, *Pass=NULL;
+const char *ptr;
 int result, val, RetVal=FALSE;
-off_t bytes_read=0, oval;
+off_t bytes_read=0, size=0, oval;
 
+if (FStat) size=FStat->st_size;
 switch (Type)
 {
 	case FT_HTTP:
 		User=CopyStr(User,GetVar(Ctx->Vars,"HTTPUser"));
 		Pass=CopyStr(Pass,GetVar(Ctx->Vars,"HTTPPass"));
-		S=HTTPGet(Path,User,Pass); 
+		S=HTTPGet(Path); 
+		ptr=STREAMGetValue(S, "HTTP:ResponseCode");
+		if ((!ptr) || (*ptr !='2'))
+		{
+			STREAMClose(S);
+			S=NULL;
+		}
 	break;
 
 	case FT_SSH:
@@ -200,8 +219,8 @@ switch (Type)
 		if ((! StrValid(Path)) || (strcmp(Path,"-")==0)) S=STREAMFromFD(0);
 		else
 		{
-			if (Ctx->Flags & CTX_DEREFERENCE) S=STREAMOpenFile(Path,SF_RDONLY|SF_SYMLINK_OK);
-			else S=STREAMOpenFile(Path,SF_RDONLY);
+			if (Ctx->Flags & CTX_DEREFERENCE) S=STREAMOpen(Path,"rf");
+			else S=STREAMOpen(Path,"rf");
 		}
 	break;
 }
@@ -210,34 +229,35 @@ if (S)
 {
 Tempstr=SetStrLen(Tempstr,BUFSIZ);
 
-oval=FileSize;
+oval=size;
 if ((oval==0) || ( oval > BUFSIZ)) val=BUFSIZ;
 else val=(int)oval;
 result=STREAMReadBytes(S,Tempstr,val);
-while (result > 0)
+while (result > STREAM_CLOSED)
 {
 	Tempstr[result]='\0';
 
 	if (result > 0) Hash->Update(Hash ,Tempstr, result);
 	bytes_read+=result;
 
-	if (FileSize > 0)
+	if (size > 0)
 	{
-	if ((Type != FT_HTTP) && (bytes_read >= FileSize)) break;
-	oval=FileSize - bytes_read;
+	if ((Type != FT_HTTP) && (bytes_read >= size)) break;
+	oval=size - bytes_read;
 	if (oval > BUFSIZ) val=BUFSIZ;
 	else val=(int)oval;
 	}
 	result=STREAMReadBytes(S,Tempstr,val);
 }
 
+if (FStat && (FStat->st_size==0)) FStat->st_size=bytes_read;
 if (Type != FT_SSH) STREAMClose(S);
 RetVal=TRUE;
 }
 
-DestroyString(Tempstr);
-DestroyString(User);
-DestroyString(Pass);
+Destroy(Tempstr);
+Destroy(User);
+Destroy(Pass);
 
 //for now we close any connection after a 'get'
 //Ctx->NetCon=NULL;
@@ -247,7 +267,7 @@ return(RetVal);
 
 
 
-void HashratFinishHash(char **RetStr, HashratCtx *Ctx, THash *Hash)
+void HashratFinishHash(char **RetStr, HashratCtx *Ctx, HASH *Hash)
 {
 int val;
 const char *ptr;
@@ -266,10 +286,9 @@ const char *ptr;
 
 int HashratHashSingleFile(HashratCtx *Ctx, const char *HashType, int FileType, const char *Path, struct stat *FStat, char **RetStr)
 {
-THash *Hash;
+HASH *Hash;
 struct stat XattrStat;
 const char *ptr;
-off_t size=0;
 
 		*RetStr=CopyStr(*RetStr,"");
 
@@ -278,6 +297,7 @@ off_t size=0;
 		{
 			XAttrGetHash(Ctx, "user", Ctx->HashType, Path, &XattrStat, RetStr);
 			//only use the hash cached in the xattr address if it's younger than the mtime
+printf("cache %llu %llu %llu\n",XattrStat.st_mtime, FStat->st_mtime, XattrStat.st_mtime - FStat->st_mtime);
 			if ( ((XattrStat.st_mtime - FStat->st_mtime) < 10) ) *RetStr=CopyStr(*RetStr,"");	
 		}
 
@@ -292,8 +312,7 @@ off_t size=0;
 			ptr=GetVar(Ctx->Vars,"EncryptionKey");
 			if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
-			if (FStat) size=FStat->st_size;
-			if (! HashratHashFile(Ctx,Hash,FileType,Path, size)) return(FALSE);
+			if (! HashratHashFile(Ctx,Hash,FileType,Path, FStat)) return(FALSE);
 
 			HashratFinishHash(RetStr, Ctx, Hash);
 			}
@@ -309,7 +328,7 @@ off_t size=0;
 void ProcessData(char **RetStr, HashratCtx *Ctx, const char *Data, int DataLen)
 {
 const char *ptr;
-THash *Hash;
+HASH *Hash;
 
 		if (! Ctx->Hash) 
 		{
@@ -327,17 +346,36 @@ THash *Hash;
 }
 
 
-int ConsiderItem(HashratCtx *Ctx, const char *Path, struct stat *FStat)
+static int ConsiderItem(HashratCtx *Ctx, const char *Path, struct stat *FStat)
 {
 	int Type;
+	ListNode *Items, *Node;
 
 	Type=FileType(Path, Flags, FStat);
 	if (! IsIncluded(Ctx, Path, FStat)) return(CTX_EXCLUDE);
 
 	switch (Type)
 	{
+		case FT_HTTP:
+			Type=HTTPStat(Ctx, Path, FStat);
+			if ((Type==FT_DIR) && (Ctx->Flags & CTX_RECURSE)) return(CTX_HASH_AND_RECURSE);
+		break;
+
 		case FT_SSH:
-			if (SSHGlob(Ctx, Path, NULL) > 1) return(CTX_RECURSE);
+			Items=ListCreate();
+			Type=SSHGlob(Ctx, Path, Items);
+			//if remote path is a directory, then return without bothering to update
+			//any information about it from 'Items'
+			if (Type==FT_DIR)
+			{
+			 ListDestroy(Items, Destroy);
+			 return(CTX_RECURSE);
+			}
+
+			//if it's a file then update FStat with its information
+			Node=ListGetNext(Items);
+			if (Node) memcpy(FStat, Node->Item, sizeof(struct stat));
+			ListDestroy(Items, Destroy);
 		break;
 
 		case FT_DIR:
@@ -415,11 +453,11 @@ char *Tempstr=NULL;
 		if (! Ctx->Hash) 
 		{
 			if (! HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr)) return(FALSE);
-		} else if (! HashratHashFile(Ctx, Ctx->Hash,Type,Path, FStat->st_size)) return(FALSE);
+		} else if (! HashratHashFile(Ctx, Ctx->Hash,Type,Path, FStat)) return(FALSE);
 		break;
 	}
 
-DestroyString(Tempstr);
+Destroy(Tempstr);
 
 return(TRUE);
 }
@@ -439,7 +477,7 @@ switch (Ctx->Action)
 case ACT_HASHDIR:
 			Type=FileType(Path, Flags, Stat);
 			//we return TRUE if hash succeeded
-			if (HashratHashFile(Ctx, Ctx->Hash, Type, Path, Stat->st_size)) result=TRUE;
+			if (HashratHashFile(Ctx, Ctx->Hash, Type, Path, Stat)) result=TRUE;
 break;
 
 case ACT_HASH:
@@ -570,7 +608,7 @@ if (result==TRUE)
 }
 
 if (FP) TFingerprintDestroy(FP);	
-DestroyString(HashStr);
+Destroy(HashStr);
 
 return(result);
 }
@@ -578,9 +616,9 @@ return(result);
 
 //ProcessItem returns TRUE on a significant event, so any instance of TRUE
 //from items checked makes return value here TRUE
-int ProcessDir(HashratCtx *Ctx, const char *Dir, const char *HashType)
+static int ProcessDir(HashratCtx *Ctx, const char *Dir)
 {
-char *Tempstr=NULL, *HashStr=NULL;
+char *Tempstr=NULL;
 ListNode *FileList, *Curr;
 int result=FALSE;
 int Type;
@@ -593,14 +631,13 @@ int Type;
 		Curr=ListGetNext(FileList);
 		while (Curr)
 		{
-			if (ProcessItem(Ctx, Curr->Tag, (struct stat *) Curr->Item)) result=TRUE;
+			if (ProcessItem(Ctx, Curr->Tag, (struct stat *) Curr->Item, FALSE)) result=TRUE;
 			Curr=ListGetNext(Curr);
 		}
 
 		ListDestroy(FileList,free);
 
-DestroyString(Tempstr);
-DestroyString(HashStr);
+Destroy(Tempstr);
 
 return(result);
 }
@@ -608,7 +645,7 @@ return(result);
 
 //ProcessDir returns TRUE on a significant event, so any instance of TRUE
 //from items checked makes return value here TRUE
-int HashratRecurse(HashratCtx *Ctx, const char *Path, char **HashStr)
+static int HashratRecurse(HashratCtx *Ctx, const char *Path, char **HashStr)
 {
 const char *ptr;
 struct stat FStat;
@@ -620,13 +657,13 @@ int result=FALSE;
 				ptr=GetVar(Ctx->Vars,"EncryptionKey");
 				if (ptr) HMACSetKey(Ctx->Hash, ptr, StrLen(ptr));
 
-				if (! ProcessDir(Ctx, Path, Ctx->HashType)) result=FALSE;
+				if (! ProcessDir(Ctx, Path)) result=FALSE;
 				HashratFinishHash(HashStr, Ctx, Ctx->Hash);
 				stat(Path, &FStat);
 				HashratOutputInfo(Ctx, Ctx->Out, Path, &FStat, *HashStr);
 				result=TRUE;
 		}
-		else if (ProcessDir(Ctx, Path, Ctx->HashType)) result=TRUE;
+		else if (ProcessDir(Ctx, Path)) result=TRUE;
 
 	return(result);
 }
@@ -634,28 +671,43 @@ int result=FALSE;
 
 
 
-int ProcessItem(HashratCtx *Ctx, const char *Path, struct stat *Stat)
+int ProcessItem(HashratCtx *Ctx, const char *Path, struct stat *Stat, int IsTopLevel)
 {
 char *HashStr=NULL;
 int result=FALSE, Flags;
 
-				switch (ConsiderItem(Ctx, Path, Stat))
-				{
-					case CTX_EXCLUDE:
-					case CTX_ONE_FS:
-						result=IGNORE;
-					break;
+if (! Visited) Visited=MapCreate(1025, LIST_FLAG_CACHE);
+if (! ListFindNamedItem(Visited, Path))
+{
+	ListAddNamedItem(Visited, Path, NULL);
+	switch (ConsiderItem(Ctx, Path, Stat))
+	{
+		case CTX_EXCLUDE:
+		case CTX_ONE_FS:
+			result=IGNORE;
+		break;
 
-					case CTX_RECURSE:
-					result=HashratRecurse(Ctx, Path, &HashStr);
-					break;
+		case CTX_RECURSE:
+			result=HashratRecurse(Ctx, Path, &HashStr);
+		break;
 
-					default:
-					result=HashratAction(Ctx, Path, Stat);
-					break;
-				}
+		case CTX_HASH_AND_RECURSE:
+			result=HashratAction(Ctx, Path, Stat);
+			result=HashratRecurse(Ctx, Path, &HashStr);
+		break;
 
-DestroyString(HashStr);
+
+		default:
+			result=HashratAction(Ctx, Path, Stat);
+		break;
+	}
+}
+
+if (IsTopLevel) 
+{
+MapClear(Visited, NULL);	
+}
+Destroy(HashStr);
 
 return(result);
 }

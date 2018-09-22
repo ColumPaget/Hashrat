@@ -6,9 +6,9 @@ void HashratSignFile(char *Path, HashratCtx *Ctx)
 STREAM *S;
 char *Tempstr=NULL, *HashStr=NULL;
 double pos;
-THash *Hash;
+HASH *Hash;
 
-S=STREAMOpenFile(Path, SF_RDWR);
+S=STREAMOpen(Path, "rw");
 if (! S) return;
 
 
@@ -22,7 +22,7 @@ STREAMFlush(S);
 
 STREAMSeek(S,0,SEEK_SET);
 Hash=HashInit(Ctx->HashType);
-HashratHashFile(Ctx, Hash, FT_FILE, Path, (off_t) pos);
+//HashratHashFile(Ctx, Hash, FT_FILE, Path, (off_t) pos);
 HashratFinishHash(&HashStr, Ctx, Hash);
 
 
@@ -32,15 +32,16 @@ STREAMWriteLine(Tempstr,S);
 STREAMFlush(S);
 
 
-DestroyString(Tempstr);
-DestroyString(HashStr);
+Destroy(Tempstr);
+Destroy(HashStr);
 }
 
 
 
 int HashratOutputSigningCheck(HashratCtx *Ctx, const char *ExpectedHash, const char *SigningLine, int LineCount)
 {
-char *Token=NULL, *ptr;
+char *Token=NULL;
+const char *ptr;
 char *DateStr=NULL, *SignHash=NULL, *HashType=NULL;
 int result=FALSE;
 
@@ -73,10 +74,10 @@ int result=FALSE;
 			}
 		}
 
-	DestroyString(Token);
-	DestroyString(DateStr);
-	DestroyString(SignHash);
-	DestroyString(HashType);
+	Destroy(Token);
+	Destroy(DateStr);
+	Destroy(SignHash);
+	Destroy(HashType);
 
 return(result);
 }
@@ -87,10 +88,10 @@ int HashratCheckSignedFile(char *Path, HashratCtx *Ctx)
 {
 STREAM *S;
 char *Tempstr=NULL, *HashStr=NULL;
-THash *Hash, *tmpHash;
+HASH *Hash, *tmpHash;
 int LineCount=0;
 
-S=STREAMOpenFile(Path, SF_RDWR);
+S=STREAMOpen(Path, "rw");
 if (! S) return(FALSE);
 
 Hash=HashInit(Ctx->HashType);
@@ -113,8 +114,8 @@ while (Tempstr)
 	Tempstr=STREAMReadLine(Tempstr, S);
 }
 
-DestroyString(Tempstr);
-DestroyString(HashStr);
+Destroy(Tempstr);
+Destroy(HashStr);
 
 return(TRUE);
 }

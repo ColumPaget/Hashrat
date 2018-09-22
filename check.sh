@@ -176,11 +176,11 @@ if [ "$HR_OUT" = "5aa622e49b541f9a71409358d2e20feca1fa1f44  tests/quotes.txt" ]
 then
 	OkayMessage "File hashing works"
 else
-	FailMessage "File hashing BROKEN"
+	FailMessage "File hashing BROKEN [$HR_OUT]"
 fi
 
 HR_OUT=`./hashrat -dir -sha1 -trad tests`
-if [ "$HR_OUT" = "7511574f667e48df0811635b110a1774a804d40f  tests" ]
+if [ "$HR_OUT" = "0b858a85e778fe8b4ab386d185eb934978941e7b  tests" ]
 then
   OkayMessage "Directory hashing works"
 else
@@ -189,7 +189,7 @@ fi
 
 
 HR_OUT=`./hashrat -sha1 -trad -r tests | ./hashrat -sha1`
-if [ "$HR_OUT" = "258751f77f7d0c22d50ff1a26ccbd90e03390653" ]
+if [ "$HR_OUT" = "7d99e0589d5fd237b108d9642c90c49bb0e58ef8" ]
 then
 	OkayMessage "Recursive file hashing works"
 else
@@ -248,10 +248,10 @@ TestLocateHook "hash='md5:6933ee7eb504d29312b23a47d2dac374' mode='100644' uid='0
 
 Title "Testing exit codes for different operations"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "" "HashFile"
-TestExitCodes "tests" "libUseful-2.5" "-r -dups" "FindDuplicates"
+TestExitCodes "tests" "libUseful-3" "-r -dups" "FindDuplicates"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-cf" "CheckHash"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-m -r ." "Locate"
-TestExitCodes "tests" "libUseful-2.5" "-r -dups" "FindDuplicates"
+TestExitCodes "tests" "libUseful-3" "-r -dups" "FindDuplicates"
 
 echo
 echo

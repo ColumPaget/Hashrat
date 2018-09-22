@@ -12,15 +12,17 @@
 int HashFromListFile(HashratCtx *Ctx)
 {
 char *Tempstr=NULL, *HashStr=NULL;
+const char *ptr;
 STREAM *S;
 struct stat Stat;
 int result=FALSE;
 
+ptr=GetVar(Ctx->Vars, "ItemsListSource");
 if (
-			(StrLen(Ctx->ListPath)==0) || 
-			(strcmp(Ctx->ListPath,"-")==0) 
+			(! StrValid(ptr)) || 
+			(strcmp(ptr,"-")==0) 
 ) S=STREAMFromFD(0);
-else S=STREAMOpenFile(Ctx->ListPath,SF_RDONLY);
+else S=STREAMOpen(ptr,"r");
 
 //if we managed to open the list, return TRUE
 if (S) result=TRUE;
@@ -29,7 +31,7 @@ Tempstr=STREAMReadLine(Tempstr, S);
 while (Tempstr)
 {
 	StripTrailingWhitespace(Tempstr);
-	if (StatFile(Ctx,Tempstr,&Stat)==0) 
+	if (StatFile(Ctx,Tempstr,&Stat) != -1) 
 	{
 		if (HashItem(Ctx, Ctx->HashType, Tempstr, &Stat, &HashStr))
 		{
@@ -52,8 +54,8 @@ while (Tempstr)
 
 STREAMClose(S);
 
-DestroyString(Tempstr);
-DestroyString(HashStr);
+Destroy(Tempstr);
+Destroy(HashStr);
 
 return(result);
 }
@@ -73,8 +75,8 @@ char *Tempstr=NULL, *Base64=NULL;
 	STREAMWriteString(Tempstr,Ctx->Out);
 	}
 
-DestroyString(Tempstr);
-DestroyString(Base64);
+Destroy(Tempstr);
+Destroy(Base64);
 }
 
 
@@ -89,8 +91,8 @@ if (Flags & FLAG_LINEMODE)
 	In=STREAMFromFD(0);
 	STREAMSetTimeout(In,0);
 
-	if (Flags & FLAG_HIDE_INPUT) Tempstr=TTYReadSecret(Tempstr, In, 0);
-	else if (Flags & FLAG_STAR_INPUT) Tempstr=TTYReadSecret(Tempstr, In, TEXT_STARS);
+	if (Flags & FLAG_HIDE_INPUT) Tempstr=TerminalReadText(Tempstr, TERM_HIDETEXT, In);
+	else if (Flags & FLAG_STAR_INPUT) Tempstr=TerminalReadText(Tempstr, TERM_SHOWSTARS, In);
 	else Tempstr=STREAMReadLine(Tempstr,In);
 	while (Tempstr)
 	{
@@ -99,8 +101,8 @@ if (Flags & FLAG_LINEMODE)
 		ProcessData(&Hash, Ctx, Tempstr, StrLen(Tempstr));
 		HashStdInOutput(Ctx, Hash);
 
-		if (Flags & FLAG_HIDE_INPUT) Tempstr=TTYReadSecret(Tempstr, In, 0);
-		else if (Flags & FLAG_STAR_INPUT) Tempstr=TTYReadSecret(Tempstr, In, TEXT_STARS);
+		if (Flags & FLAG_HIDE_INPUT) Tempstr=TerminalReadText(Tempstr, TERM_HIDETEXT, In);
+		else if (Flags & FLAG_STAR_INPUT) Tempstr=TerminalReadText(Tempstr, TERM_SHOWSTARS, In);
 		else Tempstr=STREAMReadLine(Tempstr,In);
 	}
 }
@@ -109,40 +111,45 @@ else
 	HashratHashSingleFile(Ctx, Ctx->HashType, 0, "-", NULL, &Hash);
 	HashStdInOutput(Ctx, Hash);
 }
-STREAMDisassociateFromFD(In);
+STREAMDestroy(In);
 
-DestroyString(Tempstr);
-DestroyString(Hash);
+Destroy(Tempstr);
+Destroy(Hash);
 }
 
 
 
-int ProcessCommandLine(HashratCtx *Ctx, int argc, char *argv[])
+int ProcessTargetItems(HashratCtx *Ctx)
 {
 struct stat Stat;
-int i, result=IGNORE;
+int result=IGNORE, type;
+char *Item=NULL;
+const char *ptr;
 
-	for (i=1; i < argc; i++)
-	{
-	if (StrValid(argv[i]))
-	{
-			if (StatFile(Ctx, argv[i],&Stat)==0) result=ProcessItem(Ctx, argv[i], &Stat);
-			else 
-			{
-				if (result==IGNORE) result=0;
-				fprintf(stderr,"ERROR: File '%s' not found\n",argv[i]);
-			}
-	}
-	}
+ptr=GetToken(Ctx->Targets, ",", &Item, GETTOKEN_QUOTES);
+while(ptr)
+{
+		type=StatFile(Ctx, Item, &Stat);
+ 		if (type > -1) result=ProcessItem(Ctx, Item, &Stat, TRUE);
+		else
+		{
+			if (result==IGNORE) result=0;
+			fprintf(stderr,"ERROR: File '%s' not found\n", Item);
+		}
+	ptr=GetToken(ptr, ",", &Item, GETTOKEN_QUOTES);
+}
+
+DestroyString(Item);
 
 return(result);
 }
 
 
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-char *Tempstr=NULL, *ptr;
+char *Tempstr=NULL;
+const char *ptr;
 int i, result=FALSE;
 struct stat Stat;
 HashratCtx *Ctx;	
@@ -164,13 +171,13 @@ MemcachedConnect(GetVar(Ctx->Vars, "Memcached:Server"));
 switch (Ctx->Action)
 {
 	case ACT_HASH:
-		result=ProcessCommandLine(Ctx, argc, argv);
+		result=ProcessTargetItems(Ctx);
 		//if we didn't find anything on the command-line then read from stdin
 		if (result==IGNORE) HashStdIn(Ctx);
 	break;
 
 	case ACT_HASHDIR:
-		result=ProcessCommandLine(Ctx, argc, argv);
+		result=ProcessTargetItems(Ctx);
 	break;
 	
 	case ACT_CHECK_LIST:
@@ -188,7 +195,7 @@ switch (Ctx->Action)
 			printf("No hashes supplied on stdin.\n");
 			exit(1);
 		}
-		result=ProcessCommandLine(Ctx, argc, argv);
+		result=ProcessTargetItems(Ctx);
 		if (Ctx->Action==ACT_CHECK) OutputUnmatched(Ctx);
 	break;
 
@@ -201,15 +208,15 @@ switch (Ctx->Action)
 
 	case ACT_FINDMATCHES_MEMCACHED:
 	case ACT_FINDDUPLICATES:
-		result=ProcessCommandLine(Ctx, argc, argv);
+		result=ProcessTargetItems(Ctx);
 	break;
 
 	case ACT_CHECK_XATTR:
-		result=ProcessCommandLine(Ctx, argc, argv);
+		result=ProcessTargetItems(Ctx);
 	break;
 
 	case ACT_CHECK_MEMCACHED:
-		result=ProcessCommandLine(Ctx, argc, argv);
+		result=ProcessTargetItems(Ctx);
 	break;
 
 	case ACT_CGI:
@@ -226,7 +233,7 @@ switch (Ctx->Action)
 		{
 		if (StrValid(argv[i]))
 		{
-				if (StatFile(Ctx, argv[i],&Stat)==0)
+				if (StatFile(Ctx, argv[i],&Stat) != -1)
 				{
 					if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
 					else HashratSignFile(argv[i],Ctx);
@@ -242,7 +249,7 @@ switch (Ctx->Action)
 		{
 		if (StrValid(argv[i]))
 		{
-				if (StatFile(Ctx, argv[i],&Stat)==0)
+				if (StatFile(Ctx, argv[i],&Stat) != -1)
 				{
 					if (S_ISLNK(Stat.st_mode)) fprintf(stderr,"WARN: Not following symbolic link %s\n",argv[i]);
 					else HashratCheckSignedFile(argv[i], Ctx);
@@ -282,7 +289,7 @@ switch (Ctx->Action)
 }
 }
 
-DestroyString(Tempstr);
+Destroy(Tempstr);
 
 exit(1);
 }

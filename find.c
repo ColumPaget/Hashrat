@@ -2,6 +2,7 @@
 #include "files.h"
 #include "memcached.h"
 #include "fingerprint.h"
+#include "check-hash.h"
 #include <search.h>
 
 
@@ -193,7 +194,8 @@ twalk (Tree, OutputUnmatchedItem);
 
 int LoadFromIOC(const char *XML, int Flags)
 {
-char *TagType=NULL, *TagData=NULL, *ptr;
+char *TagType=NULL, *TagData=NULL;
+const char *ptr;
 char *ID=NULL;
 int count=0;
 TFingerprint *FP;
@@ -214,9 +216,9 @@ while (ptr)
 	ptr=XMLGetTag(ptr,NULL,&TagType,&TagData);
 }
 
-DestroyString(ID);
-DestroyString(TagType);
-DestroyString(TagData);
+Destroy(ID);
+Destroy(TagType);
+Destroy(TagData);
 
 return(count);
 }
@@ -261,9 +263,9 @@ else
 
 if (Flags & FLAG_MEMCACHED) printf("Stored %d hashes in memcached server\n", count);
 
-DestroyString(Tempstr);
-DestroyString(Line);
-DestroyString(Type);
+Destroy(Tempstr);
+Destroy(Line);
+Destroy(Type);
 
 return(Tree);
 }
