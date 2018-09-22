@@ -1,30 +1,31 @@
 AUTHOR
 ======
-	Hashrat and libUseful are (C) 2014 Colum Paget. They are released under the Gnu Public License so you may do anything with them that the GPL allows.
+Hashrat and libUseful are (C) 2014 Colum Paget. They are released under the Gnu Public License so you may do anything with them that the GPL allows.
 
 Email: colums.projects@gmail.com
 
 DISCLAIMER
 ==========
-  This is free software. It comes with no guarentees and I take no responsiblity if it makes your computer explode or opens a portal to the demon dimensions, or does anything at all, or doesn't.
+This is free software. It comes with no guarentees and I take no responsiblity if it makes your computer explode or opens a portal to the demon dimensions, or does anything at all, or doesn't.
 
 
 SYNOPSIS
 ========
-	Hashrat is a hash-generation utility that supports the md5, sha1, sha256, sha512, whirlpool, jh-244, jh256, jh-384 and jh-512 hash functions, and also the HMAC versions of those functions. It can output in 'traditional' format (same as md5sum and shasum and the like), or it's own format. Hashes can be output in octal, decimal, hexadecimal, uppercase hexadecimal or base64. It supports directory recursion, hashing entire devices, and generating a hash for an entire directory. It has a 'CGI' mode that can be used as a web-page to lookup hashes. 
+Hashrat is a hash-generation utility that supports the md5, sha1, sha256, sha512, whirlpool, jh-244, jh256, jh-384 and jh-512 hash functions, and also the HMAC versions of those functions. It can output in 'traditional' format (same as md5sum and shasum and the like), or it's own format. Hashes can be output in octal, decimal, hexadecimal, uppercase hexadecimal or base64. It supports directory recursion, hashing entire devices, and generating a hash for an entire directory. It has a 'CGI' mode that can be used as a web-page to lookup hashes. 
 
 
 CREDITS 
 =======
-	Thanks for bug reports/advice to: Stephan Hegel, Michael Shigorin <mike@altlinux.org> and Joao Eriberto Mota Filho <eriberto@debian.org>
-	Thanks to the people who invented the hash functions!
-	MD5: Ronald Rivest
-	Whirlpool: Vincent Rijmen, Paulo S. L. M. Barreto
-	JH: Hongjun Wu
-	SHA: The NSA (thanks, but please stop reading my email. It's kinda creepy.).
+Thanks for bug reports/advice to: Stephan Hegel, Michael Shigorin <mike@altlinux.org> and Joao Eriberto Mota Filho <eriberto@debian.org>
 
-	Special thanks to Professor Hongjun Wu for taking the time to confirm that his JH algorithm is free for use in GPL programs.
-	Special, special thanks to Joao Eriberto Mota Filho for doing a LOT of work to make hashrat debian ready!
+Thanks to the people who invented the hash functions!
+* MD5: Ronald Rivest
+* Whirlpool: Vincent Rijmen, Paulo S. L. M. Barreto
+* JH: Hongjun Wu
+* SHA: The NSA (thanks, but please stop reading my email. It's kinda creepy.).
+
+Special thanks to Professor Hongjun Wu for taking the time to confirm that his JH algorithm is free for use in GPL programs.
+Special, special thanks to Joao Eriberto Mota Filho for doing a LOT of work to make hashrat debian ready!
 
 USAGE
 =====
