@@ -114,7 +114,7 @@ sha1.o: sha1.c sha1.h
 	$(CC) $(FLAGS) -c sha1.c
 
 sha2.o: sha2.c sha2.h
-	$(CC) $(FLAGS) -c sha2.c
+	$(CC) $(FLAGS)  -DSHA2_UNROLL_TRANSFORM -c sha2.c
 
 whirlpool.o: whirlpool.c whirlpool.h
 	$(CC) $(FLAGS) -c whirlpool.c

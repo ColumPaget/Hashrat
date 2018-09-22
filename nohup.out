@@ -1,6 +1,0 @@
-WARNING: Image format was not specified for '/home/virtual-machines/dev.img' and probing guessed raw.
-         Automatically detecting the format is dangerous for raw images, write operations on block 0 will be restricted.
-         Specify the 'raw' format explicitly to remove the restrictions.
-VNC server running on '127.0.0.1:5901'
-qemu-system-x86_64: terminating on signal 15 from pid 31742
-qemu-system-x86_64: network script /etc/qemu-ifdown failed with status 256
