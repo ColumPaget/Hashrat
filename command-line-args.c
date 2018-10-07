@@ -1,54 +1,9 @@
 #include "command-line-args.h"
+#include "include-exclude.h"
 #include "xattr.h"
 
 CMDLINE CmdLine;
 
-void AddIncludeExclude(HashratCtx *Ctx, int Type, const char *Item)
-{
-ListNode *Node;
-char *Token=NULL;
-const char *ptr;
-
-//if we get given an include with no previous excludes, then 
-//set CTX_EXCLUDE as the default
-if (! IncludeExclude)
-{
-  IncludeExclude=ListCreate();
-  if (Type==CTX_INCLUDE) Ctx->Flags |= CTX_EXCLUDE;
-}
-
-ptr=GetToken(Item, ",",&Token, GETTOKEN_QUOTES);
-while (ptr)
-{
-	Node=ListAddItem(IncludeExclude, CopyStr(NULL, Token));
-	Node->ItemType=Type;
-	ptr=GetToken(ptr, ",",&Token, GETTOKEN_QUOTES);
-}
-
-Destroy(Token);
-}
-
-
-void CommandLineLoadExcludesFromFile(HashratCtx *Ctx)
-{
-STREAM *S;
-char *Tempstr=NULL;
-
-S=STREAMOpen(CommandLineNext(&CmdLine), "r");
-if (S)
-{
-	Tempstr=STREAMReadLine(Tempstr, S);
-	while (Tempstr)
-	{
-	StripTrailingWhitespace(Tempstr);
-	AddIncludeExclude(Ctx, CTX_EXCLUDE, Tempstr);
-	Tempstr=STREAMReadLine(Tempstr, S);
-	}
-	STREAMClose(S);
-}
-
-DestroyString(Tempstr);
-}
 
 
 void HMACSetup(HashratCtx *Ctx)
@@ -113,8 +68,21 @@ void CommandLineSetCtx(HashratCtx *Ctx, int Flag, int Encoding)
 {
 if (Encoding > 0) Ctx->Encoding=Encoding;
 
-if ((Flag==CTX_INCLUDE) || (Flag==CTX_EXCLUDE)) AddIncludeExclude(Ctx, Flag, CommandLineNext(&CmdLine));
-else Ctx->Flags |= Flag;
+switch (Flag)
+{
+case CTX_INCLUDE:
+case CTX_EXCLUDE:
+case CTX_MTIME:
+case CTX_MMIN:
+case CTX_MYEAR:
+ 	IncludeExcludeAdd(Ctx, Flag, CommandLineNext(&CmdLine));
+break;
+
+default:
+	Ctx->Flags |= Flag;
+break;
+}
+
 }
 
 
@@ -293,8 +261,12 @@ else if (strcmp(arg,"-hmac")==0) CommandLineHandleArg(FLAG_NEXTARG | FLAG_HMAC, 
 else if (strcmp(arg,"-idfile")==0) CommandLineHandleArg(FLAG_NEXTARG,  "SshIdFile", "",Ctx->Vars);
 else if (strcmp(arg,"-f")==0) CommandLineHandleArg(FLAG_NEXTARG, "ItemsListSource", "",Ctx->Vars);
 else if (strcmp(arg,"-i")==0) CommandLineSetCtx(Ctx, CTX_INCLUDE,0);
+else if (strcmp(arg,"-name")==0) CommandLineSetCtx(Ctx, CTX_INCLUDE,0);
+else if (strcmp(arg,"-mtime")==0) CommandLineSetCtx(Ctx, CTX_MTIME,0);
+else if (strcmp(arg,"-mmin")==0) CommandLineSetCtx(Ctx, CTX_MMIN,0);
+else if (strcmp(arg,"-myear")==0) CommandLineSetCtx(Ctx, CTX_MYEAR,0);
 else if (strcmp(arg,"-x")==0) CommandLineSetCtx(Ctx, CTX_EXCLUDE,0);
-else if (strcmp(arg,"-X")==0) CommandLineLoadExcludesFromFile(Ctx);
+else if (strcmp(arg,"-X")==0) IncludeExcludeLoadExcludesFromFile(Ctx, CommandLineNext(&CmdLine));
 else if (strcmp(arg,"-devmode")==0) CommandLineHandleArg(FLAG_DEVMODE, "", "",Ctx->Vars);
 else if (strcmp(arg,"-lines")==0) CommandLineHandleArg(FLAG_LINEMODE, "", "",Ctx->Vars);
 else if (strcmp(arg,"-rawlines")==0) CommandLineHandleArg(FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
@@ -463,6 +435,12 @@ printf("  %-15s %s\n","-f <listfile>", "Hash files listed in <listfile>");
 printf("  %-15s %s\n","-i <patterns>", "Only hash items matching a comma-seperated list of shell patterns");
 printf("  %-15s %s\n","-x <patterns>", "Exclude items matching a comma-sepearted list of shell patterns");
 printf("  %-15s %s\n","-X <file>", "Exclude items matching shell patters stored in <file>");
+printf("  %-15s %s\n","-name  <patterns>", "Only hash items matching a comma-seperated list of shell patterns (-name aka 'find')");
+printf("  %-15s %s\n","-mtime <days>", "Only hash items <days> old. Has the same format as the find command, e.g. -10 is younger than ten days, +10 is older than ten, and 10 is ten days old");
+printf("  %-15s %s\n","-mmin  <mins>", "Only hash items <min> minutes old. Has the same format as the find command, e.g. -10 is younger than ten mins, +10 is older than ten, and 10 is ten mins old");
+printf("  %-15s %s\n","-myear <years>", "Only hash items <years> old. Has the same format as the find command, e.g. -10 is younger than ten years, +10 is older than ten, and 10 is ten years old");
+printf("  %-15s %s\n","-exec", "In CHECK or MATCH mode only examine executable files.");
+printf("  %-15s %s\n","-dups", "Search for duplicate files.");
 printf("  %-15s %s\n","-n <length>", "Truncate hashes to <length> bytes");
 printf("  %-15s %s\n","-c", "CHECK hashes against list from file (or stdin)");
 printf("  %-15s %s\n","-cf", "CHECK hashes against list but only show failures");
@@ -470,8 +448,6 @@ printf("  %-15s %s\n","-C <dir>", "Recursively CHECK directory against list of f
 printf("  %-15s %s\n","-Cf <dir>", "Recursively CHECK directory against list but only show failures");
 printf("  %-15s %s\n","-m", "MATCH files from a list read from stdin.");
 printf("  %-15s %s\n","-lm", "Read hashes from stdin, upload them to a memcached server (requires the -memcached option).");
-printf("  %-15s %s\n","-exec", "In CHECK or MATCH mode only examine executable files.");
-printf("  %-15s %s\n","-dups", "Search for duplicate files.");
 printf("  %-15s %s\n","-memcached <server>", "Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).");
 printf("  %-15s %s\n","-mcd <server>", "Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).");
 printf("  %-15s %s\n","-h <script>", "Script to run when a file fails CHECK mode, or is found in MATCH mode.");

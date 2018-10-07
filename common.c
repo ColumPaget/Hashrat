@@ -8,6 +8,7 @@ char *Key=NULL;
 char *LocalHost=NULL;
 ListNode *IncludeExclude=NULL;
 int MatchCount=0, DiffCount=0;
+time_t Now;
 
 const char *HashratHashTypes[]={"md5","sha1","sha256","sha512","whirl","whirlpool","jh-224","jh-256","jh-384","jh-512",NULL};
 

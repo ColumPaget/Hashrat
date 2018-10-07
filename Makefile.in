@@ -7,7 +7,7 @@ INSTALL=@INSTALL@
 prefix=@prefix@
 bindir=$(prefix)@bindir@
 FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) @DEFS@
-OBJ=common.o command-line-args.o ssh.o http.o fingerprint.o files.o filesigning.o xattr.o cgi.o check-hash.o find.o memcached.o
+OBJ=common.o command-line-args.o ssh.o http.o fingerprint.o include-exclude.o files.o filesigning.o xattr.o cgi.o check-hash.o find.o memcached.o
 EXE=hashrat
 
 all: hashrat
@@ -23,6 +23,9 @@ common.o: common.h common.c
 
 fingerprint.o: fingerprint.h fingerprint.c
 	$(CC) $(FLAGS) -c fingerprint.c
+
+include-exclude.o: include-exclude.h include-exclude.c
+	$(CC) $(FLAGS) -c include-exclude.c
 
 files.o: files.h files.c
 	$(CC) $(FLAGS) -c files.c

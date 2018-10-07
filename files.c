@@ -5,6 +5,7 @@
 #include "fingerprint.h"
 #include "xattr.h"
 #include "check-hash.h"
+#include "include-exclude.h"
 #include "find.h"
 #include <string.h>
 #include <fnmatch.h>
@@ -12,10 +13,6 @@
 //this is a map of all directories/collections visited, (webpages in the case of http). It's used to
 //prevent getting trapped in loops
 ListNode *Visited=NULL;
-
-dev_t StartingFS=0;
-
-
 
 
 
@@ -46,67 +43,6 @@ static int FileType(const char *Path, int FTFlags, struct stat *Stat)
 	if (S_ISLNK(Stat->st_mode))  return(FT_LNK);
 
 	return(FT_FILE);
-}
-
-
-static int IsIncluded(HashratCtx *Ctx, const char *Path, struct stat *FStat)
-{
-ListNode *Curr;
-const char *mptr, *dptr;
-int result=TRUE;
-
-if (Ctx->Flags & CTX_EXCLUDE) result=FALSE;
-if (FStat && S_ISDIR(FStat->st_mode)) result=TRUE;
-
-Curr=ListGetNext(IncludeExclude);
-while (Curr)
-{
-	mptr=(char *) Curr->Item;
-	dptr=Path;
-
-	//if match pattern doesn't start with '/' then we want to strip that off the current path
-	//so that we can match against it. However if the match pattern contains no '/' at all, then
-	//it's a file name rather than a path, in which case we should use basename on both it and 
-	//the current path
-	if (*mptr != '/') 
-	{
-		if (strchr(mptr,'/'))
-		{
-			if (*dptr=='/') dptr++;
-		}
-		else
-		{
-		mptr=GetBasename(mptr);
-		dptr=GetBasename(Path);
-		}
-	}
-	
-	switch (Curr->ItemType)
-	{
-	case CTX_INCLUDE:
-	if (fnmatch(mptr,dptr,0)==0) result=TRUE;
-	break;
-
-	case CTX_EXCLUDE:
-	if (fnmatch(mptr,dptr,0)==0) result=FALSE;
-	break;
-
-/*
-	case INEX_INCLUDE_DIR:
-	if (strncmp(mptr,dptr,StrLen(mptr))==0) result=TRUE;
-	break;
-
-	case INEX_EXCLUDE_DIR:
-	if (strncmp(mptr,dptr,StrLen(mptr))==0) result=FALSE;
-	printf("FNMD: [%s] [%s] %d\n",mptr,dptr,result);
-	break;
-*/
-	}
-
-	Curr=ListGetNext(Curr);
-}
-
-return(result);
 }
 
 
@@ -348,11 +284,12 @@ HASH *Hash;
 
 static int ConsiderItem(HashratCtx *Ctx, const char *Path, struct stat *FStat)
 {
-	int Type;
+	int Type, result;
 	ListNode *Items, *Node;
 
 	Type=FileType(Path, Flags, FStat);
-	if (! IsIncluded(Ctx, Path, FStat)) return(CTX_EXCLUDE);
+	result=IncludeExcludeCheck(Ctx, Path, FStat);
+	if (result != CTX_INCLUDE) return(result);
 
 	switch (Type)
 	{
@@ -381,16 +318,6 @@ static int ConsiderItem(HashratCtx *Ctx, const char *Path, struct stat *FStat)
 		case FT_DIR:
 		if (Ctx->Flags & CTX_RECURSE) return(CTX_RECURSE);
 		break;
-	}
-
-	if (FStat)
-	{
-	if (Ctx->Flags & CTX_ONE_FS)
-	{
-		if (StartingFS==0) StartingFS=FStat->st_dev;
-		else if (FStat->st_dev != StartingFS) return(CTX_ONE_FS);
-	}
-	if ((Ctx->Flags & CTX_EXES) && (! (FStat->st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)))) return(CTX_EXCLUDE);
 	}
 
 	return(0);
@@ -438,6 +365,14 @@ char *Tempstr=NULL;
 		case FT_LNK:
 		if (Ctx->Flags & CTX_DEREFERENCE)
 		{
+			if (! Ctx->Hash) 
+			{
+				if (! HashratHashSingleFile(Ctx, HashType, Type, Path, FStat, HashStr)) return(FALSE);
+			} else if (! HashratHashFile(Ctx, Ctx->Hash,Type,Path, FStat)) return(FALSE);
+		}
+		else
+		{
+		 	fprintf(stderr,"WARN: Not following symbolic link %s\n",Path);
 			Tempstr=SetStrLen(Tempstr,PATH_MAX);
 			val=readlink(Path, Tempstr,PATH_MAX);
 			if (val > 0)
@@ -446,7 +381,6 @@ char *Tempstr=NULL;
 				ProcessData(HashStr, Ctx, Tempstr, val);
 			}
 		}
-		else fprintf(stderr,"WARN: Not following symbolic link %s\n",Path);
 		break;
 
 		default:

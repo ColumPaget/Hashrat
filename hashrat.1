@@ -143,8 +143,34 @@ Only \fIhash\fP items matching a comma-seperated list of shell patterns. Please 
 .B
 \fB-x\fP <pattern>
 Exclude items matching a comma-seperated list of shell patterns. Works on both directories and files.
+.TP
+.B
 \fB-X\fP <path>
 Exclude items listed in file <path>. Items in the file can be wildcards.
+.TP
+.B
+\fB -name\fP  <pattern> 
+Only hash items matching a comma-seperated list of shell patterns (-name as in the 'find' command).
+.TP
+.B
+\fB -mtime\fP  <days> 
+Only hash items <days> old. Has the same format as the find command, e.g. -10 is younger than ten days, +10 is older than ten, and 10 is ten days old.
+.TP
+.B
+\fB -mmin\fP  <mins> 
+Only hash items <min> minutes old. Has the same format as the find command, e.g. -10 is younger than ten mins, +10 is older than ten, and 10 is ten mins old.
+.TP
+.B
+\fB -myear\fP  <years> 
+Only hash items <years> old. Has the same format as the find command, e.g. -10 is younger than ten years, +10 is older than ten, and 10 is ten years old.
+.TP
+.B
+\fB-exec\fP
+In CHECK or MATCH mode only examine executable files.
+.TP
+.B
+\fB-dups\fP
+Search for duplicate files.
 .TP
 .B
 \fB-n\fP <length>
@@ -173,14 +199,6 @@ MATCH files from a list read from stdin.
 .B
 \fB-lm\fP
 Read \fIhashes\fP from stdin, upload them to a memcached server (requires the \fB-memcached\fP option).
-.TP
-.B
-\fB-exec\fP
-In CHECK or MATCH mode only examine executable files.
-.TP
-.B
-\fB-dups\fP
-Search for duplicate files.
 .TP
 .B
 \fB-memcached\fP <server>, \fB-mcd\fP <server>

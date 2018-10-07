@@ -2,12 +2,12 @@
 CC = gcc
 VERSION = 
 CFLAGS = -g -O2
-LIBS = -lcrypto -lssl  libUseful-3/libUseful.a
+LIBS =  libUseful-3/libUseful.a
 INSTALL=/bin/install -c
 prefix=/usr/local
 bindir=$(prefix)${exec_prefix}/bin
-FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -D_FILE_OFFSET_BITS=64 -DHAVE_LIBSSL=1 -DHAVE_LIBCRYPTO=1
-OBJ=common.o command-line-args.o ssh.o http.o fingerprint.o files.o filesigning.o xattr.o cgi.o check-hash.o find.o memcached.o
+FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -D_FILE_OFFSET_BITS=64
+OBJ=common.o command-line-args.o ssh.o http.o fingerprint.o include-exclude.o files.o filesigning.o xattr.o cgi.o check-hash.o find.o memcached.o
 EXE=hashrat
 
 all: hashrat
@@ -23,6 +23,9 @@ common.o: common.h common.c
 
 fingerprint.o: fingerprint.h fingerprint.c
 	$(CC) $(FLAGS) -c fingerprint.c
+
+include-exclude.o: include-exclude.h include-exclude.c
+	$(CC) $(FLAGS) -c include-exclude.c
 
 files.o: files.h files.c
 	$(CC) $(FLAGS) -c files.c

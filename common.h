@@ -56,21 +56,27 @@
 #define CGI_HIDETEXT  FLAG_BSD_OUTPUT
 #define CGI_SHOWTEXT  FLAG_XSELECT
 
-#define CTX_RECURSE  2
-#define CTX_HASH_AND_RECURSE  4
-#define CTX_CACHED   8
-#define CTX_ONE_FS  16
-#define CTX_DEREFERENCE 32
-#define CTX_XATTR 64
-#define CTX_MEMCACHED 128
-#define CTX_STORE_XATTR 256
-#define CTX_STORE_MEMCACHED 512
-#define CTX_STORE_FILE 1024
-#define CTX_XATTR_ROOT 2048
-#define CTX_XATTR_CACHE 4096
-#define CTX_EXES 8192
-#define CTX_INCLUDE 16384
-#define CTX_EXCLUDE 32768
+//the first few of these must be low because they will go in a 16-bit value in
+//the 'include/exclude' list
+#define CTX_INCLUDE 2
+#define CTX_EXCLUDE 4
+#define CTX_MTIME   8
+#define CTX_MMIN    16
+#define CTX_MYEAR    32
+#define CTX_RECURSE  128
+#define CTX_HASH_AND_RECURSE  256
+#define CTX_DEREFERENCE 512
+#define CTX_XATTR 1024
+#define CTX_MEMCACHED 2048
+#define CTX_STORE_XATTR 4096
+#define CTX_STORE_MEMCACHED 8192
+#define CTX_STORE_FILE  16384
+#define CTX_XATTR_ROOT  32768
+#define CTX_XATTR_CACHE 65536
+#define CTX_EXES  131072          
+#define CTX_CACHED 262144
+#define CTX_ONE_FS 524288
+
 
 #define RESULT_PASS 1
 #define RESULT_FAIL 2
@@ -79,13 +85,15 @@
 #define FLAG_RESULT_MASK 15
 #define RESULT_RUNHOOK 8192
 
+
+
 #define FP_HASSTAT 1
 
 #define BLOCKSIZE 4096
 
 #define IGNORE -1
 
-#define VERSION "1.9"
+#define VERSION "1.10"
 
 
 typedef struct
@@ -111,7 +119,8 @@ char *HashStr;
 char *Targets;
 int Action;
 int Flags;
-int Encoding;
+int Encoding;  
+dev_t StartingFS;
 ListNode *Vars;
 } HashratCtx;
 
@@ -123,6 +132,7 @@ extern char *LocalHost;
 extern const char *HashratHashTypes[];
 extern ListNode *IncludeExclude;
 extern int MatchCount, DiffCount;
+extern time_t Now;
 
 TFingerprint *TFingerprintCreate(const char *Hash, const char *HashType, const char *Data, const char *Path);
 void HashratCtxDestroy(void *p_Ctx);

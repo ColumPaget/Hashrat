@@ -154,6 +154,7 @@ int i, result=FALSE;
 struct stat Stat;
 HashratCtx *Ctx;	
 
+time(&Now);
 Tempstr=SetStrLen(Tempstr, HOST_NAME_MAX);
 gethostname(Tempstr, HOST_NAME_MAX);
 LocalHost=CopyStr(LocalHost, Tempstr);
