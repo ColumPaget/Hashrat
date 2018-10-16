@@ -102,7 +102,7 @@ if (strncmp(Data,"hash=",5) ==0)
 	{
 		if (StrLen(Name))
 		{
-		if (strcmp(Name,"path")==0) FP->Path=CopyStr(FP->Path,Value);
+		if (strcmp(Name,"path")==0) FP->Path=UnQuoteStr(FP->Path,Value);
 		if (strcmp(Name,"size")==0) 
 		{
 			FP->Flags |= FP_HASSTAT;
