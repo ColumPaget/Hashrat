@@ -77,3 +77,6 @@ install: hashrat
 	cp -f $(EXE) $(DESTDIR)$(prefix)/bin
 	-mkdir -p $(DESTDIR)$(prefix)/share/man/man1
 	cp -f hashrat.1 $(DESTDIR)$(prefix)/share/man/man1
+
+test:
+	echo "no tests"
