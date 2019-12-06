@@ -15,8 +15,8 @@ all: hashrat
 hashrat: $(OBJ) main.c @STATIC_LIBS@
 	$(CC) $(FLAGS) -o$(EXE) $(OBJ) main.c $(LIBS) 
 
-libUseful-3/libUseful.a:
-	@cd libUseful-3; $(MAKE)
+libUseful-4/libUseful.a:
+	@cd libUseful-4; $(MAKE)
 
 common.o: common.h common.c
 	$(CC) $(FLAGS) -c common.c

@@ -2,7 +2,7 @@
 CC = gcc
 VERSION = 
 CFLAGS = -g -O2
-LIBS =  libUseful-3/libUseful.a
+LIBS =  libUseful-4/libUseful.a
 INSTALL=/bin/install -c
 prefix=/usr/local
 bindir=$(prefix)${exec_prefix}/bin
@@ -12,11 +12,11 @@ EXE=hashrat
 
 all: hashrat
 
-hashrat: $(OBJ) main.c libUseful-3/libUseful.a
+hashrat: $(OBJ) main.c libUseful-4/libUseful.a
 	$(CC) $(FLAGS) -o$(EXE) $(OBJ) main.c $(LIBS) 
 
-libUseful-3/libUseful.a:
-	@cd libUseful-3; $(MAKE)
+libUseful-4/libUseful.a:
+	@cd libUseful-4; $(MAKE)
 
 common.o: common.h common.c
 	$(CC) $(FLAGS) -c common.c
@@ -77,3 +77,6 @@ install: hashrat
 	cp -f $(EXE) $(DESTDIR)$(prefix)/bin
 	-mkdir -p $(DESTDIR)$(prefix)/share/man/man1
 	cp -f hashrat.1 $(DESTDIR)$(prefix)/share/man/man1
+
+test:
+	echo "no tests"

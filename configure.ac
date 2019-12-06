@@ -24,7 +24,12 @@ then
 AC_DEFINE([USE_EXTATTR], [1])
 elif test "$cf_extended_attribs" = "xattr"
 then
-AC_DEFINE([USE_XATTR], [1])
+	AC_CHECK_LIB(c,getxattr,,)
+	cf_have_getxattr=$ac_cv_lib_c_getxattr
+	if test "$cf_have_getxattr" = "yes"
+	then
+		AC_DEFINE([USE_XATTR], [1])
+	fi
 fi
 
 
@@ -44,9 +49,9 @@ AC_CHECK_LIB(Useful,GetToken)
 LUSEFUL="system"
 else
 LUSEFUL="bundled"
-STATIC_LIBS="libUseful-3/libUseful.a"
+STATIC_LIBS="libUseful-4/libUseful.a"
 AC_SUBST(STATIC_LIBS)
-AC_CONFIG_SUBDIRS([libUseful-3])
+AC_CONFIG_SUBDIRS([libUseful-4])
 fi
 
 AC_ARG_ENABLE(ssl, [  --enable-ssl       use Secure Sockets Layer], cf_use_ssl=$enableval )
