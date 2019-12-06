@@ -133,6 +133,7 @@ extern const char *HashratHashTypes[];
 extern ListNode *IncludeExclude;
 extern int MatchCount, DiffCount;
 extern time_t Now;
+extern uint64_t HashStartTime;
 
 TFingerprint *TFingerprintCreate(const char *Hash, const char *HashType, const char *Data, const char *Path);
 void HashratCtxDestroy(void *p_Ctx);

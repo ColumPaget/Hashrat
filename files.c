@@ -415,6 +415,7 @@ case ACT_HASHDIR:
 break;
 
 case ACT_HASH:
+	HashStartTime=GetTime(TIME_MILLISECS);
 	if (HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr))
 	{
 	HashratOutputInfo(Ctx, Ctx->Out, Path, Stat, HashStr);
@@ -586,7 +587,8 @@ struct stat FStat;
 int result=FALSE;
 
 		if ((Ctx->Action == ACT_HASHDIR) && (! Ctx->Hash)) 
-		{
+		{ 
+				HashStartTime=GetTime(TIME_MILLISECS);
 				Ctx->Hash=HashInit(Ctx->HashType);
 				ptr=GetVar(Ctx->Vars,"EncryptionKey");
 				if (ptr) HMACSetKey(Ctx->Hash, ptr, StrLen(ptr));

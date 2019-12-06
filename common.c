@@ -9,6 +9,7 @@ char *LocalHost=NULL;
 ListNode *IncludeExclude=NULL;
 int MatchCount=0, DiffCount=0;
 time_t Now;
+uint64_t HashStartTime;
 
 const char *HashratHashTypes[]={"md5","sha1","sha256","sha512","whirl","whirlpool","jh-224","jh-256","jh-384","jh-512",NULL};
 
@@ -34,6 +35,7 @@ int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, const char *Path, struct sta
 {
 char *Line=NULL, *Tempstr=NULL, *ptr; 
 const char *p_Type="unknown";
+uint64_t diff;
 
 if (Flags & FLAG_TRAD_OUTPUT) Line=MCopyStr(Line,Hash, "  ", Path,"\n",NULL);
 else if (Flags & FLAG_BSD_OUTPUT) 
@@ -87,6 +89,14 @@ else
 	if (sizeof(Stat->st_ino)==sizeof(unsigned long long)) Tempstr=FormatStr(Tempstr, "inode='%llu' ",Stat->st_ino);
 	else Tempstr=FormatStr(Tempstr, "inode='%lu' ",Stat->st_ino);
 	Line=CatStr(Line, Tempstr);
+
+	if (Flags & FLAG_VERBOSE)
+	{
+		diff=GetTime(TIME_MILLISECS) - HashStartTime;
+		if (diff > 1000) Tempstr=FormatStr(Tempstr, "hash-time='%0.2fs' ", (double) diff / 1000.0	);
+		else Tempstr=FormatStr(Tempstr, "hash-time='%llums' ", (unsigned long long) diff	);
+		Line=CatStr(Line, Tempstr);
+	}
 	
 	//we must quote out apostrophes
 	Tempstr=QuoteCharsInStr(Tempstr, Path, "'");

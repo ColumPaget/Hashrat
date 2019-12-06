@@ -33,6 +33,7 @@ while (Tempstr)
 	StripTrailingWhitespace(Tempstr);
 	if (StatFile(Ctx,Tempstr,&Stat) != -1) 
 	{
+		HashStartTime=GetTime(TIME_MILLISECS);
 		if (HashItem(Ctx, Ctx->HashType, Tempstr, &Stat, &HashStr))
 		{
 		HashratOutputInfo(Ctx, Ctx->Out, Tempstr, &Stat, HashStr);
