@@ -1,7 +1,7 @@
 language: c
 
 before_install:
-	-  if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get -y install libssl-dev; fi
+	- sudo apt-get -y install libssl-dev
 
 os:
   - linux
