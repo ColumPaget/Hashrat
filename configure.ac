@@ -57,31 +57,30 @@ AC_ARG_ENABLE(ssl, [  --enable-ssl       use Secure Sockets Layer], cf_use_ssl=$
 if test "$cf_use_ssl" = "yes"
 then
 
-AC_CHECK_HEADER([openssl/crypto.h])
-AC_CHECK_HEADER([openssl/ssl.h])
+AC_CHECK_HEADER([openssl/crypto.h], cf_have_crypto_h="Y")
+AC_CHECK_HEADER([openssl/ssl.h], cf_have_ssl_h="Y")
 
-
-AC_CHECK_LIB(crypto,EVP_CIPHER_CTX_init,,)
-cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_init
-
-dnl New versions of openssl seem to lack EVP_CIPHER_CTX_init, so let's look for another function. I've no idea what's going on with openssl, this is why I use libressl instead.
-if test "$cf_have_libcrypto" != "yes"
+if test "$cf_have_crypto_h" = "Y" -a "$cf_have_ssl_h" = "Y"
 then
-	AC_CHECK_LIB(crypto,EVP_CIPHER_CTX_new,,)
-	cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_new
+	AC_CHECK_LIB(crypto,EVP_CIPHER_CTX_init,,)
+	cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_init
+
+	dnl New versions of openssl seem to lack EVP_CIPHER_CTX_init, so let's look for another function. I've no idea what's going on with openssl, this is why I use libressl instead.
+	if test "$cf_have_libcrypto" != "yes"
+	then
+		AC_CHECK_LIB(crypto,EVP_CIPHER_CTX_new,,)
+		cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_new
+	fi
+
+	AC_CHECK_LIB(ssl,SSL_library_init,,)
+	cf_have_libssl=$ac_cv_lib_ssl_SSL_library_init
+	dnl New versions of openssl seem to lack SSL_library_init, so let's look for another function. I've no idea what's going on with openssl, this is why I use libressl instead.
+	if test "$cf_have_libssl" != "yes"
+	then
+		AC_CHECK_LIB(ssl,OPENSSL_init_ssl,,)
+		cf_have_libssl=$ac_cv_lib_ssl_OPENSSL_init_ssl
+	fi
 fi
-
-
-AC_CHECK_LIB(ssl,SSL_library_init,,)
-cf_have_libssl=$ac_cv_lib_ssl_SSL_library_init
-dnl New versions of openssl seem to lack SSL_library_init, so let's look for another function. I've no idea what's going on with openssl, this is why I use libressl instead.
-if test "$cf_have_libssl" != "yes"
-then
-	AC_CHECK_LIB(ssl,OPENSSL_init_ssl,,)
-	cf_have_libssl=$ac_cv_lib_ssl_OPENSSL_init_ssl
-fi
-
-
 fi
 
 echo

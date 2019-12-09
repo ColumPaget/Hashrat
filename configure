@@ -638,7 +638,6 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
-VERSION
 target_alias
 host_alias
 build_alias
@@ -658,7 +657,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -733,7 +731,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -986,15 +983,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1132,7 +1120,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1285,7 +1273,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -2042,8 +2029,6 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
 
 
 
@@ -3402,7 +3387,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -3448,7 +3433,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -3472,7 +3457,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -3517,7 +3502,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -3541,7 +3526,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -3931,19 +3916,20 @@ then
 
 ac_fn_c_check_header_mongrel "$LINENO" "openssl/crypto.h" "ac_cv_header_openssl_crypto_h" "$ac_includes_default"
 if test "x$ac_cv_header_openssl_crypto_h" = xyes; then :
-
+  cf_have_crypto_h="Y"
 fi
 
 
 ac_fn_c_check_header_mongrel "$LINENO" "openssl/ssl.h" "ac_cv_header_openssl_ssl_h" "$ac_includes_default"
 if test "x$ac_cv_header_openssl_ssl_h" = xyes; then :
-
+  cf_have_ssl_h="Y"
 fi
 
 
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_CIPHER_CTX_init in -lcrypto" >&5
+if test "$cf_have_crypto_h" = "Y" -a "$cf_have_ssl_h" = "Y"
+then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_CIPHER_CTX_init in -lcrypto" >&5
 $as_echo_n "checking for EVP_CIPHER_CTX_init in -lcrypto... " >&6; }
 if ${ac_cv_lib_crypto_EVP_CIPHER_CTX_init+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -3988,11 +3974,11 @@ _ACEOF
 
 fi
 
-cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_init
+	cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_init
 
-if test "$cf_have_libcrypto" != "yes"
-then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_CIPHER_CTX_new in -lcrypto" >&5
+		if test "$cf_have_libcrypto" != "yes"
+	then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_CIPHER_CTX_new in -lcrypto" >&5
 $as_echo_n "checking for EVP_CIPHER_CTX_new in -lcrypto... " >&6; }
 if ${ac_cv_lib_crypto_EVP_CIPHER_CTX_new+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -4037,11 +4023,10 @@ _ACEOF
 
 fi
 
-	cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_new
-fi
+		cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_new
+	fi
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_library_init in -lssl" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_library_init in -lssl" >&5
 $as_echo_n "checking for SSL_library_init in -lssl... " >&6; }
 if ${ac_cv_lib_ssl_SSL_library_init+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -4086,10 +4071,10 @@ _ACEOF
 
 fi
 
-cf_have_libssl=$ac_cv_lib_ssl_SSL_library_init
-if test "$cf_have_libssl" != "yes"
-then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OPENSSL_init_ssl in -lssl" >&5
+	cf_have_libssl=$ac_cv_lib_ssl_SSL_library_init
+		if test "$cf_have_libssl" != "yes"
+	then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OPENSSL_init_ssl in -lssl" >&5
 $as_echo_n "checking for OPENSSL_init_ssl in -lssl... " >&6; }
 if ${ac_cv_lib_ssl_OPENSSL_init_ssl+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -4134,10 +4119,9 @@ _ACEOF
 
 fi
 
-	cf_have_libssl=$ac_cv_lib_ssl_OPENSSL_init_ssl
+		cf_have_libssl=$ac_cv_lib_ssl_OPENSSL_init_ssl
+	fi
 fi
-
-
 fi
 
 echo

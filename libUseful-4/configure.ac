@@ -148,16 +148,13 @@ AC_ARG_ENABLE(ssl, [  --enable-ssl       use Secure Sockets Layer], cf_use_ssl=$
 if test "$cf_use_ssl" = "yes"
 then
 
-AC_CHECK_HEADER([openssl/crypto.h])
-AC_CHECK_HEADER([openssl/ssl.h])
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
-#include <openssl/pem.h>
-#include <openssl/err.h>
-#include <openssl/rand.h>
-#include <openssl/asn1.h>
+AC_CHECK_HEADER([openssl/crypto.h], cf_have_crypto_h="Y")
+AC_CHECK_HEADER([openssl/ssl.h], cf_have_ssl_h="Y")
 
+echo "HC: $cf_have_crypto_h  HS: $cf_have_ssl_h"
+
+if test "$cf_have_crypto_h" = "Y" -a "$cf_have_ssl_h" = "Y"
+then
 
 AC_CHECK_LIB(crypto,EVP_CIPHER_CTX_init,,)
 cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_init
@@ -204,6 +201,7 @@ then
 cf_use_zlib=yes
 fi
 
+fi
 
 AC_ARG_ENABLE(simd, [  --enable-simd=<level>       use SIMD cpu extensions, 'level' can be one of mmx, sse, sse2], cf_use_simd=$enableval )
 
