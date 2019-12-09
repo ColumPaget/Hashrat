@@ -3,6 +3,8 @@ language: c
 before_install:
 	- sudo apt-get -y install libssl-dev
 
+script: ./configure --enable-ssl && make
+
 os:
   - linux
   - osx
@@ -11,4 +13,3 @@ compiler:
   - clang
   - gcc
 
-script: ./configure --enable-ssl && make
