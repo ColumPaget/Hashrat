@@ -1,5 +1,8 @@
 language: c
 
+before_install:
+	-  if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get -y install libssl-dev; fi
+
 os:
   - linux
   - osx
@@ -7,3 +10,7 @@ os:
 compiler:
   - clang
   - gcc
+
+script:
+	- ./configure --enable-ssl; make
+	

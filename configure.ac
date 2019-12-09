@@ -1,8 +1,6 @@
 
 AC_INIT([main.c])
 
-AC_SUBST(VERSION) 
-
 
 AC_PROG_CC 
 AC_LANG_C 
