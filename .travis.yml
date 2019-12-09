@@ -11,6 +11,5 @@ compiler:
   - clang
   - gcc
 
-script:
-	- ./configure --enable-ssl; make
+script: ./configure --enable-ssl; make
 	
