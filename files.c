@@ -409,9 +409,9 @@ TFingerprint *FP=NULL;
 switch (Ctx->Action)
 {
 case ACT_HASHDIR:
-			Type=FileType(Path, Flags, Stat);
-			//we return TRUE if hash succeeded
-			if (HashratHashFile(Ctx, Ctx->Hash, Type, Path, Stat)) result=TRUE;
+	Type=FileType(Path, Flags, Stat);
+	//we return TRUE if hash succeeded
+	if (HashratHashFile(Ctx, Ctx->Hash, Type, Path, Stat)) result=TRUE;
 break;
 
 case ACT_HASH:

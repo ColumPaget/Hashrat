@@ -423,8 +423,8 @@ int libCryptoProcessorInit(TProcessingModule *ProcMod, const char *Args)
 
     if (Data->Cipher)
     {
-        Data->enc_ctx=(EVP_CIPHER_CTX *) calloc(1,sizeof(EVP_CIPHER_CTX));
-        Data->dec_ctx=(EVP_CIPHER_CTX *) calloc(1,sizeof(EVP_CIPHER_CTX));
+        Data->enc_ctx=EVP_CIPHER_CTX_new();
+        Data->dec_ctx=EVP_CIPHER_CTX_new();
         EVP_CIPHER_CTX_init(Data->enc_ctx);
         EVP_CIPHER_CTX_init(Data->dec_ctx);
         Data->BlockSize=EVP_CIPHER_block_size(Data->Cipher);

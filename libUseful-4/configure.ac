@@ -158,12 +158,26 @@ AC_CHECK_HEADER([openssl/ssl.h])
 #include <openssl/rand.h>
 #include <openssl/asn1.h>
 
-AC_CHECK_LIB(ssl,SSL_library_init,,)
-cf_have_libssl=$ac_cv_lib_ssl_SSL_library_init
 
 AC_CHECK_LIB(crypto,EVP_CIPHER_CTX_init,,)
 cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_init
 
+dnl New versions of openssl seem to lack EVP_CIPHER_CTX_init, so let's look for another function. I've no idea what's going on with openssl, this is why I use libressl instead.
+if test "$cf_have_libcrypto" != "yes"
+then
+	AC_CHECK_LIB(crypto,EVP_CIPHER_CTX_new,,)
+	cf_have_libcrypto=$ac_cv_lib_crypto_EVP_CIPHER_CTX_new
+fi
+
+
+AC_CHECK_LIB(ssl,SSL_library_init,,)
+cf_have_libssl=$ac_cv_lib_ssl_SSL_library_init
+dnl New versions of openssl seem to lack SSL_library_init, so let's look for another function. I've no idea what's going on with openssl, this is why I use libressl instead.
+if test "$cf_have_libssl" != "yes"
+then
+	AC_CHECK_LIB(ssl,OPENSSL_init_ssl,,)
+	cf_have_libssl=$ac_cv_lib_ssl_OPENSSL_init_ssl
+fi
 
 
 AC_CHECK_FUNCS(OpenSSL_add_all_algorithms EVP_bf_cbc EVP_rc2_cbc EVP_rc4 EVP_rc5_32_12_16_cbc EVP_des_cbc EVP_desx_cbc EVP_cast5_cbc EVP_idea_cbc EVP_aes_128_cbc EVP_aes_256_cbc X509_check_host SSL_set_tlsext_host_name)

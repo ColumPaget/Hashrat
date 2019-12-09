@@ -437,6 +437,7 @@ void HTTPInfoSetURL(HTTPInfoStruct *Info, const char *Method, const char *iURL)
 		else HTTPInfoPOSTSetContent(Info, "", Args, 0, 0);
 
     if (StrValid(Pass)) CredsStoreAdd(Info->Host, User, Pass);
+    if (! StrValid(Info->Doc)) Info->Doc=CopyStr(Info->Doc, "/");
 
     DestroyString(User);
     DestroyString(Pass);

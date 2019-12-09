@@ -130,13 +130,13 @@ const char *ptr;
 ptr=GetToken(Ctx->Targets, ",", &Item, GETTOKEN_QUOTES);
 while(ptr)
 {
-		type=StatFile(Ctx, Item, &Stat);
- 		if (type > -1) result=ProcessItem(Ctx, Item, &Stat, TRUE);
-		else
-		{
-			if (result==IGNORE) result=0;
-			fprintf(stderr,"ERROR: File '%s' not found\n", Item);
-		}
+	type=StatFile(Ctx, Item, &Stat);
+ 	if (type > -1) result=ProcessItem(Ctx, Item, &Stat, TRUE);
+	else
+	{
+		if (result==IGNORE) result=0;
+		fprintf(stderr,"ERROR: File '%s' not found\n", Item);
+	}
 	ptr=GetToken(ptr, ",", &Item, GETTOKEN_QUOTES);
 }
 
