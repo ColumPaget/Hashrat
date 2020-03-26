@@ -76,6 +76,7 @@
 #define CTX_EXES  131072          
 #define CTX_CACHED 262144
 #define CTX_ONE_FS 524288
+#define CTX_HIDDEN 1048576
 
 
 #define RESULT_PASS 1

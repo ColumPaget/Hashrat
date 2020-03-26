@@ -73,7 +73,7 @@ void GlobFiles(HashratCtx *Ctx, const char *Path, int FType, ListNode *Dirs)
 {
 char *Tempstr=NULL;
 glob_t Glob;
-int i;
+int i, flags=0;
 struct stat *Stat;
 
 ListClear(Dirs, Destroy);
@@ -91,12 +91,13 @@ switch (FType)
 }
 
 Tempstr=MCopyStr(Tempstr,Path,"/*",NULL);
-glob(Tempstr,0,0,&Glob);
+if (Ctx->Flags & CTX_HIDDEN) flags |= GLOB_PERIOD;
+glob(Tempstr,flags,0,&Glob);
 for (i=0; i < Glob.gl_pathc; i++)
 {
 	if (
-				(strcmp(Glob.gl_pathv[i],".") !=0) &&
-				(strcmp(Glob.gl_pathv[i],"..") !=0)
+				(strcmp(GetBasename(Glob.gl_pathv[i]),".") !=0) &&
+				(strcmp(GetBasename(Glob.gl_pathv[i]),"..") !=0)
 		)
 	{
 		if (Dirs)

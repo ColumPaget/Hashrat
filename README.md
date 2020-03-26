@@ -81,6 +81,8 @@ OPTIONS
   -tag            Output hashes in bsdsum format
   --tag           Output hashes in bsdsum format
   -r              Recurse into directories when hashing files
+  -hid            Show hidden (starting with .) files
+  -hidden         Show hidden (starting with .) files
   -f <listfile>   Hash files listed in <listfile>
   -i <pattern>    Only hash items matching <pattern>
   -x <pattern>    Exclude items matching <pattern>
