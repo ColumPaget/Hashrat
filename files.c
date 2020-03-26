@@ -55,6 +55,7 @@ int val;
 	memset(Stat, 0, sizeof(struct stat));
   //Pass NULL for stat, because we are only checking for 'net' type paths
   val=FileType(Path, Flags, NULL);
+
   if ((val !=FT_FILE) && (val !=FT_DIR) && (val != FT_LNK))
   {
     return(val);
@@ -90,7 +91,8 @@ switch (FType)
 	break;
 }
 
-Tempstr=MCopyStr(Tempstr,Path,"/*",NULL);
+Tempstr=QuoteCharsInStr(Tempstr, Path, "[]*?");
+Tempstr=CatStr(Tempstr,"/*");
 if (Ctx->Flags & CTX_HIDDEN) flags |= GLOB_PERIOD;
 glob(Tempstr,flags,0,&Glob);
 for (i=0; i < Glob.gl_pathc; i++)

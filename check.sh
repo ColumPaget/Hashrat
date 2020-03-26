@@ -163,7 +163,7 @@ TestHash z85 "ZEROMQ85 encoding" "wX%ElWFTQ9+Z=X4h"
 Title "Testing Misc. Features"
 
 HR_OUT=`./hashrat -version`
-if [ "$HR_OUT" = "version: 1.10.2" ]
+if [ "$HR_OUT" = "version: 1.11" ]
 then
 	OkayMessage "Version (-version) works"
 else
