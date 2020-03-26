@@ -367,16 +367,16 @@ Generate a list of \fIhashes\fP for files in the current directory (default \fIh
 Generate a list of \fIhashes\fP for files in the current directory, AND ALL SUBDIRECTORIES, using sha1 hashing.
 .TP
 .B
-cat hashes.sha1 > \fBhashrat\fP \fB-c\fP
+cat hashes.sha1 | \fBhashrat\fP \fB-c\fP
 Check \fIhashes\fP listed in hashes.sha1.
 .TP
 .B
-cat hashes.sha1 > \fBhashrat\fP \fB-c\fP \fB-strict\fP
+cat hashes.sha1 | \fBhashrat\fP \fB-c\fP \fB-strict\fP
 Check \fIhashes\fP listed in hashes.sha1. If \fIhashes\fP are NOT in traditional format than the \fB-strict\fP flag will cause
 \fBhashrat\fP to check the files uid, gid, size, mtime and inode and print a failure message if any of those don't match.
 .TP
 .B
-cat hashes.sha1 > \fBhashrat\fP \fB-cf\fP
+cat hashes.sha1 | \fBhashrat\fP \fB-cf\fP
 Check \fIhashes\fP listed in hashes.sha1 but only output failures.
 .TP
 .B
