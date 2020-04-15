@@ -1,0 +1,17 @@
+These examples all contain the line:
+
+#include "../libUseful.h"
+
+This is because they're intended to be compiled in place, within the libUseful source directory. In normal use the libUseful header files would be installed in your include path, and this line would become something like:
+
+#include "libUseful-3/libUseful.h"
+
+Furthermore these examples are linked against the static library of libUseful, like so:
+
+gcc -oVars.exe Vars.c ../libUseful-3.a 
+
+This is why the .exe files are so big! In normal usage you'd install libUseful-2.8.so somewhere in your library path, and link with
+
+gcc -oVars.exe Vars.c -lUseful-3
+
+
