@@ -93,7 +93,9 @@ switch (FType)
 
 Tempstr=QuoteCharsInStr(Tempstr, Path, "[]*?");
 Tempstr=CatStr(Tempstr,"/*");
+#ifdef GLOB_PERIOD
 if (Ctx->Flags & CTX_HIDDEN) flags |= GLOB_PERIOD;
+#endif
 glob(Tempstr,flags,0,&Glob);
 for (i=0; i < Glob.gl_pathc; i++)
 {
