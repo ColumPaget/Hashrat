@@ -213,12 +213,14 @@ const char *ptr;
 
 		HashFinish(Hash,Ctx->Encoding,RetStr);
 
+		/*
 		ptr=GetVar(Ctx->Vars,"Output:Length");
 		if (StrValid(ptr))
 		{
 			val=atoi(ptr);
 			if ((val > 0) && (StrLen(*RetStr) > val)) (*RetStr)[val]='\0';
 		}
+		*/
 }
 
 

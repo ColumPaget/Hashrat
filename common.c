@@ -30,12 +30,41 @@ free(Ctx);
 }
 
 
-
-int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, const char *Path, struct stat *Stat, const char *Hash)
+char *ReformatHash(char *RetStr, const char *Str, int OutputLen, int SegmentSize, char SegmentChar)
 {
-char *Line=NULL, *Tempstr=NULL, *ptr; 
+int ipos=0, opos=0;
+
+if (OutputLen==0) OutputLen=StrLen(Str);
+
+for (ipos=0; ipos < OutputLen; ipos++)
+{
+	//don't increment pos, the loop does this one
+	RetStr=AddCharToBuffer(RetStr, opos++, Str[ipos]);
+	if (Str[ipos]=='\0') break;
+
+	if ((SegmentSize > 0) && (ipos > 0) && (OutputLen-ipos > 1) && (((ipos+1) % SegmentSize)==0)) 
+	{
+		RetStr=AddCharToBuffer(RetStr, opos++, SegmentChar);
+	}
+
+}
+
+return(RetStr);
+}
+
+
+int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, const char *Path, struct stat *Stat, const char *iHash)
+{
+char *Line=NULL, *Tempstr=NULL, *Hash=NULL, *ptr; 
 const char *p_Type="unknown";
 uint64_t diff;
+
+//printf("SEG: %d %d\n", Ctx->OutputLength, Ctx->SegmentLength);
+
+if (Ctx->SegmentLength > 0) Hash=ReformatHash(Hash, iHash, Ctx->OutputLength, Ctx->SegmentLength, Ctx->SegmentChar);
+else Hash=CopyStr(Hash, iHash);
+
+if (Ctx->OutputLength > 0) StrTrunc(Hash, Ctx->OutputLength);
 
 if (Flags & FLAG_TRAD_OUTPUT) Line=MCopyStr(Line,Hash, "  ", Path,"\n",NULL);
 else if (Flags & FLAG_BSD_OUTPUT) 
@@ -107,6 +136,7 @@ STREAMWriteString(Line,Out);
 
 Destroy(Tempstr);
 Destroy(Line);
+Destroy(Hash);
 
 return(TRUE);
 }
@@ -170,24 +200,4 @@ Destroy(QuotedOther);
 }
 
 
-char *ReformatHash(char *RetStr, const char *Str, int OutputLen, int SegmentSize, char SegmentChar)
-{
-int ipos=0, opos=0;
 
-if (OutputLen==0) OutputLen=StrLen(Str);
-
-for (ipos=0; ipos < OutputLen; ipos++)
-{
-	//don't increment pos, the loop does this one
-	RetStr=AddCharToBuffer(RetStr, opos++, Str[ipos]);
-	if (Str[ipos]=='\0') break;
-
-	if ((SegmentSize > 0) && (ipos > 0) && (OutputLen-ipos > 1) && (((ipos+1) % SegmentSize)==0)) 
-	{
-		RetStr=AddCharToBuffer(RetStr, opos++, SegmentChar);
-	}
-
-}
-
-return(RetStr);
-}

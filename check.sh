@@ -248,10 +248,10 @@ TestLocateHook "hash='md5:6933ee7eb504d29312b23a47d2dac374' mode='100644' uid='0
 
 Title "Testing exit codes for different operations"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "" "HashFile"
-TestExitCodes "tests" "libUseful-3" "-r -dups" "FindDuplicates"
+TestExitCodes "tests" "libUseful" "-r -dups" "FindDuplicates"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-cf" "CheckHash"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-m -r ." "Locate"
-TestExitCodes "tests" "libUseful-3" "-r -dups" "FindDuplicates"
+TestExitCodes "tests" "libUseful" "-r -dups" "FindDuplicates"
 
 echo
 echo

@@ -42,7 +42,7 @@ Destroy(Tempstr);
 //and whether the switch takes a string argument, which it then reads and stores in the variable list
 //with the name supplied in 'VarName'. 
 
-void CommandLineHandleArg(int SetFlags, const char *VarName, const char *VarValue, ListNode *Vars)
+void CommandLineHandleArg(HashratCtx *Ctx, int SetFlags, const char *VarName, const char *VarValue, ListNode *Vars)
 {
 const char *arg, *next;
 
@@ -51,13 +51,18 @@ const char *arg, *next;
 	arg=CommandLineCurr(&CmdLine);
 	if (SetFlags & FLAG_NEXTARG)
 	{
-	next=CommandLineNext(&CmdLine);
-	if (next==NULL)
-	{
-		printf("ERROR: The %s option requires an argument.\n",arg);
-		exit(1);
-	}
-	else SetVar(Vars,VarName,next);
+		next=CommandLineNext(&CmdLine);
+		if (next==NULL)
+		{
+			printf("ERROR: The %s option requires an argument.\n",arg);
+			exit(1);
+		}
+		else 
+		{
+			SetVar(Vars,VarName,next);
+			if (strcmp(VarName, "Output:Length")==0) Ctx->OutputLength=atoi(next);
+			if (strcmp(VarName, "Segment:Length")==0) Ctx->SegmentLength=atoi(next);
+		}
 	}
 	else if (StrValid(VarName)) SetVar(Vars,VarName,VarValue);
 }
@@ -140,19 +145,19 @@ ptr=GetBasename(ptr);
 //if the program name is something other than 'hashrat', then we're being used as a drop-in
 //replacement for another program. Change flags/behavior accordingly
 if (strcmp(ptr,"md5sum")==0) 
-CommandLineHandleArg(FLAG_TRAD_OUTPUT, "HashType", "md5",Ctx->Vars);
+CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "md5",Ctx->Vars);
 if (
 		(strcmp(ptr,"sha1sum")==0) ||
 		(strcmp(ptr,"shasum")==0) 
 	) 
-CommandLineHandleArg(FLAG_TRAD_OUTPUT, "HashType", "sha1",Ctx->Vars);
-if (strcmp(ptr,"sha256sum")==0) CommandLineHandleArg(FLAG_TRAD_OUTPUT, "HashType", "sha256",Ctx->Vars);
-if (strcmp(ptr,"sha512sum")==0) CommandLineHandleArg(FLAG_TRAD_OUTPUT, "HashType", "sha512",Ctx->Vars);
-if (strcmp(ptr,"whirlpoolsum")==0) CommandLineHandleArg(FLAG_TRAD_OUTPUT, "HashType", "whirlpool",Ctx->Vars);
-if (strcmp(ptr,"jh224sum")==0) CommandLineHandleArg(FLAG_TRAD_OUTPUT, "HashType", "jh-224",Ctx->Vars);
-if (strcmp(ptr,"jh256sum")==0) CommandLineHandleArg(FLAG_TRAD_OUTPUT, "HashType", "jh-256",Ctx->Vars);
-if (strcmp(ptr,"jh384sum")==0) CommandLineHandleArg(FLAG_TRAD_OUTPUT, "HashType", "jh-385",Ctx->Vars);
-if (strcmp(ptr,"jh512sum")==0) CommandLineHandleArg(FLAG_TRAD_OUTPUT, "HashType", "jh-512",Ctx->Vars);
+CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "sha1",Ctx->Vars);
+if (strcmp(ptr,"sha256sum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "sha256",Ctx->Vars);
+if (strcmp(ptr,"sha512sum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "sha512",Ctx->Vars);
+if (strcmp(ptr,"whirlpoolsum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "whirlpool",Ctx->Vars);
+if (strcmp(ptr,"jh224sum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "jh-224",Ctx->Vars);
+if (strcmp(ptr,"jh256sum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "jh-256",Ctx->Vars);
+if (strcmp(ptr,"jh384sum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "jh-385",Ctx->Vars);
+if (strcmp(ptr,"jh512sum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "jh-512",Ctx->Vars);
 
 
 if (strcmp(ptr,"hashrat.cgi")==0) Ctx->Action=ACT_CGI;
@@ -170,7 +175,7 @@ HashratCtx *Ctx;
 
 CommandLineParserInit(&CmdLine, argc, argv);
 Ctx=CommandLineParseArg0();
-
+Ctx->SegmentChar='-';
 
 arg=CommandLineNext(&CmdLine);
 while (arg)
@@ -202,12 +207,12 @@ else if (strcmp(arg,"-Cf")==0)
 {
 	Ctx->Action = ACT_CHECK;
 	CommandLineSetCtx(Ctx, CTX_RECURSE,0);
-	CommandLineHandleArg(FLAG_OUTPUT_FAILS, "", "",Ctx->Vars);
+	CommandLineHandleArg(Ctx,FLAG_OUTPUT_FAILS, "", "",Ctx->Vars);
 }
 else if (strcmp(arg,"-cf")==0)
 {
 	Ctx->Action = ACT_CHECK_LIST;
-	CommandLineHandleArg(FLAG_OUTPUT_FAILS, "", "",Ctx->Vars);
+	CommandLineHandleArg(Ctx,FLAG_OUTPUT_FAILS, "", "",Ctx->Vars);
 }
 else if (strcmp(arg,"-c")==0) Ctx->Action = ACT_CHECK_LIST;
 else if (strcmp(arg,"-s")==0) Ctx->Action = ACT_SIGN;
@@ -220,23 +225,23 @@ else if (strcmp(arg,"-dups")==0) Ctx->Action = ACT_FINDDUPLICATES;
 else if (strcmp(arg,"-B")==0) Ctx->Action = ACT_BACKUP;
 else if (strcmp(arg,"-cB")==0) Ctx->Action = ACT_CHECKBACKUP;
 else if (strcmp(arg,"-cgi")==0) Ctx->Action = ACT_CGI;
-else if (strcmp(arg,"-md5")==0) CommandLineHandleArg(0, "HashType", "md5",Ctx->Vars);
-else if (strcmp(arg,"-sha")==0) CommandLineHandleArg(0, "HashType", "sha1",Ctx->Vars);
-else if (strcmp(arg,"-sha1")==0) CommandLineHandleArg(0, "HashType", "sha1",Ctx->Vars);
-else if (strcmp(arg,"-sha256")==0) CommandLineHandleArg(0, "HashType", "sha256",Ctx->Vars);
-else if (strcmp(arg,"-sha512")==0) CommandLineHandleArg(0, "HashType", "sha512",Ctx->Vars);
-else if (strcmp(arg,"-whirl")==0) CommandLineHandleArg(0, "HashType", "whirlpool",Ctx->Vars);
-else if (strcmp(arg,"-whirlpool")==0) CommandLineHandleArg(0, "HashType", "whirlpool",Ctx->Vars);
-else if (strcmp(arg,"-jh-224")==0) CommandLineHandleArg(0, "HashType", "jh-224",Ctx->Vars);
-else if (strcmp(arg,"-jh-256")==0) CommandLineHandleArg(0, "HashType", "jh-256",Ctx->Vars);
-else if (strcmp(arg,"-jh-384")==0) CommandLineHandleArg(0, "HashType", "jh-384",Ctx->Vars);
-else if (strcmp(arg,"-jh-512")==0) CommandLineHandleArg(0, "HashType", "jh-512",Ctx->Vars);
-else if (strcmp(arg,"-jh224")==0) CommandLineHandleArg(0, "HashType", "jh-224",Ctx->Vars);
-else if (strcmp(arg,"-jh256")==0) CommandLineHandleArg(0, "HashType", "jh-256",Ctx->Vars);
-else if (strcmp(arg,"-jh384")==0) CommandLineHandleArg(0, "HashType", "jh-384",Ctx->Vars);
-else if (strcmp(arg,"-jh512")==0) CommandLineHandleArg(0, "HashType", "jh-512",Ctx->Vars);
-else if (strcmp(arg,"-jh")==0) CommandLineHandleArg(0, "HashType", "jh-512",Ctx->Vars);
-//else if (strcmp(argv[i],"-crc32")==0) CommandLineHandleArg(0, "HashType", "crc32",Ctx->Vars);
+else if (strcmp(arg,"-md5")==0) CommandLineHandleArg(Ctx,0, "HashType", "md5",Ctx->Vars);
+else if (strcmp(arg,"-sha")==0) CommandLineHandleArg(Ctx,0, "HashType", "sha1",Ctx->Vars);
+else if (strcmp(arg,"-sha1")==0) CommandLineHandleArg(Ctx,0, "HashType", "sha1",Ctx->Vars);
+else if (strcmp(arg,"-sha256")==0) CommandLineHandleArg(Ctx,0, "HashType", "sha256",Ctx->Vars);
+else if (strcmp(arg,"-sha512")==0) CommandLineHandleArg(Ctx,0, "HashType", "sha512",Ctx->Vars);
+else if (strcmp(arg,"-whirl")==0) CommandLineHandleArg(Ctx,0, "HashType", "whirlpool",Ctx->Vars);
+else if (strcmp(arg,"-whirlpool")==0) CommandLineHandleArg(Ctx,0, "HashType", "whirlpool",Ctx->Vars);
+else if (strcmp(arg,"-jh-224")==0) CommandLineHandleArg(Ctx,0, "HashType", "jh-224",Ctx->Vars);
+else if (strcmp(arg,"-jh-256")==0) CommandLineHandleArg(Ctx,0, "HashType", "jh-256",Ctx->Vars);
+else if (strcmp(arg,"-jh-384")==0) CommandLineHandleArg(Ctx,0, "HashType", "jh-384",Ctx->Vars);
+else if (strcmp(arg,"-jh-512")==0) CommandLineHandleArg(Ctx,0, "HashType", "jh-512",Ctx->Vars);
+else if (strcmp(arg,"-jh224")==0) CommandLineHandleArg(Ctx,0, "HashType", "jh-224",Ctx->Vars);
+else if (strcmp(arg,"-jh256")==0) CommandLineHandleArg(Ctx,0, "HashType", "jh-256",Ctx->Vars);
+else if (strcmp(arg,"-jh384")==0) CommandLineHandleArg(Ctx,0, "HashType", "jh-384",Ctx->Vars);
+else if (strcmp(arg,"-jh512")==0) CommandLineHandleArg(Ctx,0, "HashType", "jh-512",Ctx->Vars);
+else if (strcmp(arg,"-jh")==0) CommandLineHandleArg(Ctx,0, "HashType", "jh-512",Ctx->Vars);
+//else if (strcmp(argv[i],"-crc32")==0) CommandLineHandleArg(Ctx,0, "HashType", "crc32",Ctx->Vars);
 else if (strcmp(arg,"-8")==0)  CommandLineSetCtx(Ctx,  0, ENCODE_OCTAL);
 else if (strcmp(arg,"-10")==0) CommandLineSetCtx(Ctx,  0, ENCODE_DECIMAL);
 else if (strcmp(arg,"-16")==0) CommandLineSetCtx(Ctx,  0, ENCODE_HEX);
@@ -258,10 +263,11 @@ else if (strcmp(arg,"-r")==0) CommandLineSetCtx(Ctx, CTX_RECURSE,0);
 else if (strcmp(arg,"-hid")==0) CommandLineSetCtx(Ctx, CTX_HIDDEN,0);
 else if (strcmp(arg,"-hidden")==0) CommandLineSetCtx(Ctx, CTX_HIDDEN,0);
 else if (strcmp(arg,"-fs")==0) CommandLineSetCtx(Ctx, CTX_ONE_FS,0);
-else if (strcmp(arg,"-n")==0) CommandLineHandleArg(FLAG_NEXTARG, "Output:Length", "",Ctx->Vars);
-else if (strcmp(arg,"-hmac")==0) CommandLineHandleArg(FLAG_NEXTARG | FLAG_HMAC, "EncryptionKey", "",Ctx->Vars);
-else if (strcmp(arg,"-idfile")==0) CommandLineHandleArg(FLAG_NEXTARG,  "SshIdFile", "",Ctx->Vars);
-else if (strcmp(arg,"-f")==0) CommandLineHandleArg(FLAG_NEXTARG, "ItemsListSource", "",Ctx->Vars);
+else if (strcmp(arg,"-n")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG, "Output:Length", "",Ctx->Vars);
+else if (strcmp(arg,"-segment")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG, "Segment:Length", "",Ctx->Vars);
+else if (strcmp(arg,"-hmac")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG | FLAG_HMAC, "EncryptionKey", "",Ctx->Vars);
+else if (strcmp(arg,"-idfile")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG,  "SshIdFile", "",Ctx->Vars);
+else if (strcmp(arg,"-f")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG, "ItemsListSource", "",Ctx->Vars);
 else if (strcmp(arg,"-i")==0) CommandLineSetCtx(Ctx, CTX_INCLUDE,0);
 else if (strcmp(arg,"-name")==0) CommandLineSetCtx(Ctx, CTX_INCLUDE,0);
 else if (strcmp(arg,"-mtime")==0) CommandLineSetCtx(Ctx, CTX_MTIME,0);
@@ -269,23 +275,23 @@ else if (strcmp(arg,"-mmin")==0) CommandLineSetCtx(Ctx, CTX_MMIN,0);
 else if (strcmp(arg,"-myear")==0) CommandLineSetCtx(Ctx, CTX_MYEAR,0);
 else if (strcmp(arg,"-x")==0) CommandLineSetCtx(Ctx, CTX_EXCLUDE,0);
 else if (strcmp(arg,"-X")==0) IncludeExcludeLoadExcludesFromFile(Ctx, CommandLineNext(&CmdLine));
-else if (strcmp(arg,"-devmode")==0) CommandLineHandleArg(FLAG_DEVMODE, "", "",Ctx->Vars);
-else if (strcmp(arg,"-lines")==0) CommandLineHandleArg(FLAG_LINEMODE, "", "",Ctx->Vars);
-else if (strcmp(arg,"-rawlines")==0) CommandLineHandleArg(FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
-else if (strcmp(arg,"-hide-input")==0) CommandLineHandleArg(FLAG_HIDE_INPUT, "", "",Ctx->Vars);
-else if (strcmp(arg,"-star-input")==0) CommandLineHandleArg(FLAG_STAR_INPUT, "", "",Ctx->Vars);
-else if (strcmp(arg,"-rl")==0) CommandLineHandleArg(FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
-else if (strcmp(arg,"-xattr")==0) CommandLineHandleArg(FLAG_XATTR, "", "",Ctx->Vars);
-else if (strcmp(arg,"-txattr")==0) CommandLineHandleArg(FLAG_TXATTR, "", "",Ctx->Vars);
+else if (strcmp(arg,"-devmode")==0) CommandLineHandleArg(Ctx,FLAG_DEVMODE, "", "",Ctx->Vars);
+else if (strcmp(arg,"-lines")==0) CommandLineHandleArg(Ctx,FLAG_LINEMODE, "", "",Ctx->Vars);
+else if (strcmp(arg,"-rawlines")==0) CommandLineHandleArg(Ctx,FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
+else if (strcmp(arg,"-hide-input")==0) CommandLineHandleArg(Ctx,FLAG_HIDE_INPUT, "", "",Ctx->Vars);
+else if (strcmp(arg,"-star-input")==0) CommandLineHandleArg(Ctx,FLAG_STAR_INPUT, "", "",Ctx->Vars);
+else if (strcmp(arg,"-rl")==0) CommandLineHandleArg(Ctx,FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
+else if (strcmp(arg,"-xattr")==0) CommandLineHandleArg(Ctx,FLAG_XATTR, "", "",Ctx->Vars);
+else if (strcmp(arg,"-txattr")==0) CommandLineHandleArg(Ctx,FLAG_TXATTR, "", "",Ctx->Vars);
 else if (strcmp(arg,"-cache")==0) CommandLineSetCtx(Ctx, CTX_XATTR_CACHE,0);
-else if (strcmp(arg,"-strict")==0) CommandLineHandleArg(FLAG_FULLCHECK, "", "",Ctx->Vars);
-else if (strcmp(arg,"-color")==0) CommandLineHandleArg(FLAG_COLOR, "", "",Ctx->Vars);
-else if (strcmp(arg,"-S")==0) CommandLineHandleArg(FLAG_FULLCHECK, "", "",Ctx->Vars);
-else if (strcmp(arg,"-net")==0) CommandLineHandleArg(FLAG_NET, "", "",Ctx->Vars);
-else if (strcmp(arg,"-memcached")==0) CommandLineHandleArg(FLAG_NEXTARG | FLAG_MEMCACHED, "Memcached:Server", "",Ctx->Vars);
-else if (strcmp(arg,"-mcd")==0) CommandLineHandleArg(FLAG_NEXTARG | FLAG_MEMCACHED, "Memcached:Server", "",Ctx->Vars);
-else if (strcmp(arg,"-xsel")==0) CommandLineHandleArg(FLAG_XSELECT, "", "",Ctx->Vars);
-else if (strcmp(arg,"-v")==0) CommandLineHandleArg(FLAG_VERBOSE, "", "",Ctx->Vars);
+else if (strcmp(arg,"-strict")==0) CommandLineHandleArg(Ctx,FLAG_FULLCHECK, "", "",Ctx->Vars);
+else if (strcmp(arg,"-color")==0) CommandLineHandleArg(Ctx,FLAG_COLOR, "", "",Ctx->Vars);
+else if (strcmp(arg,"-S")==0) CommandLineHandleArg(Ctx,FLAG_FULLCHECK, "", "",Ctx->Vars);
+else if (strcmp(arg,"-net")==0) CommandLineHandleArg(Ctx,FLAG_NET, "", "",Ctx->Vars);
+else if (strcmp(arg,"-memcached")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG | FLAG_MEMCACHED, "Memcached:Server", "",Ctx->Vars);
+else if (strcmp(arg,"-mcd")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG | FLAG_MEMCACHED, "Memcached:Server", "",Ctx->Vars);
+else if (strcmp(arg,"-xsel")==0) CommandLineHandleArg(Ctx,FLAG_XSELECT, "", "",Ctx->Vars);
+else if (strcmp(arg,"-v")==0) CommandLineHandleArg(Ctx,FLAG_VERBOSE, "", "",Ctx->Vars);
 else if ((strcmp(arg,"-dir")==0) || (strcmp(arg,"-dirmode")==0))
 {
 	Ctx->Action = ACT_HASHDIR;
@@ -304,17 +310,17 @@ else if ((strcmp(arg,"-hook")==0) || (strcmp(arg,"-h")==0))
 else if (strcmp(arg,"-type")==0) 
 {
 	arg=CommandLineNext(&CmdLine);
-	CommandLineHandleArg(0, "HashType", arg, Ctx->Vars);
+	CommandLineHandleArg(Ctx,0, "HashType", arg, Ctx->Vars);
 }
 else if (
 					(strcmp(arg,"-t")==0) ||
 					(strcmp(arg,"-trad")==0)
-				) CommandLineHandleArg(FLAG_TRAD_OUTPUT, "", "",Ctx->Vars);
+				) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "", "",Ctx->Vars);
 else if (
 					(strcmp(arg,"-bsd")==0) ||
 					(strcmp(arg,"-tag")==0) ||
 					(strcmp(arg,"--tag")==0)
-				) CommandLineHandleArg(FLAG_BSD_OUTPUT, "", "",Ctx->Vars);
+				) CommandLineHandleArg(Ctx,FLAG_BSD_OUTPUT, "", "",Ctx->Vars);
 else if (strcmp(arg,"-u")==0) CommandLineHandleUpdate(Ctx);
 else if (strcmp(arg,"-attrs")==0) 
 {

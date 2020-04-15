@@ -64,14 +64,23 @@ return(result);
 
 void HashStdInOutput(HashratCtx *Ctx, const char *Hash)
 {
-char *Tempstr=NULL, *Base64=NULL;
+char *Tempstr=NULL, *Base64=NULL, *Reformatted=NULL;
+const char *p_Hash;
 
-	Tempstr=MCopyStr(Tempstr,Hash,"\n",NULL);
+	p_Hash=Hash;
+	if ((Ctx->OutputLength > 0) || (Ctx->SegmentLength > 0)) 
+	{
+		Reformatted=ReformatHash(Reformatted, Hash, Ctx->OutputLength, Ctx->SegmentLength, Ctx->SegmentChar);
+		p_Hash=Reformatted;
+	}
+
+	Tempstr=MCopyStr(Tempstr,p_Hash,"\n",NULL);
 	STREAMWriteString(Tempstr,Ctx->Out); 
+
 
 	if (Flags & FLAG_XSELECT)
 	{
-	Base64=EncodeBytes(Base64, Hash, StrLen(Hash), ENCODE_BASE64);
+	Base64=EncodeBytes(Base64, p_Hash, StrLen(p_Hash), ENCODE_BASE64);
 	Tempstr=FormatStr(Tempstr,"\x1b]52;cps;%s\x07",Base64);
 	STREAMWriteString(Tempstr,Ctx->Out);
 	}
