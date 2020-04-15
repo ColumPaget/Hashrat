@@ -1,7 +1,7 @@
 
 CC = gcc
 CFLAGS = -g -O2
-LIBS = -lssl -lcrypto  libUseful-4/libUseful.a
+LIBS = -lssl -lcrypto  libUseful/libUseful.a
 INSTALL=/bin/install -c
 prefix=/usr/local
 bindir=$(prefix)${exec_prefix}/bin
@@ -11,11 +11,11 @@ EXE=hashrat
 
 all: hashrat
 
-hashrat: $(OBJ) main.c libUseful-4/libUseful.a
+hashrat: $(OBJ) main.c libUseful/libUseful.a
 	$(CC) $(FLAGS) -o$(EXE) $(OBJ) main.c $(LIBS) 
 
-libUseful-4/libUseful.a:
-	@cd libUseful-4; $(MAKE)
+libUseful/libUseful.a:
+	@cd libUseful; $(MAKE)
 
 common.o: common.h common.c
 	$(CC) $(FLAGS) -c common.c

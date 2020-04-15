@@ -452,6 +452,7 @@ printf("  %-15s %s\n","-myear <years>", "Only hash items <years> old. Has the sa
 printf("  %-15s %s\n","-exec", "In CHECK or MATCH mode only examine executable files.");
 printf("  %-15s %s\n","-dups", "Search for duplicate files.");
 printf("  %-15s %s\n","-n <length>", "Truncate hashes to <length> bytes");
+printf("  %-15s %s\n","-segment <length>", "Break hash up into segments of <length> chars seperated by '-'");
 printf("  %-15s %s\n","-c", "CHECK hashes against list from file (or stdin)");
 printf("  %-15s %s\n","-cf", "CHECK hashes against list but only show failures");
 printf("  %-15s %s\n","-C <dir>", "Recursively CHECK directory against list of files on stdin ");

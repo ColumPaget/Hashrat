@@ -94,6 +94,7 @@ OPTIONS
   -exec           In CHECK or MATCH mode only examine executable files.
   -dups           Search for duplicate files.
   -n <length>     Truncate hashes to <length> bytes
+  -segment <length> Break has up into segments of <length> characters seperated by '-'
   -c              CHECK hashes against list from file (or stdin)
   -cf             CHECK hashes but only show failures
   -C              CHECK files against list from file (or stdin) can spot new files

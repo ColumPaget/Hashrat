@@ -47,9 +47,9 @@ AC_CHECK_LIB(Useful,GetToken)
 LUSEFUL="system"
 else
 LUSEFUL="bundled"
-STATIC_LIBS="libUseful-4/libUseful.a"
+STATIC_LIBS="libUseful/libUseful.a"
 AC_SUBST(STATIC_LIBS)
-AC_CONFIG_SUBDIRS([libUseful-4])
+AC_CONFIG_SUBDIRS([libUseful])
 fi
 
 AC_ARG_ENABLE(ssl, [  --enable-ssl       use Secure Sockets Layer], cf_use_ssl=$enableval )

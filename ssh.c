@@ -10,12 +10,12 @@
 #define SSH_REMOTE_HAS_SHA1SUM 8
 #define SSH_REMOTE_HAS_MD5SUM  16
 
-char *SSHGenerateReplayTerminator(char *RetStr, const char *Command)
+static char *SSHGenerateReplayTerminator(char *RetStr, const char *Command)
 {
 	return(FormatStr(RetStr,"%s-%lu-%lu-%lu",Command,getpid(),time(NULL),rand()));
 }
 
-void SSHRequestPasswd(char **Passwd)
+static void SSHRequestPasswd(char **Passwd)
 {
 STREAM *S;
 char inchar;
@@ -41,7 +41,7 @@ STREAMDestroy(S);
 }
 
 
-STREAM *SSHOpen(HashratCtx *Ctx, const char *URL, char **Path)
+static STREAM *SSHOpenHashrat(HashratCtx *Ctx, const char *URL, char **Path)
 {
 char *Tempstr=NULL;
 const char *ptr;
@@ -76,7 +76,7 @@ while (waitpid(-1,NULL,WNOHANG) > 0);
 
 //clean up bytes in the stream
 
-S=SSHOpen(Ctx, URL, &Path);
+S=SSHOpenHashrat(Ctx, URL, &Path);
 if (S)
 {
 	Tempstr=MCopyStr(Tempstr,"cat '",Path,"' 2>/dev/null \n",NULL);
@@ -94,7 +94,7 @@ return(S);
 }
 
 
-void Decode_LS_Output(const char *Line, char **Path, struct stat *Stat)
+static void Decode_LS_Output(const char *Line, char **Path, struct stat *Stat)
 {
 char *Token=NULL;
 const char *ptr, *tptr;
@@ -186,7 +186,7 @@ STREAM *S;
 int RetVal=FT_FILE;
 struct stat *Stat;
 
-S=SSHOpen(Ctx, URL, &Path);
+S=SSHOpenHashrat(Ctx, URL, &Path);
 if (S)
 {
 	TermLine=SSHGenerateReplayTerminator(TermLine, "LIST");
