@@ -793,19 +793,8 @@ STREAM *STREAMServerAccept(STREAM *Serv)
     S=STREAMFromSock(fd, type, Tempstr, DestIP, DestPort);
     if (type==STREAM_TYPE_TCP_ACCEPT)
     {
-        //if TLS autodetection enabled, perform it now
-        if (Serv->Flags & SF_TLS_AUTO)
-        {
-            Tempstr=SetStrLen(Tempstr,255);
-            result=recv(S->in_fd, Tempstr, 4, MSG_PEEK);
-            if (result >3)
-            {
-                if (memcmp(Tempstr, "\x16\x03\x01",3)==0)
-                {
-                    //it's SSL/TLS
-                }
-            }
-        }
+    	//if TLS autodetection enabled, perform it now
+    	if (Serv->Flags & SF_TLS_AUTO) OpenSSLAutoDetect(S);
     }
 
     DestroyString(Tempstr);

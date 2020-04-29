@@ -269,6 +269,7 @@ char *MenuCursorLeft;
 char *MenuCursorRight;
 } TERMMENU;
 
+#define TERMMENU_SELECTED LIST_FLAG_USER1
 
 TERMMENU *TerminalMenuCreate(STREAM *Term, int x, int y, int wid, int high);
 void TerminalMenuDestroy(TERMMENU *Item);
@@ -286,9 +287,13 @@ ListNode *TerminalMenuOnKey(TERMMENU *Menu, int key);
 ListNode *TerminalMenuProcess(TERMMENU *Menu);
 
 //create a menu from a list of options, and run it.
-// This keeps reading keypresses until an option is
-//selected. Returns the selected option, or returns NULL if escape is pressed
+//This keeps reading keypresses until an option is selected. 
+//Returns the selected option, or returns NULL if escape is pressed.
+//if TERMMENU_SELECTED is set on the head of Options, then the menu will allow setting
+//'selected' against multiple values
 ListNode *TerminalMenu(STREAM *Term, ListNode *Options, int x, int y, int wid, int high);
+
+
 
 #ifdef __cplusplus
 }

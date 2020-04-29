@@ -70,6 +70,8 @@ OPTIONS
   -base64         Encode with base64 instead of hex
   -i64            Encode with base64 with rearranged characters
   -p64            Encode with base64 with a-z,A-Z and _-, for best compatibility with 'allowed characters' in websites.
+  -r64            Encode with base64 with a-z,A-Z and _-, rfc4648 compatible.
+  -rfc4648        Encode with base64 with a-z,A-Z and _-, rfc4648 compatible.
   -x64            Encode with XXencode style base64.
   -u64            Encode with UUencode style base64.
   -g64            Encode with GEDCOM style base64.

@@ -14,9 +14,12 @@ int EncodingParse(const char *Str)
     if (strcmp(Str,"base64")==0) return(ENCODE_BASE64);
     if (strcmp(Str,"i64")==0) return(ENCODE_IBASE64);
     if (strcmp(Str,"p64")==0) return(ENCODE_PBASE64);
+    if (strcmp(Str,"r64")==0) return(ENCODE_RBASE64);
+    if (strcmp(Str,"rfc4648")==0) return(ENCODE_RBASE64);
     if (strncmp(Str,"xx",2)==0) return(ENCODE_XXENC);
     if (strncmp(Str,"uu",2)==0) return(ENCODE_UUENC);
     if (strcmp(Str,"crypt")==0) return(ENCODE_CRYPT);
+    if (strcmp(Str,"z85")==0) return(ENCODE_Z85);
 
     return(ENCODE_NONE);
 }
@@ -82,47 +85,43 @@ char *EncodeBytes(char *Buffer, const char *Bytes, int len, int Encoding)
         RetStr=SetStrLen(RetStr,len * 4);
         to64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len);
         break;
-        break;
 
     case ENCODE_IBASE64:
         RetStr=SetStrLen(RetStr,len * 4);
         Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,IBASE64_CHARS,'\0');
-        break;
         break;
 
     case ENCODE_PBASE64:
         RetStr=SetStrLen(RetStr,len * 4);
         Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,PBASE64_CHARS,'\0');
         break;
-        break;
 
+    case ENCODE_RBASE64:
+        RetStr=SetStrLen(RetStr,len * 4);
+        Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,RBASE64_CHARS,'=');
+        break;
 
     case ENCODE_CRYPT:
         RetStr=SetStrLen(RetStr,len * 4);
         Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,CRYPT_CHARS,'\0');
-        break;
         break;
 
     case ENCODE_XXENC:
         RetStr=SetStrLen(RetStr,len * 4);
         Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,XXENC_CHARS,'+');
         break;
-        break;
 
     case ENCODE_UUENC:
         RetStr=SetStrLen(RetStr,len * 4);
         Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,UUENC_CHARS,'\'');
         break;
-        break;
 
     case ENCODE_ASCII85:
         RetStr=Ascii85(RetStr,Bytes,len,ASCII85_CHARS);
         break;
-        break;
 
     case ENCODE_Z85:
         RetStr=Ascii85(RetStr,Bytes,len,Z85_CHARS);
-        break;
         break;
 
     case ENCODE_OCTAL:

@@ -1817,8 +1817,13 @@ char *TerminalReadText(char *RetStr, int Flags, STREAM *S)
 
         if ( (inchar == '\n') || (inchar == '\r') )
         {
-            //backspace over previous character and replace with star
+            //backspace over previous character and replace with star, so the 
+						//last character is not left chnaging when we press 'enter'
             if (Flags & TERM_SHOWTEXTSTARS) STREAMWriteString("\x08*",S);
+
+						//ensure we don't return NULL, but that we instead return an empty string
+						RetStr=CatStr(RetStr, ""); 
+
             break;
         }
 
@@ -2123,9 +2128,9 @@ void TerminalBarMenuUpdate(TERMBAR *TB, ListNode *Items)
     {
         if (Items->Side==Curr)
         {
-            Tempstr=MCatStr(Tempstr, TB->MenuCursorLeft, Curr->Tag, TB->MenuCursorRight,NULL);
+            Tempstr=MCatStr(Tempstr, TB->MenuCursorLeft, Curr->Tag, TB->MenuCursorRight, NULL);
         }
-        else Tempstr=MCatStr(Tempstr, TB->MenuPadLeft,Curr->Tag,TB->MenuPadRight,NULL);
+        else Tempstr=MCatStr(Tempstr, TB->MenuPadLeft,Curr->Tag, TB->MenuPadRight, NULL);
 
         Curr=ListGetNext(Curr);
     }
@@ -2263,6 +2268,11 @@ void TerminalMenuDraw(TERMMENU *Menu)
 						p_Attribs=Menu->MenuCursorLeft;
 						p_Cursor="> ";
 					}
+					else if (Curr->Flags & TERMMENU_SELECTED)
+					{
+						p_Attribs=Menu->MenuAttribs;
+						p_Cursor=" X";
+					}
 					else 
 					{
 						p_Attribs=Menu->MenuAttribs;
@@ -2353,6 +2363,15 @@ int i;
 			 }	 
 			 break;	
 
+		case ' ':
+			 	if (Menu->Options->Side)
+				{
+					//if Flags for the list head item has 'TERMMENU_SELECTED' set, then toggle that value for the
+					//list item
+					if (Menu->Options->Flags & TERMMENU_SELECTED) Menu->Options->Side->Flags ^= TERMMENU_SELECTED;
+				}
+			 break;
+
 		case '\r':
 		case '\n':
 			 return(Menu->Options->Side);
@@ -2397,6 +2416,7 @@ ListNode *Node;
 int key;
 
 Menu=TerminalMenuCreate(Term, x, y, wid, high);
+Menu->Options->Flags = Options->Flags;
 Node=ListGetNext(Options);
 while (Node)
 {

@@ -68,6 +68,7 @@ If you *KNOW* that your output of DecodeBytes is going to be null-terminated tex
 #define ENCODE_XXENC 67
 #define ENCODE_UUENC 68
 #define ENCODE_CRYPT 69
+#define ENCODE_RBASE64 70
 
 #define ENCODE_ASCII85 85
 #define ENCODE_Z85 86
@@ -77,6 +78,7 @@ If you *KNOW* that your output of DecodeBytes is going to be null-terminated tex
 #define BASE64_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 #define IBASE64_CHARS "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789+/"
 #define PBASE64_CHARS "0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"
+#define RBASE64_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_" //RFC4648 compliant
 #define CRYPT_CHARS "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 #define UUENC_CHARS " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
 #define XXENC_CHARS "+-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -88,6 +90,26 @@ If you *KNOW* that your output of DecodeBytes is going to be null-terminated tex
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+//parse a string that describes an encoding. Strings are:
+//"8"    Octal Encoding
+//"oct"  Octal Encoding
+//"10"   Decimal Encoding
+//"dec"  Decimal Encoding
+//"16"   HexaDecimal Encoding
+//"hex"  HexaDecimal Encoding
+//"64"   base64 Encoding
+//"b64"  base64 Encoding
+//"r64"  rfc4648 compliant alternative base64 Encoding
+//"rfc4648"  rfc4648 compliant alternative base64 Encoding
+//"i64"  alternative base64 Encoding
+//"p64"  another alternative base64 Encoding
+//"xx"   xxencode encoding
+//"uu"   uuencode encoding
+//"crypt"   unix 'crypt' encoding
+//"ascii85" ascii85 encoding
+//"z86" z85 encoding
+
 
 int EncodingParse(const char *Str);
 

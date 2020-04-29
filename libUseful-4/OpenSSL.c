@@ -661,7 +661,7 @@ int DoSSLServerNegotiation(STREAM *S, int Flags)
 
 
 
-int STREAMIsPeerAuth(STREAM *S)
+int OpenSSLIsPeerAuth(STREAM *S)
 {
 #ifdef HAVE_LIBSSL
     void *ptr;
@@ -689,4 +689,36 @@ if (ptr) SSL_free((SSL *) ptr);
 ptr=STREAMGetItem(S,"LIBUSEFUL-SSL:CTX");
 if (ptr) SSL_CTX_free((SSL_CTX *) ptr);
 #endif
+}
+
+
+
+int OpenSSLAutoDetect(STREAM *S)
+{
+int result, val, RetVal=FALSE;
+char *Tempstr=NULL;
+
+val=S->Timeout;
+STREAMSetTimeout(S, 1);
+
+result=STREAMCountWaitingBytes(S);
+if (result > 1)
+{
+   Tempstr=SetStrLen(Tempstr,255);
+   result=recv(S->in_fd, Tempstr, 2, MSG_PEEK);
+   if (result >1)
+   {
+     if (memcmp(Tempstr, "\x16\x03",2)==0)
+     {
+     	//it's SSL/TLS
+			DoSSLServerNegotiation(S, 0);
+			RetVal=TRUE;
+     }
+   }
+}
+STREAMSetTimeout(S, val);
+
+Destroy(Tempstr);
+
+return(RetVal);
 }
