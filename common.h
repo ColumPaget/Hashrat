@@ -77,6 +77,7 @@
 #define CTX_CACHED 262144
 #define CTX_ONE_FS 524288
 #define CTX_HIDDEN 1048576
+#define CTX_REFORMAT 2097152
 
 
 #define RESULT_PASS 1
@@ -144,6 +145,6 @@ void HashratCtxDestroy(void *p_Ctx);
 void HashratStoreHash(HashratCtx *Ctx, const char *Path, struct stat *Stat, const char *Hash);
 int HashratOutputInfo(HashratCtx *Ctx, STREAM *S, const char *Path, struct stat *Stat, const char *Hash);
 void RunHookScript(const char *Hook, const char *Path, const char *Other);
-char *ReformatHash(char *RetStr, const char *Str, int OutputLen, int SegmentSize, char SegmentChar);
+char *ReformatHash(char *RetStr, const char *Str, HashratCtx *Ctx);
 
 #endif

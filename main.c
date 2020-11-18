@@ -68,9 +68,9 @@ char *Tempstr=NULL, *Base64=NULL, *Reformatted=NULL;
 const char *p_Hash;
 
 	p_Hash=Hash;
-	if ((Ctx->OutputLength > 0) || (Ctx->SegmentLength > 0)) 
+	if (Ctx->Flags & CTX_REFORMAT) 
 	{
-		Reformatted=ReformatHash(Reformatted, Hash, Ctx->OutputLength, Ctx->SegmentLength, Ctx->SegmentChar);
+		Reformatted=ReformatHash(Reformatted, Hash, Ctx);
 		p_Hash=Reformatted;
 	}
 

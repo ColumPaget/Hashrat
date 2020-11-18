@@ -245,7 +245,11 @@ if (Flags & CGI_DOHASH)
 {
 	Ctx=(HashratCtx *) calloc(1,sizeof(HashratCtx));
 	Ctx->HashType=CopyStr(Ctx->HashType,HashType);
+	Ctx->OutputLength=OutputLength;
+	Ctx->SegmentLength=SegmentLength;
+	Ctx->SegmentChar=SegmentChar[0];
 	Ctx->Encoding |=ENCODE_HEX;
+	if ((OutputLength > 0) || (SegmentLength > 0)) Ctx->Flags |= CTX_REFORMAT;
 
 	i=MatchTokenFromList(Encoding, EncodingNames, 0);
 	if (i > -1) Ctx->Encoding=Encodings[i];
@@ -259,7 +263,7 @@ if (Flags & CGI_DOHASH)
 
 	ProcessData(&Hash, Ctx, Text, StrLen(Text));
 
-	Token=ReformatHash(Token, Hash, OutputLength, SegmentLength, SegmentChar[0]);
+	Token=ReformatHash(Token, Hash, Ctx);
 	CGIDrawHashResult(Token);
 }
 

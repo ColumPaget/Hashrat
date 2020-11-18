@@ -281,6 +281,8 @@ HASH *Hash;
 			ptr=GetVar(Ctx->Vars,"EncryptionKey");
 			if (ptr) HMACSetKey(Hash, ptr, StrLen(ptr));
 
+			ptr=GetVar(Ctx->Vars, "InputPrefix");
+			if (StrValid(ptr)) Hash->Update(Hash ,ptr, StrLen(ptr));
 			Hash->Update(Hash ,Data, DataLen);
 			HashratFinishHash(RetStr, Ctx, Hash);
 			}

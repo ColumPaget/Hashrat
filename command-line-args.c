@@ -60,8 +60,17 @@ const char *arg, *next;
 		else 
 		{
 			SetVar(Vars,VarName,next);
-			if (strcmp(VarName, "Output:Length")==0) Ctx->OutputLength=atoi(next);
-			if (strcmp(VarName, "Segment:Length")==0) Ctx->SegmentLength=atoi(next);
+			if (strcmp(VarName, "Output:Length")==0) 
+			{
+				Ctx->OutputLength=atoi(next);
+				Ctx->Flags |= CTX_REFORMAT;
+			}
+			if (strcmp(VarName, "Segment:Length")==0) 
+			{
+				Ctx->Flags |= CTX_REFORMAT;
+				Ctx->SegmentLength=atoi(next);
+			}
+			if (strcmp(VarName, "OutputPrefix")==0) Ctx->Flags |= CTX_REFORMAT;
 		}
 	}
 	else if (StrValid(VarName)) SetVar(Vars,VarName,VarValue);
@@ -268,8 +277,10 @@ else if (strcmp(arg,"-fs")==0) CommandLineSetCtx(Ctx, CTX_ONE_FS,0);
 else if (strcmp(arg,"-n")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG, "Output:Length", "",Ctx->Vars);
 else if (strcmp(arg,"-segment")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG, "Segment:Length", "",Ctx->Vars);
 else if (strcmp(arg,"-hmac")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG | FLAG_HMAC, "EncryptionKey", "",Ctx->Vars);
-else if (strcmp(arg,"-idfile")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG,  "SshIdFile", "",Ctx->Vars);
-else if (strcmp(arg,"-f")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG, "ItemsListSource", "",Ctx->Vars);
+else if (strcmp(arg,"-idfile")==0) CommandLineHandleArg( Ctx,FLAG_NEXTARG,  "SshIdFile", "", Ctx->Vars);
+else if (strcmp(arg,"-f")==0) CommandLineHandleArg( Ctx,FLAG_NEXTARG, "ItemsListSource", "", Ctx->Vars);
+else if (strcmp(arg,"-iprefix")==0) CommandLineHandleArg( Ctx, FLAG_NEXTARG, "InputPrefix", "", Ctx->Vars);
+else if (strcmp(arg,"-oprefix")==0) CommandLineHandleArg( Ctx, FLAG_NEXTARG, "OutputPrefix", "", Ctx->Vars);
 else if (strcmp(arg,"-i")==0) CommandLineSetCtx(Ctx, CTX_INCLUDE,0);
 else if (strcmp(arg,"-name")==0) CommandLineSetCtx(Ctx, CTX_INCLUDE,0);
 else if (strcmp(arg,"-mtime")==0) CommandLineSetCtx(Ctx, CTX_MTIME,0);

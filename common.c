@@ -30,11 +30,16 @@ free(Ctx);
 }
 
 
-char *ReformatHash(char *RetStr, const char *Str, int OutputLen, int SegmentSize, char SegmentChar)
+char *ReformatHash(char *RetStr, const char *Str, HashratCtx *Ctx)
 {
 int ipos=0, opos=0;
+int OutputLen;
 
+OutputLen=Ctx->OutputLength;
 if (OutputLen==0) OutputLen=StrLen(Str);
+
+RetStr=CopyStr(RetStr, GetVar(Ctx->Vars, "OutputPrefix"));
+opos=StrLen(RetStr);
 
 for (ipos=0; ipos < OutputLen; ipos++)
 {
@@ -42,12 +47,13 @@ for (ipos=0; ipos < OutputLen; ipos++)
 	RetStr=AddCharToBuffer(RetStr, opos++, Str[ipos]);
 	if (Str[ipos]=='\0') break;
 
-	if ((SegmentSize > 0) && (ipos > 0) && (OutputLen-ipos > 1) && (((ipos+1) % SegmentSize)==0)) 
+	if ((Ctx->SegmentLength > 0) && (ipos > 0) && (OutputLen - ipos > 1) && (((ipos+1) % Ctx->SegmentLength)==0)) 
 	{
-		RetStr=AddCharToBuffer(RetStr, opos++, SegmentChar);
+		RetStr=AddCharToBuffer(RetStr, opos++, Ctx->SegmentChar);
 	}
-
 }
+
+
 
 return(RetStr);
 }
@@ -61,7 +67,7 @@ uint64_t diff;
 
 //printf("SEG: %d %d\n", Ctx->OutputLength, Ctx->SegmentLength);
 
-if (Ctx->SegmentLength > 0) Hash=ReformatHash(Hash, iHash, Ctx->OutputLength, Ctx->SegmentLength, Ctx->SegmentChar);
+if (Ctx->SegmentLength > 0) Hash=ReformatHash(Hash, iHash, Ctx);
 else Hash=CopyStr(Hash, iHash);
 
 if (Ctx->OutputLength > 0) StrTrunc(Hash, Ctx->OutputLength);
