@@ -5,6 +5,7 @@
 #include "URL.h"
 #include "Expect.h"
 #include "Http.h"
+#include "Gemini.h"
 #include "Ssh.h"
 #include "Pty.h"
 #include "String.h"
@@ -17,13 +18,6 @@
 #include <linux/fs.h>
 #endif
 
-#ifdef HAVE_LIBSSL
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#endif
 
 
 
@@ -33,10 +27,10 @@ int STREAMReadCharsToBuffer(STREAM *S);
 
 typedef struct
 {
-int size;
-int high;
-void *items;
-void *witems;
+    int size;
+    int high;
+    void *items;
+    void *witems;
 } TSelectSet;
 
 #ifdef HAVE_POLL
@@ -45,111 +39,111 @@ void *witems;
 
 static void *SelectAddFD(TSelectSet *Set, int type, int fd)
 {
-struct pollfd *items;
+    struct pollfd *items;
 
-Set->size++;
-Set->items=realloc(Set->items, sizeof(struct pollfd) * Set->size);
+    Set->size++;
+    Set->items=realloc(Set->items, sizeof(struct pollfd) * Set->size);
 
-items=(struct pollfd *) Set->items;
-items[Set->size-1].fd=fd;
-items[Set->size-1].events=0;
-items[Set->size-1].revents=0;
-if (type & SELECT_READ) items[Set->size-1].events |= POLLIN;
-if (type & SELECT_WRITE) items[Set->size-1].events |= POLLOUT;
+    items=(struct pollfd *) Set->items;
+    items[Set->size-1].fd=fd;
+    items[Set->size-1].events=0;
+    items[Set->size-1].revents=0;
+    if (type & SELECT_READ) items[Set->size-1].events |= POLLIN;
+    if (type & SELECT_WRITE) items[Set->size-1].events |= POLLOUT;
 }
 #include <math.h>
 
 static int SelectWait(TSelectSet *Set, struct timeval *tv)
 {
-long long timeout, next;
-double start, diff, val;
-int result;
+    long long timeout, next;
+    double start, diff, val;
+    int result;
 
 
-if (tv)
-{
-	//convert to millisecs
-	timeout=(tv->tv_sec * 1000) + (tv->tv_usec / 1000);
-	start=GetTime(TIME_MILLISECS);
-}
-else timeout=-1;
+    if (tv)
+    {
+        //convert to millisecs
+        timeout=(tv->tv_sec * 1000) + (tv->tv_usec / 1000);
+        start=GetTime(TIME_MILLISECS);
+    }
+    else timeout=-1;
 
-result=poll((struct pollfd *) Set->items, Set->size, timeout);
+    result=poll((struct pollfd *) Set->items, Set->size, timeout);
 
-if (tv)
-{
-	diff=GetTime(TIME_MILLISECS) - start;
-	if (diff > 0)
-	{
-		timeout-=diff;
-		if (timeout > 0) 
-		{
-			tv->tv_sec=(int) (timeout / 1000.0);
-			tv->tv_usec=(timeout - (tv->tv_sec * 1000.0)) * 1000;
-		}
-		else
-		{
-			tv->tv_sec=0;
-			tv->tv_usec=0;
-		}
-	}
-}
+    if (tv)
+    {
+        diff=GetTime(TIME_MILLISECS) - start;
+        if (diff > 0)
+        {
+            timeout-=diff;
+            if (timeout > 0)
+            {
+                tv->tv_sec=(int) (timeout / 1000.0);
+                tv->tv_usec=(timeout - (tv->tv_sec * 1000.0)) * 1000;
+            }
+            else
+            {
+                tv->tv_sec=0;
+                tv->tv_usec=0;
+            }
+        }
+    }
 
-return(result);
+    return(result);
 }
 
 static int SelectCheck(TSelectSet *Set, int fd)
 {
-int i, RetVal=0;
-struct pollfd *items;
+    int i, RetVal=0;
+    struct pollfd *items;
 
-items=(struct pollfd *) Set->items;
-for (i=0; i < Set->size; i++)
-{
-	if (items[i].fd==fd)
-	{
-		if (items[i].revents & (POLLIN | POLLHUP)) RetVal |= SELECT_READ;
-		if (items[i].revents & POLLOUT) RetVal |= SELECT_WRITE;
-		break;
-	}
-}
+    items=(struct pollfd *) Set->items;
+    for (i=0; i < Set->size; i++)
+    {
+        if (items[i].fd==fd)
+        {
+            if (items[i].revents & (POLLIN | POLLHUP)) RetVal |= SELECT_READ;
+            if (items[i].revents & POLLOUT) RetVal |= SELECT_WRITE;
+            break;
+        }
+    }
 
-return(RetVal);
+    return(RetVal);
 }
 #else
 
 static void SelectAddFD(TSelectSet *Set, int type, int fd)
 {
-if (fd < FD_SETSIZE)
-{
-	if (! Set->items) Set->items=calloc(1, sizeof(fd_set));
+    if (fd < FD_SETSIZE)
+    {
+        if (! Set->items) Set->items=calloc(1, sizeof(fd_set));
 
-	if (type & SELECT_WRITE)
-	{
-	if (! Set->witems) Set->witems=calloc(1, sizeof(fd_set));
-	}
+        if (type & SELECT_WRITE)
+        {
+            if (! Set->witems) Set->witems=calloc(1, sizeof(fd_set));
+        }
 
-  if (type & SELECT_READ) FD_SET(fd, (fd_set *) Set->items);
-  if (type & SELECT_WRITE) FD_SET(fd, (fd_set *) Set->witems);
-	Set->size++;
-	if (fd > Set->high) Set->high=fd;
-}
-else RaiseError(ERRFLAG_ERRNO, "SelectAddFD", "File Descriptor '%d' is higher than FD_SETSIZE limit. Cannot add to select.", fd);
+        if (type & SELECT_READ) FD_SET(fd, (fd_set *) Set->items);
+        if (type & SELECT_WRITE) FD_SET(fd, (fd_set *) Set->witems);
+        Set->size++;
+        if (fd > Set->high) Set->high=fd;
+    }
+    else RaiseError(ERRFLAG_ERRNO, "SelectAddFD", "File Descriptor '%d' is higher than FD_SETSIZE limit. Cannot add to select.", fd);
 }
 
 static int SelectWait(TSelectSet *Set, struct timeval *tv)
 {
-return(select(Set->high+1, Set->items, Set->witems,NULL,tv));
+    return(select(Set->high+1, Set->items, Set->witems,NULL,tv));
 }
 
 static int SelectCheck(TSelectSet *Set, int fd)
 {
-int RetVal=0;
+    int RetVal=0;
 
- if (Set->items  && FD_ISSET(fd, (fd_set *) Set->items )) RetVal |= SELECT_READ;
- if (Set->witems && FD_ISSET(fd, (fd_set *) Set->witems)) RetVal |= SELECT_WRITE;
+    if (Set->items  && FD_ISSET(fd, (fd_set *) Set->items )) RetVal |= SELECT_READ;
+    if (Set->witems && FD_ISSET(fd, (fd_set *) Set->witems)) RetVal |= SELECT_WRITE;
 
- return(RetVal);
+    return(RetVal);
 }
 
 #endif
@@ -157,25 +151,25 @@ int RetVal=0;
 
 static void SelectSetDestroy(TSelectSet *Set)
 {
-		Destroy(Set->items);
-		Destroy(Set->witems);
-		Destroy(Set);
+    Destroy(Set->items);
+    Destroy(Set->witems);
+    Destroy(Set);
 }
 
 
 int FDSelect(int fd, int Flags, struct timeval *tv)
 {
-		TSelectSet *Set;
+    TSelectSet *Set;
     int result, RetVal=0;
 
-		Set=(TSelectSet *) calloc(1,sizeof(TSelectSet));
-		SelectAddFD(Set, Flags, fd);
-		result=SelectWait(Set, tv);
+    Set=(TSelectSet *) calloc(1,sizeof(TSelectSet));
+    SelectAddFD(Set, Flags, fd);
+    result=SelectWait(Set, tv);
 
     if ((result==-1) && (errno==EBADF)) RetVal=0;
     else if (result  > 0) RetVal=SelectCheck(Set, fd);
 
-		SelectSetDestroy(Set);
+    SelectSetDestroy(Set);
 
     return(RetVal);
 }
@@ -378,28 +372,39 @@ int STREAMCountWaitingBytes(STREAM *S)
 
 STREAM *STREAMSelect(ListNode *Streams, struct timeval *tv)
 {
-		TSelectSet *Set;
+    TSelectSet *Set;
     STREAM *S;
     ListNode *Curr, *Last;
     int result;
 
-		Set=(TSelectSet *) calloc(1,sizeof(TSelectSet));
+    Set=(TSelectSet *) calloc(1,sizeof(TSelectSet));
     Curr=ListGetNext(Streams);
     while (Curr)
     {
         S=(STREAM *) Curr->Item;
         if (S && (! (S->State & SS_EMBARGOED)))
         {
-            //Pump any data in the stream
-            STREAMFlush(S);
-            if (S->InEnd > S->InStart) return(S);
-						SelectAddFD(Set, SELECT_READ, S->in_fd);
+            //server type streams don't have buffers
+            if ( (S->Type != STREAM_TYPE_UNIX_SERVER) && (S->Type != STREAM_TYPE_TCP_SERVER) )
+            {
+                //Pump any data in the stream
+                STREAMFlush(S);
+
+                //if there's stuff in buffer, then we don't need to select the file descriptor
+                if (S->InEnd > S->InStart)
+                {
+                    SelectSetDestroy(Set);
+                    return(S);
+                }
+            }
+
+            SelectAddFD(Set, SELECT_READ, S->in_fd);
         }
 
         Curr=ListGetNext(Curr);
     }
 
-		result=SelectWait(Set, tv);
+    result=SelectWait(Set, tv);
 
     if (result > 0)
     {
@@ -418,14 +423,14 @@ STREAM *STREAMSelect(ListNode *Streams, struct timeval *tv)
                     if (! Last) Last=Streams;
                     ListThreadNode(Last, Curr);
                 }
-								SelectSetDestroy(Set);
+                SelectSetDestroy(Set);
                 return(S);
             }
             Curr=ListGetNext(Curr);
         }
     }
 
-		SelectSetDestroy(Set);
+    SelectSetDestroy(Set);
     return(NULL);
 }
 
@@ -456,7 +461,7 @@ int STREAMCheckForWaitingChar(STREAM *S,unsigned char check_char)
 
 
 
-int STREAMInternalFinalWriteBytes(STREAM *S, const char *Data, int DataLen)
+static int STREAMInternalFinalWriteBytes(STREAM *S, const char *Data, int DataLen)
 {
     fd_set selectset;
     int result=0, count=0, len;
@@ -490,43 +495,33 @@ int STREAMInternalFinalWriteBytes(STREAM *S, const char *Data, int DataLen)
 
     while (count < DataLen)
     {
-        if (S->State & SS_SSL)
-        {
-#ifdef HAVE_LIBSSL
-		vptr=STREAMGetItem(S,"LIBUSEFUL-SSL:OBJ");
-		if (vptr) result=SSL_write((SSL *) vptr, Data + count, DataLen - count);
-		else result=0;
-		if (result < 0) result=STREAM_CLOSED;
-#endif
-        }
+        if (S->State & SS_SSL) result=OpenSSLSTREAMWriteBytes(S, Data+count, DataLen-count);
         else
         {
             if (S->Timeout > 0)
             {
                 FD_ZERO(&selectset);
                 FD_SET(S->out_fd, &selectset);
-                result=(S->Timeout % 100);
-                tv.tv_usec=result * 100000;
-                tv.tv_sec=S->Timeout / 100;
+                MillisecsToTV(S->Timeout * 10, &tv);
                 result=select(S->out_fd+1,NULL,&selectset,NULL,&tv);
-                if (result < 1) 
-								{
-                	if ((result == 0) || (errno==EAGAIN)) result=STREAM_TIMEOUT;
-									else result=STREAM_CLOSED;
-									break;
-								}
+                if (result < 1)
+                {
+                    if ((result == 0) || (errno==EAGAIN)) result=STREAM_TIMEOUT;
+                    else result=STREAM_CLOSED;
+                    break;
+                }
             }
 
             if (S->Flags & SF_WRLOCK) flock(S->out_fd,LOCK_EX);
             result=DataLen-count;
             //if (S->BlockSize && (S->BlockSize < (DataLen-count))) result=S->BlockSize;
             result=write(S->out_fd, Data + count, result);
-						if (result < 0) 
-						{
-							if (errno==EINTR) result=0;
-							else if (errno==EAGAIN) result=STREAM_TIMEOUT;
-							else result=STREAM_CLOSED;
-						}
+            if (result < 0)
+            {
+                if (errno==EINTR) result=0;
+                else if (errno==EAGAIN) result=STREAM_TIMEOUT;
+                else result=STREAM_CLOSED;
+            }
             if (S->Flags & SF_WRLOCK) flock(S->out_fd,LOCK_UN);
 
             //yes, we neglect to do a sync. The idea here is to work opportunisitically, flushing out those pages
@@ -537,17 +532,17 @@ int STREAMInternalFinalWriteBytes(STREAM *S, const char *Data, int DataLen)
 
         }
 
-				if (result < 0) break;
+        if (result < 0) break;
         count+=result;
-				if (S->Flags & SF_NONBLOCK) break;
+        if (S->Flags & SF_NONBLOCK) break;
     }
 
     S->BytesWritten+=count;
-		//memmove any remaining data so that we add onto the end of it
+    //memmove any remaining data so that we add onto the end of it
     S->OutEnd -= count;
     if (S->OutEnd > 0) memmove(S->OutputBuff,S->OutputBuff+count, S->OutEnd);
 
-		if (result < 0) return(result);
+    if (result < 0) return(result);
 
     return(count);
 }
@@ -769,15 +764,15 @@ STREAM *STREAMFileOpen(const char *Path, int Flags)
 #endif
         p_Path=NewPath;
     }
-		//if path starts with a tilde, then it's the user's home directory
+    //if path starts with a tilde, then it's the user's home directory
     else if (strncmp(Path, "~/", 2) ==0)
-		{
-			//Path+1 so we get the / to make sure there is one after HomeDir
-			NewPath=MCopyStr(NewPath, GetCurrUserHomeDir(), Path+1, NULL);
-      fd=open(NewPath, Mode, 0600);
-      p_Path=NewPath;
-		}
-		else
+    {
+        //Path+1 so we get the / to make sure there is one after HomeDir
+        NewPath=MCopyStr(NewPath, GetCurrUserHomeDir(), Path+1, NULL);
+        fd=open(NewPath, Mode, 0600);
+        p_Path=NewPath;
+    }
+    else
     {
         fd=open(Path, Mode, 0600);
         p_Path=Path;
@@ -846,7 +841,7 @@ STREAM *STREAMFileOpen(const char *Path, int Flags)
     //CREATE THE STREAM OBJECT !!
     Stream=STREAMFromFD(fd);
 
-		ptr=LibUsefulGetValue("STREAM:Timeout");
+    ptr=LibUsefulGetValue("STREAM:Timeout");
     if (StrValid(ptr)) STREAMSetTimeout(Stream, atoi(ptr));
 
     STREAMSetFlushType(Stream,FLUSH_FULL,0,0);
@@ -885,6 +880,7 @@ int STREAMParseConfig(const char *Config)
         ptr=Config;
         while (*ptr != '\0')
         {
+            if (*ptr==' ') break;
             switch (*ptr)
             {
             case 'c':
@@ -913,9 +909,9 @@ int STREAMParseConfig(const char *Config)
             case 'm':
                 Flags |= SF_MMAP;
                 break;
-						case 'n':
-								Flags |= SF_NONBLOCK;
-								break;
+            case 'n':
+                Flags |= SF_NONBLOCK;
+                break;
             case 's':
                 Flags |= SF_SECURE;
                 break;
@@ -955,6 +951,30 @@ int STREAMParseConfig(const char *Config)
 }
 
 
+
+//this function handles the situation where we have a 'chain' of URLs (network proxies)
+//it extracts the 'real' or 'master' URL that specifies the actual connection, which
+//will be the LAST one in the list
+static const char *STREAMExtractMasterURL(const char *URL)
+{
+    const char *ptr;
+
+    if (strncmp(URL, "cmd:",4) ==0) return(URL); //'cmd:' urls do not go through proxies!
+    if (strncmp(URL, "file:",5) ==0) return(URL); //'file:' urls do not go through proxies!
+    if (strncmp(URL, "mmap:",5) ==0) return(URL); //'mmap:' urls do not go through proxies!
+    if (strncmp(URL, "stdin:",6) ==0) return(URL); //'stdin:' urls do not go through proxies!
+    if (strncmp(URL, "stdout:",7) ==0) return(URL); //'stdout:' urls do not go through proxies!
+    if (strncmp(URL, "stdio:",6) ==0) return(URL); //'stdio:' urls do not go through proxies!
+
+    ptr=strrchr(URL, '|');
+    if (ptr) ptr++;
+    else ptr=URL;
+
+    return(ptr);
+}
+
+
+
 //URL can be a file path or a number of different network/file URL types
 STREAM *STREAMOpen(const char *URL, const char *Config)
 {
@@ -963,13 +983,9 @@ STREAM *STREAMOpen(const char *URL, const char *Config)
     const char *ptr;
     int Port=0, Flags=0;
 
-    //if we've got a chain of connections, then get the LAST one to analyze. 
-		//The others are all proxies we go via
-    ptr=strrchr(URL, '|');
-    if (ptr) ptr++;
-    else ptr=URL;
 
-    Proto=CopyStr(Proto,"file");
+    Proto=CopyStr(Proto,"");
+    ptr=STREAMExtractMasterURL(URL);
     ParseURL(ptr, &Proto, &Host, &Token, &User, &Pass, &Path, &Args);
     if (StrValid(Token)) Port=strtoul(Token,NULL,10);
 
@@ -981,39 +997,68 @@ STREAM *STREAMOpen(const char *URL, const char *Config)
     {
     case 'c':
         if (strcasecmp(Proto,"cmd")==0) S=STREAMSpawnCommand(URL+4, Config);
+        else S=STREAMFileOpen(URL, Flags);
+        break;
+
+    case 'f':
+        if (strcasecmp(Proto,"file")==0)
+        {
+            ptr=URL+5;
+
+            //file protocol can have 3 '/' after file, like this file:///myfile.txt. So we strip off two of these
+            //thus anything with 3 of them is a full path from /, anything with less than that is a relative path
+            //from the current directory
+            if (*ptr=='/') ptr++;
+            if (*ptr=='/') ptr++;
+            S=STREAMFileOpen(ptr, Flags);
+        }
+        else S=STREAMFileOpen(URL, Flags);
+        break;
+
+    case 'g':
+        if (strcasecmp(Proto, "gemini")==0) S=GeminiOpen(URL, Config);
+        else S=STREAMFileOpen(URL, Flags);
         break;
 
     case 'h':
         if (
-            (strcmp(Proto,"http")==0) ||
-            (strcmp(Proto,"https")==0)
-        ) S=HTTPWithConfig(URL, Config);
-        //the 'write only' and 'read only' flags normally result in one or another
-        //buffer not being allocated (as it's not expected to be needed). However
-        //with HTTP 'write' means 'POST', and we still need both read and write
-        //buffers to read from and to the server, so we must unset these flags
-        Flags &= ~(SF_WRONLY | SF_RDONLY);
+            (strcasecmp(Proto,"http")==0) ||
+            (strcasecmp(Proto,"https")==0)
+        )
+        {
+            S=HTTPWithConfig(URL, Config);
+            //the 'write only' and 'read only' flags normally result in one or another
+            //buffer not being allocated (as it's not expected to be needed). However
+            //with HTTP 'write' means 'POST', and we still need both read and write
+            //buffers to read from and to the server, so we must unset these flags
+            Flags &= ~(SF_WRONLY | SF_RDONLY);
+        }
+        else S=STREAMFileOpen(URL, Flags);
         break;
 
     case 'm':
-        if (strcmp(Proto,"mmap")==0) S=STREAMFileOpen(URL+5, Flags | SF_MMAP);
+        if (strcasecmp(Proto,"mmap")==0) S=STREAMFileOpen(URL+5, Flags | SF_MMAP);
+        else S=STREAMFileOpen(URL, Flags);
         break;
 
     case 't':
     case 's':
     case 'u':
-			if (strcasecmp(Proto,"ssh")==0) S=SSHOpen(Host, Port, User, Pass, Path, Flags);
-      else if (strcasecmp(Proto,"tty")==0)
-      {
+        if ( (strcmp(URL,"-")==0) || (strcasecmp(URL,"stdio:")==0) ) S=STREAMFromDualFD(0,1);
+        else if (strcasecmp(URL,"stdin:")==0) S=STREAMFromFD(0);
+        else if (strcasecmp(URL,"stdout:")==0) S=STREAMFromFD(1);
+        else if (strcasecmp(Proto,"ssh")==0) S=SSHOpen(Host, Port, User, Pass, Path, Flags);
+        else if (strcasecmp(Proto,"tty")==0)
+        {
             S=STREAMFromFD(TTYConfigOpen(URL+4, Config));
             if (S)
             {
                 S->Path=CopyStr(S->Path,URL);
                 S->Type=STREAM_TYPE_TTY;
             }
-      }
-      else
-      {
+        }
+        else
+        {
             S=STREAMCreate();
             S->Path=CopyStr(S->Path,URL);
             if (! STREAMConnect(S, URL, Config))
@@ -1021,13 +1066,11 @@ STREAM *STREAMOpen(const char *URL, const char *Config)
                 STREAMClose(S);
                 S=NULL;
             }
-      }
-      break;
+        }
+        break;
 
     default:
-        if ( (strcmp(URL,"-")==0) || (strcasecmp(URL,"stdio:")==0) ) S=STREAMFromDualFD(0,1);
-				else if (strcasecmp(URL,"stdin:")==0) S=STREAMFromFD(0);
-				else if (strcasecmp(URL,"stdout:")==0) S=STREAMFromFD(1);
+        if (strcmp(URL,"-")==0) S=STREAMFromDualFD(0,1);
         else S=STREAMFileOpen(URL, Flags);
         break;
     }
@@ -1043,19 +1086,19 @@ STREAM *STREAMOpen(const char *URL, const char *Config)
             else if (Flags & SF_WRONLY) STREAMAddStandardDataProcessor(S, "compress", "gzip", "");
         }
 
-    		STREAMSetTimeout(S, LibUsefulGetInteger("STREAM:Timeout"));
+        STREAMSetTimeout(S, LibUsefulGetInteger("STREAM:Timeout"));
 
-				switch (S->Type)
-				{
-					case STREAM_TYPE_TCP:
-					case STREAM_TYPE_UDP: 
-					case STREAM_TYPE_SSL:
-					case STREAM_TYPE_HTTP:
-					case STREAM_TYPE_CHUNKED_HTTP:
-						ptr=LibUsefulGetValue("Net:Timeout");
-    				if (StrValid(ptr)) STREAMSetTimeout(S, atoi(ptr));
-					break;
-				}
+        switch (S->Type)
+        {
+        case STREAM_TYPE_TCP:
+        case STREAM_TYPE_UDP:
+        case STREAM_TYPE_SSL:
+        case STREAM_TYPE_HTTP:
+        case STREAM_TYPE_CHUNKED_HTTP:
+            ptr=LibUsefulGetValue("Net:Timeout");
+            if (StrValid(ptr)) STREAMSetTimeout(S, atoi(ptr));
+            break;
+        }
 
     }
 
@@ -1103,7 +1146,7 @@ void STREAMDestroy(void *p_S)
 
 void STREAMTruncate(STREAM *S, long size)
 {
-   ftruncate(S->out_fd, size);
+    ftruncate(S->out_fd, size);
 }
 
 
@@ -1117,9 +1160,9 @@ void STREAMCloseFile(STREAM *S)
         (strcmp(S->Path,"-") !=0) //don't do this for stdin/stdout
     )
     {
-        if (S->out_fd != -1) 
+        if (S->out_fd != -1)
         {
-					//if we don't need this file cached for future use, tell the os so when we close it
+            //if we don't need this file cached for future use, tell the os so when we close it
 #ifdef POSIX_FADV_DONTNEED
             if (S->Flags & SF_NOCACHE)
             {
@@ -1133,8 +1176,8 @@ void STREAMCloseFile(STREAM *S)
         if (S->in_fd != -1)
         {
 #ifdef POSIX_FADV_DONTNEED
-					//if we don't need this input file cached for future use, tell the os so when we close it
-          if (S->Flags & SF_NOCACHE) posix_fadvise(S->in_fd, 0,0,POSIX_FADV_DONTNEED);
+            //if we don't need this input file cached for future use, tell the os so when we close it
+            if (S->Flags & SF_NOCACHE) posix_fadvise(S->in_fd, 0,0,POSIX_FADV_DONTNEED);
 #endif
 
         }
@@ -1143,9 +1186,9 @@ void STREAMCloseFile(STREAM *S)
 
 
 
-void STREAMClose(STREAM *S)
+void STREAMShutdown(STREAM *S)
 {
-    ListNode *Curr;
+    ListNode *Curr, *Next;
     STREAM *tmpS;
     int val;
 
@@ -1155,24 +1198,24 @@ void STREAMClose(STREAM *S)
     STREAMReadThroughProcessors(S, NULL, -1);
     STREAMFlush(S);
 
-		switch (S->Type)
-		{
-		case STREAM_TYPE_SSH:
-		SSHClose(S);
-		break;
+    switch (S->Type)
+    {
+    case STREAM_TYPE_SSH:
+        SSHClose(S);
+        break;
 
     case STREAM_TYPE_TTY:
-		TTYHangUp(S->in_fd);
-		break;
+        TTYHangUp(S->in_fd);
+        break;
 
-		case STREAM_TYPE_FILE:
-		STREAMCloseFile(S);
-		break;
-		}
+    case STREAM_TYPE_FILE:
+        STREAMCloseFile(S);
+        break;
+    }
 
 
-		//OpenSSLClose only closes things that the OpenSSL subsystem has created, so it's safe to call on all streams
-		OpenSSLClose(S);
+    //OpenSSLClose only closes things that the OpenSSL subsystem has created, so it's safe to call on all streams
+    OpenSSLClose(S);
 
 //For all streams we kill off any helper processes and close any associated streams
     Curr=ListGetNext(S->Values);
@@ -1186,42 +1229,57 @@ void STREAMClose(STREAM *S)
         Curr=ListGetNext(Curr);
     }
 
-		//associate streams are streams that support other streams, like the ssh connection that
-		//supports a port-forward through ssh. We close these down when the owner stream is closed
+    //associate streams are streams that support other streams, like the ssh connection that
+    //supports a port-forward through ssh. We close these down when the owner stream is closed
     Curr=ListGetNext(S->Items);
     while (Curr)
     {
-        if (strcmp(Curr->Tag,"LU:AssociatedStream")==0)
+        Next=ListGetNext(Curr);
+        if (strcmp(Curr->Tag, "LU:AssociatedStream")==0)
         {
             tmpS=(STREAM *) Curr->Item;
             STREAMClose(tmpS);
+            ListDeleteNode(Curr);
         }
-        else if (strcmp(Curr->Tag, "HTTP:InfoStruct")==0) HTTPInfoDestroy(Curr->Item);
+        else if (strcmp(Curr->Tag, "HTTP:InfoStruct")==0)
+        {
+            HTTPInfoDestroy(Curr->Item);
+            ListDeleteNode(Curr);
+        }
 
-        Curr=ListGetNext(Curr);
+
+        Curr=Next;
     }
 
-		//now we actually close the file descriptors for this stream
-		if ((S->out_fd != S->in_fd) && (S->out_fd > -1)) close(S->out_fd);
-    if (S->in_fd > -1) close(S->in_fd);
+    //now we actually close the file descriptors for this stream.
+    if ((S->out_fd != S->in_fd) && (S->out_fd > -1)) close(S->out_fd);
+    //out_fd is invalid now whether we closed it or not, so set it to -1
+    //so that if STREAMClose gets called later (say, in garbage-collected environments)
+    //we don't wind up closing another connection that has inhertied the file number
+    S->out_fd=-1;
 
-
-    STREAMDestroy(S);
+    if (S->in_fd > -1)
+    {
+        close(S->in_fd);
+        S->in_fd=-1;
+    }
 }
 
 
+void STREAMClose(STREAM *S)
+{
+    STREAMShutdown(S);
+    STREAMDestroy(S);
+}
 
 
 int STREAMReadCharsToBuffer(STREAM *S)
 {
     fd_set selectset;
-    int val=0, read_result=0, saved_errno, WaitForBytes=TRUE;
+    int val=0, read_result=0, WaitForBytes=TRUE, saved_errno;
     long bytes_read;
     struct timeval tv;
     char *tmpBuff=NULL, *Peer=NULL;
-#ifdef HAVE_LIBSSL
-    void *SSL_OBJ=NULL;
-#endif
 
     if (! S) return(0);
 
@@ -1264,19 +1322,8 @@ int STREAMReadCharsToBuffer(STREAM *S)
 //if no room in buffer, we can't read in more bytes
     if (S->InEnd >= S->BuffSize) return(1);
 
-
-//This is used in multiple places below, do don't just move it to within the first place
-#ifdef HAVE_LIBSSL
-    SSL_OBJ=STREAMGetItem(S,"LIBUSEFUL-SSL:OBJ");
-
-//if there are bytes available in the internal OpenSSL buffers, when we don't have to
-//wait on a select, we can just go straight through to SSL_read
-    if (S->State & SS_SSL)
-    {
-        //ssl pending checks if there's bytes in the SSL buffer, it's not a select
-        if (SSL_pending((SSL *) SSL_OBJ) > 0) WaitForBytes=FALSE;
-    }
-#endif
+    //if using SSL and already has bytes  queued, don't do a wait on select
+    if ( (S->State & SS_SSL) && OpenSSLSTREAMCheckForBytes(S) ) WaitForBytes=FALSE;
 
     //must set this to 1 in case not doing a select, 'cos S->Timeout not set
     read_result=1;
@@ -1285,9 +1332,7 @@ int STREAMReadCharsToBuffer(STREAM *S)
     {
         FD_ZERO(&selectset);
         FD_SET(S->in_fd, &selectset);
-        val=(S->Timeout % 100);
-        tv.tv_usec=val * 10000;
-        tv.tv_sec=S->Timeout / 100;
+        MillisecsToTV(S->Timeout * 10, &tv);
         val=select(S->in_fd+1,&selectset,NULL,NULL,&tv);
 
         switch (val)
@@ -1317,30 +1362,21 @@ int STREAMReadCharsToBuffer(STREAM *S)
         val=S->BuffSize - S->InEnd;
         tmpBuff=SetStrLen(tmpBuff,val);
 
-        //saved_erno is used in all cases to capture errno before another function
-        //changes it
-#ifdef HAVE_LIBSSL
-        if (S->State & SS_SSL)
+        if (S->State & SS_SSL) bytes_read=OpenSSLSTREAMReadBytes(S, tmpBuff, val);
+        else if (S->Type==STREAM_TYPE_UDP)
         {
-            bytes_read=SSL_read((SSL *) SSL_OBJ, tmpBuff, val);
+            bytes_read=UDPRecv(S->in_fd,  tmpBuff, val, &Peer, NULL);
             saved_errno=errno;
+            STREAMSetValue(S, "Peer", Peer);
+            Destroy(Peer);
         }
         else
-#endif
-            if (S->Type==STREAM_TYPE_UDP)
-            {
-                bytes_read=UDPRecv(S->in_fd,  tmpBuff, val, &Peer, NULL);
-                saved_errno=errno;
-                STREAMSetValue(S, "Peer", Peer);
-                Destroy(Peer);
-            }
-            else
-            {
-                if (S->Flags & SF_RDLOCK) flock(S->in_fd,LOCK_SH);
-                bytes_read=read(S->in_fd, tmpBuff, val);
-                saved_errno=errno;
-                if (S->Flags & SF_RDLOCK) flock(S->in_fd,LOCK_UN);
-            }
+        {
+            if (S->Flags & SF_RDLOCK) flock(S->in_fd,LOCK_SH);
+            bytes_read=read(S->in_fd, tmpBuff, val);
+            saved_errno=errno;
+            if (S->Flags & SF_RDLOCK) flock(S->in_fd,LOCK_UN);
+        }
 
         if (bytes_read > 0)
         {
@@ -1516,7 +1552,7 @@ uint64_t STREAMSeek(STREAM *S, int64_t offset, int whence)
 
 
 
-int STREAMInternalPushProcessingModules(STREAM *S, const char *InData, unsigned long InLen, char **OutData, unsigned long *OutLen)
+static int STREAMInternalPushProcessingModules(STREAM *S, const char *InData, unsigned long InLen, char **OutData, unsigned long *OutLen)
 {
     TProcessingModule *Mod;
     ListNode *Curr, *Next;
@@ -1558,7 +1594,7 @@ int STREAMInternalPushProcessingModules(STREAM *S, const char *InData, unsigned 
 
 //this function returns the number of bytes *queued*, not number
 //written
-int STREAMInternalQueueBytes(STREAM *S, const char *Bytes, int Len)
+static int STREAMInternalQueueBytes(STREAM *S, const char *Bytes, int Len)
 {
     int o_len, queued=0, avail, val=0, result=0;
     const char *ptr;
@@ -1640,8 +1676,8 @@ int STREAMWriteBytes(STREAM *S, const char *Data, int DataLen)
 
     Destroy(TempBuff);
 
-		if (result < 0) return(result);
-		else return(DataLen);
+    if (result < 0) return(result);
+    else return(DataLen);
 }
 
 
@@ -1813,8 +1849,8 @@ char *STREAMReadToTerminator(char *Buffer, STREAM *S, unsigned char Term)
         len=0;
         avail=S->InEnd-S->InStart;
 
-				//if this gets set we've found a terminator
-				p_Term=NULL;
+        //if this gets set we've found a terminator
+        p_Term=NULL;
 
         //if we have bytes in buffer then check for terminator or buffer full
         //in either case set len to transfer bytes out
@@ -1831,7 +1867,7 @@ char *STREAMReadToTerminator(char *Buffer, STREAM *S, unsigned char Term)
         //if nothing in buffer and connection closed, return NULL
         else if (IsClosed)
         {
-						if (bytes_read > 0) return(RetStr);
+            if (bytes_read > 0) return(RetStr);
             Destroy(RetStr);
             return(NULL);
         }
@@ -1857,7 +1893,7 @@ char *STREAMReadToTerminator(char *Buffer, STREAM *S, unsigned char Term)
         else
         {
             RetStr=SetStrLen(RetStr,bytes_read + len);
-            len=STREAMTransferBytesOut(S, RetStr+bytes_read , len);
+            len=STREAMTransferBytesOut(S, RetStr+bytes_read, len);
             bytes_read+=len;
             *(RetStr+bytes_read)='\0';
 
@@ -2220,7 +2256,7 @@ unsigned long STREAMSendFile(STREAM *In, STREAM *Out, unsigned long Max, int Fla
 
         if (! UseSendFile)
         {
-						//How much do we have queued in the in-stream?
+            //How much do we have queued in the in-stream?
             towrite=In->InEnd - In->InStart;
 
 
@@ -2229,50 +2265,45 @@ unsigned long STREAMSendFile(STREAM *In, STREAM *Out, unsigned long Max, int Fla
             {
                 result=STREAMReadCharsToBuffer(In);
                 towrite=In->InEnd - In->InStart;
-								if ((result==STREAM_CLOSED) && (towrite==0))
-								{
-									STREAMFlush(Out);
-									return(bytes_transferred);
-								}
+                if ((result==STREAM_CLOSED) && (towrite==0))
+                {
+                    STREAMFlush(Out);
+                    return(bytes_transferred);
+                }
             }
 
- 						//if it's more than we've been told to get then adjust
-						if (towrite > len) towrite=len;
+            //if it's more than we've been told to get then adjust
+            if (towrite > len) towrite=len;
 
-           //if outbuff hasn't enough space to take the transfer, then do some flushing
+            //if outbuff hasn't enough space to take the transfer, then do some flushing
             val=Out->BuffSize - Out->OutEnd;
             if (val < 1)
             {
-							val=BUFSIZ;
-							if (val > Out->OutEnd) val=Out->OutEnd;
-							STREAMInternalFinalWriteBytes(Out, Out->OutputBuff, val);
-            	sleep(0);
-            	val=Out->BuffSize - Out->OutEnd;
+                val=BUFSIZ;
+                if (val > Out->OutEnd) val=Out->OutEnd;
+                STREAMInternalFinalWriteBytes(Out, Out->OutputBuff, val);
+                sleep(0);
+                val=Out->BuffSize - Out->OutEnd;
             }
 
 
-						//if we still haven't got enough room then adjust our expectations
-						if (towrite > val) towrite=val;
+            //if we still haven't got enough room then adjust our expectations
+            if (towrite > val) towrite=val;
             result=0;
 
 
-            //nothing to write!
-            if (towrite < 1)
-            {
-                //nothing in either buffer! Stream empty. Is it closed?
-                if ((Out->OutEnd==0) && (result==STREAM_CLOSED)) break;
-            }
-
             result=STREAMWriteBytes(Out,In->InputBuff+In->InStart,towrite);
 
-						if (result > 0)
-						{
-            In->InStart+=result;
-            bytes_transferred+=result;
-						}
+            //write failed with 'STREAM_CLOSED'
+            if (result==STREAM_CLOSED) break;
+            else if (result > 0)
+            {
+                In->InStart+=result;
+                bytes_transferred+=result;
+            }
         }
 
-				if (Flags & SENDFILE_FLUSH) STREAMFlush(Out);
+        if (Flags & SENDFILE_FLUSH) STREAMFlush(Out);
         if (! (Flags & SENDFILE_LOOP)) break;
 
         if (Max==0) len=BUFSIZ;

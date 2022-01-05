@@ -1,11 +1,11 @@
 CC = gcc
-VERSION = 4.27
+VERSION = 4.70
 CFLAGS = -g -O2 
 LDFLAGS=
 LIBS = -lssl -lcrypto -lc -lc -lc -lc -lc -lc -lc -lc 
-FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -fPIC -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -D_FILE_OFFSET_BITS=64 -DHAVE_LIBC=1 -DHAVE_PTSNAME_R=1 -DHAVE_LIBC=1 -DHAVE_CLEARENV=1 -DHAVE_LIBC=1 -DHAVE_SETRESUID=1 -DHAVE_LIBC=1 -DHAVE_GET_CURR_DIR=1 -DHAVE_LIBC=1 -DHAVE_UMOUNT2=1 -DHAVE_LIBC=1 -DHAVE_UMOUNT=1 -DHAVE_LIBC=1 -DHAVE_MKOSTEMP=1 -DHAVE_LIBC=1 -DHAVE_POLL=1 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1 -DHAVE_EVP_BF_CBC=1 -DHAVE_EVP_RC2_CBC=1 -DHAVE_EVP_RC4=1 -DHAVE_EVP_DES_CBC=1 -DHAVE_EVP_DESX_CBC=1 -DHAVE_EVP_CAST5_CBC=1 -DHAVE_EVP_IDEA_CBC=1 -DHAVE_EVP_AES_128_CBC=1 -DHAVE_EVP_AES_256_CBC=1 -DHAVE_X509_CHECK_HOST=1 -DHAVE_DECL_OPENSSL_ADD_ALL_ALGORITHMS=1 -DHAVE_OPENSSL_ADD_ALL_ALGORITHMS=1 -DHAVE_DECL_SSL_SET_TLSEXT_HOST_NAME=1 -DHAVE_SSL_SET_TLSEXT_HOST_NAME=1 -DHAVE_MADVISE -DHAVE_MADVISE_NOFORK -DHAVE_MADVISE_DONTDUMP -DHAVE_MLOCK -DVERSION=\"$(VERSION)\"
+FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -fPIC -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -D_FILE_OFFSET_BITS=64 -DHAVE_LIBC=1 -DHAVE_PTSNAME_R=1 -DHAVE_LIBC=1 -DHAVE_CLEARENV=1 -DHAVE_LIBC=1 -DHAVE_SETRESUID=1 -DHAVE_LIBC=1 -DHAVE_GET_CURR_DIR=1 -DHAVE_LIBC=1 -DHAVE_UMOUNT2=1 -DHAVE_LIBC=1 -DHAVE_UMOUNT=1 -DHAVE_LIBC=1 -DHAVE_MKOSTEMP=1 -DHAVE_LIBC=1 -DHAVE_POLL=1 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1 -DHAVE_EVP_BF_CBC=1 -DHAVE_EVP_RC2_CBC=1 -DHAVE_EVP_RC4=1 -DHAVE_EVP_DES_CBC=1 -DHAVE_EVP_DESX_CBC=1 -DHAVE_EVP_CAST5_CBC=1 -DHAVE_EVP_IDEA_CBC=1 -DHAVE_EVP_AES_128_CBC=1 -DHAVE_EVP_AES_256_CBC=1 -DHAVE_X509_CHECK_HOST=1 -DHAVE_SSL_SET_MIN_PROTO_VERSION=1 -DHAVE_DECL_OPENSSL_ADD_ALL_ALGORITHMS=1 -DHAVE_OPENSSL_ADD_ALL_ALGORITHMS=1 -DHAVE_DECL_SSL_SET_TLSEXT_HOST_NAME=1 -DHAVE_SSL_SET_TLSEXT_HOST_NAME=1 -DHAVE_MADVISE -DHAVE_MADVISE_NOFORK -DHAVE_MADVISE_DONTDUMP -DHAVE_MLOCK -DVERSION=\"$(VERSION)\"
 prefix=/usr/local
-OBJ=String.o Array.o List.o Socket.o UnixSocket.o Stream.o Errors.o Unicode.o Terminal.o FileSystem.o GeneralFunctions.o DataProcessing.o Pty.o Log.o Http.o Smtp.o inet.o Expect.o base64.o  crc32.o md5c.o sha1.o sha2.o whirlpool.o jh_ref.o Hash.o Ssh.o Compression.o OAuth.o LibSettings.o Vars.o Time.o Markup.o SpawnPrograms.o Tokenizer.o PatternMatch.o URL.o DataParser.o ConnectionChain.o OpenSSL.o Process.o Encodings.o RawData.o SecureMem.o CommandLineParser.o SysInfo.o
+OBJ=String.o Array.o List.o IPAddress.o Socket.o Server.o UnixSocket.o Stream.o Errors.o Unicode.o Terminal.o TerminalWidget.o TerminalMenu.o TerminalChoice.o TerminalBar.o FileSystem.o GeneralFunctions.o DataProcessing.o Pty.o Log.o Http.o Gemini.o Smtp.o inet.o Expect.o base64.o  crc32.o md5c.o sha1.o sha2.o whirlpool.o jh_ref.o Hash.o Ssh.o Compression.o OAuth.o LibSettings.o Vars.o Time.o Markup.o SpawnPrograms.o Tokenizer.o PatternMatch.o URL.o DataParser.o ConnectionChain.o OpenSSL.o Process.o Encodings.o RawData.o SecureMem.o CommandLineParser.o SysInfo.o
 
 
 all: $(OBJ)
@@ -26,14 +26,23 @@ Array.o: Array.h Array.c
 List.o: List.h List.c
 	$(CC) $(FLAGS) -c List.c
 
+IPAddress.o: IPAddress.h IPAddress.c
+	$(CC) $(FLAGS) -c IPAddress.c
+
 Socket.o: Socket.h Socket.c
 	$(CC) $(FLAGS) -c Socket.c
+
+Server.o: Server.h Server.c
+	$(CC) $(FLAGS) -c Server.c
 
 Pty.o: Pty.h Pty.c
 	$(CC) $(FLAGS) -c Pty.c
 
 Http.o: Http.h Http.c
 	$(CC) $(FLAGS) -c Http.c
+
+Gemini.o: Gemini.h Gemini.c
+	$(CC) $(FLAGS) -c Gemini.c
 
 Smtp.o: Smtp.h Smtp.c
 	$(CC) $(FLAGS) -c Smtp.c
@@ -46,6 +55,18 @@ Unicode.o: Unicode.c Unicode.h
 
 Terminal.o: Terminal.h Terminal.c
 	$(CC) $(FLAGS) -c Terminal.c
+
+TerminalWidget.o: TerminalWidget.h TerminalWidget.c
+	$(CC) $(FLAGS) -c TerminalWidget.c
+
+TerminalMenu.o: TerminalMenu.h TerminalMenu.c
+	$(CC) $(FLAGS) -c TerminalMenu.c
+
+TerminalChoice.o: TerminalChoice.h TerminalChoice.c
+	$(CC) $(FLAGS) -c TerminalChoice.c
+
+TerminalBar.o: TerminalBar.h TerminalBar.c
+	$(CC) $(FLAGS) -c TerminalBar.c
 
 Errors.o: Errors.h Errors.c
 	$(CC) $(FLAGS) -c Errors.c
@@ -170,6 +191,9 @@ install: libUseful.so
 	cp *.h $(DESTDIR)$(prefix)/include/libUseful-$(VERSION)
 	-mkdir -p $(DESTDIR)$(prefix)/include/libUseful-4
 	cp *.h $(DESTDIR)$(prefix)/include/libUseful-4
+	-mkdir -p $(DESTDIR)$(prefix)/etc
+	cp *.conf $(DESTDIR)$(prefix)/etc
+
 
 test: libUseful.so
 	-echo "No tests written yet"

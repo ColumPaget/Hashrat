@@ -8,11 +8,12 @@
 
 typedef struct
 {
-const char *Str;
-size_t len;
+    const char *Str;
+    size_t len;
 } TStrLenCacheEntry;
 
 static int StrLenCacheSize=0;
+static int StrLenCacheMinLen=100;
 static TStrLenCacheEntry *StrLenCache=NULL;
 
 
@@ -105,94 +106,107 @@ int CompareStr(const char *S1, const char *S2)
 
 void StrLenCacheDel(const char *Str)
 {
-int i;
+    int i;
 
-for (i=0; i < StrLenCacheSize; i++)
-{
-	if (StrLenCache[i].Str == Str) StrLenCache[i].Str=NULL;
-}
+    for (i=0; i < StrLenCacheSize; i++)
+    {
+        if (StrLenCache[i].Str == Str) StrLenCache[i].Str=NULL;
+    }
 }
 
 void StrLenCacheUpdate(const char *Str, int incr)
 {
-int i;
+    int i;
 
-for (i=0; i < StrLenCacheSize; i++)
-{
-	if (StrLenCache[i].Str == Str) StrLenCache[i].len+=incr;
-}
+    for (i=0; i < StrLenCacheSize; i++)
+    {
+        if (StrLenCache[i].Str == Str) StrLenCache[i].len+=incr;
+    }
 }
 
 
 void StrLenCacheAdd(const char *Str, size_t len)
 {
-int i, emptyslot=-1;
+    int i, emptyslot=-1;
 
-if (! StrLenCache) 
-{
-	StrLenCache=(TStrLenCacheEntry *) calloc(20, sizeof(TStrLenCacheEntry));
-	StrLenCacheSize=20;
-}
+    if (! StrLenCache)
+    {
+        StrLenCache=(TStrLenCacheEntry *) calloc(20, sizeof(TStrLenCacheEntry));
+        StrLenCacheSize=20;
+        StrLenCacheMinLen=100;
+    }
 
-for (i=0; i < StrLenCacheSize; i++)
-{
-	if (StrLenCache[i].Str == NULL) emptyslot=i;
-	else if (StrLenCache[i].Str == Str) 
-	{
-		StrLenCache[i].len=len;
-		return;
-	}
-}
+//strlen caching has been seen to give a benefit with very large strings, but modern processors with built-in strlen
+//functions are proabably faster.
+    //don't pollute cache with short strings that don't take long to look up
+    if (len > StrLenCacheMinLen)
+    {
+        //is string already in cache?
+        for (i=0; i < StrLenCacheSize; i++)
+        {
+            if (StrLenCache[i].Str == NULL) emptyslot=i;
+            else if (StrLenCache[i].Str == Str)
+            {
+                StrLenCache[i].len=len;
+                return;
+            }
+        }
 
-if (emptyslot == -1) emptyslot=rand() % StrLenCacheSize;
+        //if we get here than string isn't in cache and we add it
+        if (emptyslot == -1) emptyslot=rand() % StrLenCacheSize;
 
-StrLenCache[emptyslot].Str=Str;
-StrLenCache[emptyslot].len=len;
+        StrLenCache[emptyslot].Str=Str;
+        StrLenCache[emptyslot].len=len;
+    }
 }
 
 
 int StrLenFromCache(const char *Str)
 {
-uint64_t c, i;
+    int i, len;
+    const char *ptr;
 
-if (! Str) return(0);
+    if (! StrValid(Str)) return(0);
 
-//apparently with a good compiler this gives a faster result than checking each byte
-//not sure I believe it but it doesn't cost much so...
-c=*(uint64_t *) Str;
-if ((c & 0xFF)==0) return(0);
-if ((c & 0xFF00)==0) return(1);
-if ((c & 0xFF0000)==0) return(2);
-if ((c & 0xFF000000)==0) return(3);
-if ((c & 0xFF00000000)==0) return(4);
-if ((c & 0xFF0000000000)==0) return(5);
-if ((c & 0xFF000000000000)==0) return(6);
-if ((c & 0xFF00000000000000)==0) return(7);
+    /* this kind of thing alarms some lint/memcheck software, and is risky if the memory allocated to string is less than 64 bits
+       might go back to it if I ever include a custom allocator for libUseful strings though
+
+        ptr=Str;
+        if ((c & 0xFF)==0) return(0);
+        if ((c & 0xFF00)==0) return(1);
+        if ((c & 0xFF0000)==0) return(2);
+        if ((c & 0xFF000000)==0) return(3);
+        if ((c & 0xFF00000000)==0) return(4);
+        if ((c & 0xFF0000000000)==0) return(5);
+        if ((c & 0xFF000000000000)==0) return(6);
+        if ((c & 0xFF00000000000000)==0) return(7);
+    */
 
 //okay, it's not a short string, so is it in the cache?
-for (i=0; i < StrLenCacheSize; i++)
-{
-__builtin_prefetch (&StrLenCache[i].Str, 0, 3);
-__builtin_prefetch (&StrLenCache[i+1].Str, 0, 3);
+    for (i=0; i < StrLenCacheSize; i++)
+    {
+        __builtin_prefetch (&StrLenCache[i].Str, 0, 3);
+        __builtin_prefetch (&StrLenCache[i+1].Str, 0, 3);
 
-	if (StrLenCache[i].Str == Str) 
-{
-//	fprintf(stderr, "strlen cache hit: %d\n", StrLenCache[i].len);
-	return(StrLenCache[i].len);
-}
-}
-//fprintf(stderr, "strlen cache miss: %d\n", StrLenCache[i].len);
+        if (StrLenCache[i].Str == Str)
+        {
+            return(StrLenCache[i].len);
+        }
+    }
 
 //okay, nothing worked, fall back to good old strlen
-return(strlen(Str));
+    return(strlen(Str));
 }
 
 
 //Use strlen cache
 void Destroy(void *Obj)
 {
-	StrLenCacheDel(Obj);
-  if (Obj) free(Obj);
+    if (Obj)
+    {
+        StrLenCacheDel(Obj);
+        free(Obj);
+    }
 }
 
 
@@ -201,15 +215,15 @@ void Destroy(void *Obj)
 
 char *SetStrLen(char *Str, size_t len)
 {
-char *ptr;
+    char *ptr;
 
-		StrLenCacheDel(Str);
-    // Note len+1 to allow for terminating NULL 
+    StrLenCacheDel(Str);
+    // Note len+1 to allow for terminating NULL
     if (Str==NULL) ptr=(char *) calloc(1, len + 8);
     else ptr=(char *) realloc(Str, len + 8);
 
-		if (len > 8) StrLenCacheAdd(ptr, len);
-		return(ptr);
+    if (len > StrLenCacheMinLen) StrLenCacheAdd(ptr, len);
+    return(ptr);
 }
 
 
@@ -308,7 +322,7 @@ char *VCatStr(char *Dest, const char *Str1,  va_list args)
 
 
 
-//These two functions are not really internal to this module, but should only be called via the 
+//These two functions are not really internal to this module, but should only be called via the
 //supplied macros in String.h
 char *InternalMCatStr(char *Dest, const char *Str1,  ...)
 {
@@ -339,41 +353,41 @@ char *InternalMCopyStr(char *Dest, const char *Str1,  ...)
 
 char *StrTrunc(char *Str, int Len)
 {
-if (StrLen(Str) > Len) 
-{
-	Str[Len]='\0';
-	StrLenCacheAdd(Str, Len);
-}
+    if (StrLen(Str) > Len)
+    {
+        Str[Len]='\0';
+        StrLenCacheAdd(Str, Len);
+    }
 
-return(Str);
+    return(Str);
 }
 
 
 int StrTruncChar(char *Str, char Term)
 {
-const char *ptr;
+    const char *ptr;
 
-ptr=strchr(Str, Term);
-if (ptr) 
-{
-	StrTrunc(Str, ptr-Str);
-	return(TRUE);
-}
-return(FALSE);
+    ptr=strchr(Str, Term);
+    if (ptr)
+    {
+        StrTrunc(Str, ptr-Str);
+        return(TRUE);
+    }
+    return(FALSE);
 }
 
 
 int StrRTruncChar(char *Str, char Term)
 {
-const char *ptr;
+    const char *ptr;
 
-ptr=strrchr(Str, Term);
-if (ptr) 
-{
-	Str=StrTrunc(Str, ptr-Str);
-	return(TRUE);
-}
-return(FALSE);
+    ptr=strrchr(Str, Term);
+    if (ptr)
+    {
+        Str=StrTrunc(Str, ptr-Str);
+        return(TRUE);
+    }
+    return(FALSE);
 }
 
 
@@ -496,8 +510,8 @@ char *VFormatStr(char *InBuff, const char *InputFmtStr, va_list args)
         break;
     }
 
-		if (result < 0) result=0;
-		StrLenCacheAdd(Tempstr, result);
+    if (result < 0) result=0;
+    StrLenCacheAdd(Tempstr, result);
 
     Destroy(FmtStr);
 
@@ -521,21 +535,21 @@ char *FormatStr(char *InBuff, const char *FmtStr, ...)
 
 char *ReplaceStr(char *RetStr, const char *Input, const char *Old, const char *New)
 {
-char *Token=NULL;
-const char *ptr;
+    char *Token=NULL;
+    const char *ptr;
 
-RetStr=CopyStr(RetStr, "");
-ptr=GetToken(Input, Old, &Token, GETTOKEN_INCLUDE_SEP);
-while (ptr)
-{
-  if (strcmp(Token, Old)==0) RetStr=CatStr(RetStr, New);
-  else RetStr=CatStr(RetStr, Token);
-  ptr=GetToken(ptr, Old, &Token, GETTOKEN_INCLUDE_SEP);
-}
+    RetStr=CopyStr(RetStr, "");
+    ptr=GetToken(Input, Old, &Token, GETTOKEN_INCLUDE_SEP);
+    while (ptr)
+    {
+        if (strcmp(Token, Old)==0) RetStr=CatStr(RetStr, New);
+        else RetStr=CatStr(RetStr, Token);
+        ptr=GetToken(ptr, Old, &Token, GETTOKEN_INCLUDE_SEP);
+    }
 
-Destroy(Token);
+    Destroy(Token);
 
-return(RetStr);
+    return(RetStr);
 }
 
 
@@ -591,7 +605,7 @@ char *StripTrailingWhitespace(char *Str)
     len=StrLenFromCache(Str);
     if (len > 0)
     {
-    		StrLenCacheDel(Str);
+        StrLenCacheDel(Str);
         for(ptr=Str+len-1; (ptr >= Str) && isspace(*ptr); ptr--) *ptr='\0';
     }
 
@@ -601,7 +615,7 @@ char *StripTrailingWhitespace(char *Str)
 
 char *StripLeadingWhitespace(char *Str)
 {
-		size_t len;
+    size_t len;
     char *ptr, *start=NULL;
 
     if (Str)
@@ -612,10 +626,10 @@ char *StripLeadingWhitespace(char *Str)
         }
 
         if (!start) start=ptr;
-				len=ptr-start;
-				//+1 to get the '\0' character at the end of the line
+        len=ptr-start;
+        //+1 to get the '\0' character at the end of the line
         memmove(Str,start,len+1);
-				StrLenCacheAdd(Str, len);
+        StrLenCacheAdd(Str, len);
     }
     return(Str);
 }
@@ -630,13 +644,13 @@ char *StripCRLF(char *Str)
     len=StrLenFromCache(Str);
     if (len > 0)
     {
-				StrLenCacheDel(Str);
+        StrLenCacheDel(Str);
         for (ptr=Str+len-1; ptr >= Str; ptr--)
         {
-            if (strchr("\n\r",*ptr)) 
-						{
-							*ptr='\0';
-						}
+            if (strchr("\n\r",*ptr))
+            {
+                *ptr='\0';
+            }
             else break;
         }
     }
@@ -661,7 +675,7 @@ char *StripQuotes(char *Str)
         {
             if (ptr[len-1]==StartQuote) ptr[len-1]='\0';
             memmove(Str,ptr+1,len);
-						StrLenCacheAdd(Str, len);
+            StrLenCacheAdd(Str, len);
         }
     }
     return(Str);
@@ -704,7 +718,7 @@ char *QuoteCharsInStr(char *Buffer, const char *String, const char *QuoteChars)
         olen++;
     }
 
-		StrLenCacheAdd(RetStr, olen);
+    StrLenCacheAdd(RetStr, olen);
     return(RetStr);
 }
 

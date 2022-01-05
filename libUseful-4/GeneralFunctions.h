@@ -18,7 +18,7 @@ A number of general functions that don't fit anywhere else
 extern "C" {
 #endif
 
-//Destroy is defined in String.c 'cos of StrLen caching
+//Destroy is defined in String.c 'cos of StrLen caching, but you can use it to destroy anything
 //void Destroy(void *Obj);
 
 //fill 'size' bytes pointed to by 'Str' with char 'fill'. 'Str' is treated as a volatile, which is intended to prevent
@@ -27,15 +27,21 @@ extern "C" {
 //function out. 'volatile' should prevent this.
 void xmemset(volatile char *Str, char fill, off_t size);
 
+//setenv that returns TRUE or FALSE rather than returning 0 on success
 int xsetenv(const char *Name, const char *Value);
 
 //increment a char * by 'count' but DO NOT GO PAST A NULL CHARACTER. Returns number of bytes actually incremented
 int ptr_incr(const char **ptr, int count);
 
+
+const char *traverse_until(const char *ptr, char terminator);
+
 //treat the first character pointed to by 'ptr' as a quote character. Traverse the string until a matching character is
 //found, then return the character after that. This function ignores characters if they are quoted with a preceeding
 //'\' character.
 const char *traverse_quoted(const char *ptr);
+
+
 
 //Add item to a comma seperated list. If the new item is not the first Item in the list, then a comma will be
 //placed before it
@@ -43,7 +49,6 @@ const char *traverse_quoted(const char *ptr);
 //e.g.   CSV=CommaList(CSV, "this")
 //       CSV=CommaList(CSV, "that")
 //       printf("%s\n",CSV);    //this,that
-
 char *CommaList(char *RetStr, const char *AddStr);
 
 //return item at 'pos' in array WITHOUT GOING PAST A NULL. Returns NULL if item can't be reached.

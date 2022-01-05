@@ -76,7 +76,7 @@ RAWDATA *RAWDATACopy(RAWDATA *RD, size_t offset, size_t len)
 
 int RAWDATAReadAt(RAWDATA *RD, STREAM *S, size_t offset, size_t size)
 {
-int len;
+    int len;
 
     if (size==0) size=S->Size;
     if ((offset+size) > RD->BuffLen)
@@ -91,8 +91,9 @@ int len;
         RD->BuffLen=size;
     }
 
-		len=STREAMReadBytes(S, RD->Buffer+offset, size);
-    RD->DataLen=offset+len;
+    len=STREAMReadBytes(S, RD->Buffer+offset, size);
+    if (len > 0) offset+=len;
+    RD->DataLen=offset;
     return(len);
 }
 

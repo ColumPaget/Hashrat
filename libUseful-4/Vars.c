@@ -164,27 +164,27 @@ char *ParseVar(char *Buff, const char **Line, ListNode *LocalVars, int Flags)
     if (! (Flags & SUBS_CASE_VARNAMES)) strlwr(VarName);
 
     vptr=GetVar(LocalVars,VarName);
-		if (vptr)
-		{
-
-		if (Flags & SUBS_SHELL_SAFE) 
-		{
-			//naughty reuse of VarName to hold altered string
-			VarName=MakeShellSafeString(VarName, vptr, 0);
-			vptr=VarName;
-		}
-
-    if (Flags & SUBS_STRIP_VARS_WHITESPACE)
+    if (vptr)
     {
-        Tempstr=CopyStr(Tempstr,vptr);
-        StripTrailingWhitespace(Tempstr);
-        StripLeadingWhitespace(Tempstr);
-				vptr=Tempstr;
-    }
 
-    if (Flags & SUBS_QUOTE_VARS) OutStr=MCatStr(OutStr,"'",vptr,"'",NULL);
-    else OutStr=CatStr(OutStr, vptr);
-		}
+        if (Flags & SUBS_SHELL_SAFE)
+        {
+            //naughty reuse of VarName to hold altered string
+            VarName=MakeShellSafeString(VarName, vptr, 0);
+            vptr=VarName;
+        }
+
+        if (Flags & SUBS_STRIP_VARS_WHITESPACE)
+        {
+            Tempstr=CopyStr(Tempstr,vptr);
+            StripTrailingWhitespace(Tempstr);
+            StripLeadingWhitespace(Tempstr);
+            vptr=Tempstr;
+        }
+
+        if (Flags & SUBS_QUOTE_VARS) OutStr=MCatStr(OutStr,"'",vptr,"'",NULL);
+        else OutStr=CatStr(OutStr, vptr);
+    }
 
     DestroyString(VarName);
     DestroyString(Tempstr);
@@ -260,7 +260,7 @@ char *SubstituteVarsInString(char *Buffer, const char *Fmt, ListNode *Vars, int 
 
         case '$':
             FmtPtr++;
-						StrLenCacheAdd(ReturnStr, len);
+            StrLenCacheAdd(ReturnStr, len);
             ReturnStr=ParseVar(ReturnStr, &FmtPtr, Vars, Flags);
             len=StrLen(ReturnStr);
             break;
@@ -287,7 +287,7 @@ char *SubstituteVarsInString(char *Buffer, const char *Fmt, ListNode *Vars, int 
     }
 
 
-		StrLenCacheAdd(ReturnStr, len);
+    StrLenCacheAdd(ReturnStr, len);
     DestroyString(Tempstr);
     DestroyString(VarName);
     return(ReturnStr);
@@ -401,20 +401,20 @@ int ExtractVarsFromString(const char *Data, const char *FormatStr, ListNode *Var
 
 int FindVarNamesInString(const char *Data, ListNode *Vars)
 {
-const char *ptr;
-char *Name=NULL;
+    const char *ptr;
+    char *Name=NULL;
 
-for (ptr=Data; *ptr !='\0'; ptr++)
-{
-  if ((*ptr=='$') && (*(ptr+1)=='('))
-  {
-  ptr=GetToken(ptr+2, ")", &Name, 0);
-  SetVar(Vars, Name, "");
-  }
-}
+    for (ptr=Data; *ptr !='\0'; ptr++)
+    {
+        if ((*ptr=='$') && (*(ptr+1)=='('))
+        {
+            ptr=GetToken(ptr+2, ")", &Name, 0);
+            SetVar(Vars, Name, "");
+        }
+    }
 
-Destroy(Name);
+    Destroy(Name);
 
-return(ListSize(Vars));
+    return(ListSize(Vars));
 }
 

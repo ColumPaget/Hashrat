@@ -54,12 +54,14 @@ H    HEAD  method
 
 after this initial argument come name-value pairs with the following values
 
+method=<method>  //override method (GET/POST etc) with any default value
 oauth=<oauth config to use>
-content-type=<content type>
-content-length=<content length>
+content-type=<content type>         //content type of sent data (for PUT/POST)
+content-length=<content length>     //content leength of sent data (for PUT/POST)
 user=<username>
 useragent=<user agent>
 user-agent=<user agent>
+timeout=<centisecs>    //socket timeout in centisecs, this applies both to connection and read. If a different value is desired for read, set it with 'STREAMSetTimeout'
 hostauth
 
 Note, 'hostauth' is not a name/value pair, just a config flag that enables sending authentication without waiting for a 401 Response from the server. This means that we can't know the authentication realm for the server, and so internally use the hostname as the realm for looking up logon credentials. This is mostly useful for the github api.
@@ -131,6 +133,7 @@ typedef struct
     int Flags;
     int AuthFlags;
     int State;
+    int Timeout;
     char *RedirectPath;
     char *PreviousRedirect;
     char *ContentType;
@@ -149,7 +152,7 @@ typedef struct
     char *Authorization;
     char *ProxyAuthorization;
     char *ConnectionChain;
-		char *UserAgent;
+    char *UserAgent;
     STREAM *S;
 } HTTPInfoStruct;
 

@@ -14,21 +14,21 @@
 
 char *OSSysInfoInterfaces(char *RetStr)
 {
-struct if_nameindex *interfaces;
-int i;
+    struct if_nameindex *interfaces;
+    int i;
 
-RetStr=CopyStr(RetStr, "");
-interfaces=if_nameindex();
-if (interfaces)
-{
-for (i=0; interfaces[i].if_name != NULL; i++)
-{
-	RetStr=MCatStr(RetStr, interfaces[i].if_name, " ", NULL);
-}
-if_freenameindex(interfaces);
-}
+    RetStr=CopyStr(RetStr, "");
+    interfaces=if_nameindex();
+    if (interfaces)
+    {
+        for (i=0; interfaces[i].if_name != NULL; i++)
+        {
+            RetStr=MCatStr(RetStr, interfaces[i].if_name, " ", NULL);
+        }
+        if_freenameindex(interfaces);
+    }
 
-return(RetStr);
+    return(RetStr);
 }
 
 
@@ -40,7 +40,7 @@ const char *OSSysInfoString(int Info)
     static struct utsname UtsInfo;
     struct passwd *pw;
     const char *ptr;
-		static char *buf=NULL;
+    static char *buf=NULL;
 
     uname(&UtsInfo);
 
@@ -59,14 +59,14 @@ const char *OSSysInfoString(int Info)
         break;
 
     case OSINFO_HOSTNAME:
-				buf=SetStrLen(buf, HOST_NAME_MAX);
-				gethostname(buf, HOST_NAME_MAX);
+        buf=SetStrLen(buf, HOST_NAME_MAX);
+        gethostname(buf, HOST_NAME_MAX);
         return(buf);
         break;
 
     case OSINFO_DOMAINNAME:
-				buf=SetStrLen(buf, HOST_NAME_MAX);
-				getdomainname(buf, HOST_NAME_MAX);
+        buf=SetStrLen(buf, HOST_NAME_MAX);
+        getdomainname(buf, HOST_NAME_MAX);
         return(buf);
         break;
 
@@ -82,11 +82,11 @@ const char *OSSysInfoString(int Info)
         if (ptr) return(ptr);
         break;
 
-		case OSINFO_INTERFACES:
-			//don't just return output of function, as buf is static we must update it
-			buf=OSSysInfoInterfaces(buf);
-			return(buf);
-		break;
+    case OSINFO_INTERFACES:
+        //don't just return output of function, as buf is static we must update it
+        buf=OSSysInfoInterfaces(buf);
+        return(buf);
+        break;
 
 
         /*
@@ -136,31 +136,31 @@ size_t OSSysInfoLong(int Info)
 
     case OSINFO_BUFFERMEM:
         return((size_t) (SysInfo.bufferram * SysInfo.mem_unit));
-       break;
+        break;
 
-		case OSINFO_TOTALSWAP:
-			 	return((size_t) (SysInfo.totalswap * SysInfo.mem_unit));
-			break;
+    case OSINFO_TOTALSWAP:
+        return((size_t) (SysInfo.totalswap * SysInfo.mem_unit));
+        break;
 
-		case OSINFO_FREESWAP:
-			 	return((size_t) (SysInfo.freeswap * SysInfo.mem_unit));
-				break;
+    case OSINFO_FREESWAP:
+        return((size_t) (SysInfo.freeswap * SysInfo.mem_unit));
+        break;
 
     case OSINFO_PROCS:
         return((size_t) SysInfo.procs);
         break;
 
-		case OSINFO_LOAD1MIN:
+    case OSINFO_LOAD1MIN:
         return((size_t) SysInfo.loads[0]);
-				break;
+        break;
 
-		case OSINFO_LOAD5MIN:
+    case OSINFO_LOAD5MIN:
         return((size_t) SysInfo.loads[1]);
-				break;
+        break;
 
-		case OSINFO_LOAD15MIN:
+    case OSINFO_LOAD15MIN:
         return((size_t) SysInfo.loads[2]);
-				break;
+        break;
     }
 
 #endif

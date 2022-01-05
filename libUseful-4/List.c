@@ -2,20 +2,20 @@
 #include "List.h"
 #include "Time.h"
 
-unsigned long ListSize(ListNode *Node) 
+unsigned long ListSize(ListNode *Node)
 {
-ListNode *Head;
+    ListNode *Head;
 
-Head=ListGetHead(Node);
-if (Head && Head->Stats) return(Head->Stats->Hits);
-return(0);
+    Head=ListGetHead(Node);
+    if (Head && Head->Stats) return(Head->Stats->Hits);
+    return(0);
 }
 
 
 void MapDumpSizes(ListNode *Head)
 {
     int i;
-		ListNode *Chain;
+    ListNode *Chain;
 
     for (i=0; i < MapChainCount(Head); i++)
     {
@@ -53,7 +53,7 @@ ListNode *MapCreate(int Buckets, int Flags)
     Node->Flags |= LIST_FLAG_MAP_HEAD | Flags;
     Node->ItemType=Buckets;
 
-		//we allocate one more than we will use, so the last one acts as a terminator
+    //we allocate one more than we will use, so the last one acts as a terminator
     Node->Item=calloc(Buckets+1, sizeof(ListNode));
     SubNode=(ListNode *) Node->Item;
     for (i=0; i < Buckets; i++)
@@ -135,9 +135,9 @@ ListNode *MapGetChain(ListNode *Map, const char *Key)
 
 
 
-/* 
+/*
 Number of items is stored in the 'Stats->Hits' value of the head listnode. For normal nodes this would be
-a counter of how many times the node has been accessed with 'ListFindNamedItem etc, 
+a counter of how many times the node has been accessed with 'ListFindNamedItem etc,
 but the head node is never directly accessed this way, so we store the count of list items in this instead
 */
 
@@ -157,16 +157,16 @@ unsigned long ListIncrNoOfItems(ListNode *List)
 {
     ListNode *Head;
 
-		if (List->Flags & LIST_FLAG_MAP_CHAIN) List->Stats->Hits++;
+    if (List->Flags & LIST_FLAG_MAP_CHAIN) List->Stats->Hits++;
 
     Head=List->Head;
-		if (Head->Flags & LIST_FLAG_MAP_CHAIN) 
-		{
-			Head->Stats->Hits++;
+    if (Head->Flags & LIST_FLAG_MAP_CHAIN)
+    {
+        Head->Stats->Hits++;
 
-			//get map head, rather than chain head
-    	Head=Head->Head;
-		}
+        //get map head, rather than chain head
+        Head=Head->Head;
+    }
     Head->Stats->Hits++;
 
     return(Head->Stats->Hits);
@@ -178,14 +178,14 @@ unsigned long ListDecrNoOfItems(ListNode *List)
 {
     ListNode *Head;
 
-		if (List->Flags & LIST_FLAG_MAP_CHAIN) List->Stats->Hits--;
+    if (List->Flags & LIST_FLAG_MAP_CHAIN) List->Stats->Hits--;
     Head=List->Head;
-		if (Head->Flags & LIST_FLAG_MAP_CHAIN) 
-		{
-			Head->Stats->Hits--;
-			//get map head, rather than chain head
-    	Head=Head->Head;
-		}
+    if (Head->Flags & LIST_FLAG_MAP_CHAIN)
+    {
+        Head->Stats->Hits--;
+        //get map head, rather than chain head
+        Head=Head->Head;
+    }
 
     Head->Stats->Hits--;
 
@@ -241,7 +241,7 @@ void ListUnThreadNode(ListNode *Node)
         if (Head->Prev==Node) Head->Prev=Prev;
     }
 
-		//make our unthreaded node a singleton
+    //make our unthreaded node a singleton
     Node->Head=NULL;
     Node->Prev=NULL;
     Node->Next=NULL;
@@ -389,12 +389,12 @@ ListNode *ListFindNamedItemInsert(ListNode *Root, const char *Name)
         //use next to hold Head->Side for less typing!
         Next=Head->Side;
 
-				if (Next->Tag)
-				{
-        if (Root->Flags & LIST_FLAG_CASE) result=strcmp(Next->Tag,Name);
-        else result=strcasecmp(Next->Tag,Name);
-				}
-				else result=-1;
+        if (Next->Tag)
+        {
+            if (Root->Flags & LIST_FLAG_CASE) result=strcmp(Next->Tag,Name);
+            else result=strcasecmp(Next->Tag,Name);
+        }
+        else result=-1;
 
         if (result==0) return(Next);
         //if result < 0 AND ITS AN ORDERED LIST then it means the cached item is ahead of our insert point, so we might as well jump to it
@@ -469,21 +469,34 @@ ListNode *ListFindTypedItem(ListNode *Root, int Type, const char *Name)
     //insert chain
     Head=Node->Head;
 
-		if (Head)
-		{
-    if (Head->Flags & LIST_FLAG_CASE) result=strcmp(Node->Tag,Name);
-    else result=strcasecmp(Node->Tag,Name);
-
-    if (
-        (result==0) &&
-        ( (Type==ANYTYPE) || (Type==Node->ItemType) )
-    )
+    if (Head)
     {
-        if (Head->Flags & LIST_FLAG_CACHE) Head->Side=Node;
-        if (Node->Stats) Node->Stats->Hits++;
-        return(Node);
+        while (Node)
+        {
+            if (Head->Flags & LIST_FLAG_CASE) result=strcmp(Node->Tag,Name);
+            else result=strcasecmp(Node->Tag,Name);
+
+            if (
+                (result==0) &&
+                ( (Type==ANYTYPE) || (Type==Node->ItemType) )
+            )
+            {
+                if (Head->Flags & LIST_FLAG_CACHE) Head->Side=Node;
+                if (Node->Stats) Node->Stats->Hits++;
+                return(Node);
+            }
+
+            //if this is set then there's at most one instance of an item with a given name
+            if (Head->Flags & LIST_FLAG_UNIQ) break;
+
+            //if it's an ordered list and the strcmp didn't match, then give up as there will be no more matching items
+            //past this point
+            if ((Head->Flags & LIST_FLAG_ORDERED) && (result !=0)) break;
+
+
+            Node=ListGetNext(Node);
+        }
     }
-		}
     return(NULL);
 }
 
@@ -553,8 +566,8 @@ ListNode *MapGetNext(ListNode *CurrItem)
     ListNode *SubNode, *Head;
 
     if (! CurrItem) return(NULL);
-		SubNode=MapChainGetNext(CurrItem);
-		if (SubNode) return(SubNode);
+    SubNode=MapChainGetNext(CurrItem);
+    if (SubNode) return(SubNode);
 
 //'Head' here points to a BUCKET HEADER. These are marked with this flag, except the last one
 //so we know when we've reached the end
@@ -568,7 +581,7 @@ ListNode *MapGetNext(ListNode *CurrItem)
     return(NULL);
 }
 
- 
+
 
 ListNode *ListGetPrev(ListNode *CurrItem)
 {
@@ -590,7 +603,7 @@ ListNode *ListGetLast(ListNode *CurrItem)
     if (! Head) return(CurrItem);
     /* the dummy header has a 'Prev' entry that points to the last item! */
     if (Head->Prev) return(Head->Prev);
-		return(Head);
+    return(Head);
 }
 
 

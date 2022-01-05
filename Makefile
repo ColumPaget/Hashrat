@@ -6,7 +6,7 @@ INSTALL=/bin/install -c
 prefix=/usr/local
 bindir=$(prefix)${exec_prefix}/bin
 FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -D_FILE_OFFSET_BITS=64 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1
-OBJ=common.o command-line-args.o ssh.o http.o fingerprint.o include-exclude.o files.o filesigning.o xattr.o cgi.o check-hash.o find.o memcached.o
+OBJ=common.o encodings.o command-line-args.o ssh.o http.o fingerprint.o include-exclude.o files.o filesigning.o xattr.o check-hash.o find.o memcached.o cgi.o xdialog.o
 EXE=hashrat
 
 all: hashrat
@@ -19,6 +19,9 @@ libUseful-4/libUseful.a:
 
 common.o: common.h common.c
 	$(CC) $(FLAGS) -c common.c
+
+encodings.o: encodings.h encodings.c
+	$(CC) $(FLAGS) -c encodings.c
 
 fingerprint.o: fingerprint.h fingerprint.c
 	$(CC) $(FLAGS) -c fingerprint.c
@@ -47,9 +50,11 @@ ssh.o: ssh.h ssh.c
 http.o: http.h http.c
 	$(CC) $(FLAGS) -c http.c
 
-
 cgi.o: cgi.h cgi.c
 	$(CC) $(FLAGS) -c cgi.c
+
+xdialog.o: xdialog.h xdialog.c
+	$(CC) $(FLAGS) -c xdialog.c
 
 memcached.o: memcached.h memcached.c
 	$(CC) $(FLAGS) -c memcached.c

@@ -6,11 +6,13 @@
 #include "Errors.h"
 #include "Stream.h"
 #include "Ssh.h"
+#include "IPAddress.h"
 
-typedef enum {CONNECT_HOP_NONE, CONNECT_HOP_TCP, CONNECT_HOP_HTTPTUNNEL, CONNECT_HOP_SSH, CONNECT_HOP_SSHTUNNEL, CONNECT_HOP_SOCKS4, CONNECT_HOP_SOCKS5, CONNECT_HOP_SHELL_CMD, CONNECT_HOP_TELNET} THopTypes;
-static const char *HopTypes[]= {"none","tcp","https","ssh","sshtunnel","socks4","socks5","shell","telnet",NULL};
+typedef enum {CONNECT_HOP_NONE, CONNECT_HOP_TCP, CONNECT_HOP_HTTPTUNNEL, CONNECT_HOP_SSH, CONNECT_HOP_SSHTUNNEL, CONNECT_HOP_SSHPROXY, CONNECT_HOP_SOCKS4, CONNECT_HOP_SOCKS5, CONNECT_HOP_SHELL_CMD, CONNECT_HOP_TELNET} THopTypes;
+static const char *HopTypes[]= {"none","tcp","https","ssh","sshtunnel","sshproxy","socks4","socks5","shell","telnet",NULL};
 
 char *GlobalConnectionChain=NULL;
+ListNode *ProxyHelpers=NULL;
 
 int SetGlobalConnectionChain(const char *Chain)
 {
@@ -35,6 +37,24 @@ int SetGlobalConnectionChain(const char *Chain)
 }
 
 
+//if a proxy helper was launched by the current program (check using getpid) then
+//this is called by 'atexit' on exit, to shutdown that helper
+static void ConnectionHopCloseAll()
+{
+    ListNode *Curr;
+    STREAM *S;
+    pid_t pid;
+
+    Curr=ListGetNext(ProxyHelpers);
+    while (Curr)
+    {
+        S=(STREAM *) Curr->Item;
+        pid=atoi(STREAMGetValue(S, "LU:LauncherPID"));
+        if (pid==getpid()) STREAMClose(S);
+        Curr=ListGetNext(Curr);
+    }
+}
+
 
 int ConnectHopHTTPSProxy(STREAM *S, const char *Proxy, const char *Destination)
 {
@@ -48,7 +68,7 @@ int ConnectHopHTTPSProxy(STREAM *S, const char *Proxy, const char *Destination)
     if (! (S->State & SS_INITIAL_CONNECT_DONE))
     {
         if (Port==0) Port=443;
-        S->in_fd=TCPConnect(Host,Port,0);
+        S->in_fd=TCPConnect(Host, Port, "");
         S->out_fd=S->in_fd;
         if (S->in_fd == -1)
         {
@@ -206,7 +226,7 @@ int ConnectHopSocks(STREAM *S, int SocksLevel, const char *ProxyURL, const char 
     if (! (S->State & SS_INITIAL_CONNECT_DONE))
     {
         val=atoi(Token);
-        S->in_fd=TCPConnect(Host, val, 0);
+        S->in_fd=TCPConnect(Host, val, "");
         S->out_fd=S->in_fd;
         if (S->in_fd == -1)
         {
@@ -381,33 +401,72 @@ int SendPublicKeyToRemote(STREAM *S, char *KeyFile, char *LocalPath)
 
 
 
+//this function launches an ssh helper process for either ssh, sshtunnel or sshproxy connection hops.
+//An sshtunnel hop launches an ssh process with '-L <local port>:<remote host>:<remote port>' syntax.
+//An sshproxy hop launches an ssh process with '-D 127.0.0.1:<local port>' syntax (socks proxy).
+//For both these configs the local port is selected randomly by this function
+static STREAM *ConnectHopSSHSpawnHelper(const char *ProxyURL, const char *Fmt, const char *Destination)
+{
+    int i, LocalPort, SshPort=22;
+    char *RemoteHost=NULL, *RemotePort=NULL, *Tempstr=NULL;
+    char *SshHost=NULL, *SshUser=NULL, *SshPassword=NULL;
+    STREAM *tmpS=NULL;
+
+    ParseConnectDetails(ProxyURL, NULL, &SshHost, &Tempstr, &SshUser, &SshPassword, NULL);
+    if (StrValid(Tempstr)) SshPort=atoi(Tempstr);
+
+    ParseConnectDetails(Destination, NULL, &RemoteHost, &RemotePort, NULL, NULL, NULL);
+
+    for (i=0; i < 10; i++)
+    {
+        //pick a random port above port 9000
+        LocalPort=(rand() % (0xFFFF - 9000)) +9000;
+        if (strncmp(Fmt,"stdin:",6)==0) Tempstr=FormatStr(Tempstr, Fmt, RemoteHost, RemotePort);
+        else Tempstr=FormatStr(Tempstr, Fmt, LocalPort, RemoteHost, RemotePort);
+        tmpS=SSHConnect(SshHost, SshPort, SshUser, SshPassword, Tempstr, 0);
+        if (tmpS)
+        {
+            Tempstr=FormatStr(Tempstr, "%d", LocalPort);
+            STREAMSetValue(tmpS, "LU:SshTunnelPort", Tempstr);
+            break;
+        }
+    }
+
+    Destroy(RemoteHost);
+    Destroy(RemotePort);
+    Destroy(SshHost);
+    Destroy(SshUser);
+    Destroy(SshPassword);
+    Destroy(Tempstr);
+
+    return(tmpS);
+}
+
+
+
 int ConnectHopSSH(STREAM *S, int Type, const char *ProxyURL, const char *Destination)
 {
-    char *Tempstr=NULL, *Token=NULL, *Token2=NULL;
-    char *Host=NULL, *User=NULL, *Pass=NULL;
     STREAM *tmpS;
-    int result=FALSE, val, i;
-    unsigned int Port=0, DPort=0;
+    ListNode *Node;
+    char *Tempstr=NULL;
+    const char *ptr;
+    int result=FALSE, i;
+    unsigned int Port=0;
 
 
-    ParseConnectDetails(ProxyURL, NULL, &Host, &Token, &User, &Pass, NULL);
-    if (StrValid(Token)) Port=atoi(Token);
-
-    if (Type==CONNECT_HOP_SSHTUNNEL)
+    switch (Type)
     {
-//get hostname and port of next hop
-        DPort=(rand() % (0xFFFF - 9000)) +9000;
-        //Host will be Token, and port Token2
-        ParseConnectDetails(Destination, NULL, &Token, &Token2, NULL, NULL, NULL);
-        Tempstr=FormatStr(Tempstr,"tunnel:%d:%s:%s ",DPort,Token,Token2);
-        tmpS=SSHConnect(Host, Port, User, Pass, Tempstr, 0);
+    case CONNECT_HOP_SSHTUNNEL:
+        tmpS=ConnectHopSSHSpawnHelper(ProxyURL, "tunnel:%d:%s:%s", Destination);
+
         if (tmpS)
         {
             if (! S->Items) S->Items=ListCreate();
+            Port=atoi(STREAMGetValue(tmpS, "LU:SshTunnelPort"));
             ListAddNamedItem(S->Items, "LU:AssociatedStream", tmpS);
             for (i=0; i < 60; i++)
             {
-                S->in_fd=TCPConnect("127.0.0.1",DPort,0);
+                S->in_fd=TCPConnect("127.0.0.1", Port, "");
                 if (S->in_fd > -1)
                 {
                     S->out_fd=S->in_fd;
@@ -417,13 +476,35 @@ int ConnectHopSSH(STREAM *S, int Type, const char *ProxyURL, const char *Destina
                 usleep(200000);
             }
         }
-    }
-    else
-    {
-        ParseConnectDetails(Destination, NULL, &Token, &Token2, NULL, NULL, NULL);
-        DPort=atoi(Token2);
-        Tempstr=FormatStr(Tempstr,"stdin:%s:%d", Token, DPort);
-        tmpS=SSHConnect(Host, Port, User, Pass, Tempstr, 0);
+        break;
+
+    case CONNECT_HOP_SSHPROXY:
+        Node=ListFindNamedItem(ProxyHelpers, ProxyURL);
+        if (Node) tmpS=(STREAM *) Node->Item;
+        else
+        {
+            tmpS=ConnectHopSSHSpawnHelper(ProxyURL, "proxy:127.0.0.1:%d", Destination);
+            if (tmpS)
+            {
+                if (! ProxyHelpers) ProxyHelpers=ListCreate();
+                Tempstr=FormatStr(Tempstr, "%d", getpid());
+                STREAMSetValue(tmpS, "LU:LauncherPID", Tempstr);
+                ListAddNamedItem(ProxyHelpers, ProxyURL, tmpS);
+                atexit(ConnectionHopCloseAll);
+            }
+        }
+
+        if (tmpS)
+        {
+            usleep(200000);
+            Tempstr=MCopyStr(Tempstr, "127.0.0.1:", STREAMGetValue(tmpS, "LU:SshTunnelPort"), NULL);
+            result=ConnectHopSocks(S, CONNECT_HOP_SOCKS5, Tempstr, Destination);
+        }
+        break;
+
+
+    default:
+        tmpS=ConnectHopSSHSpawnHelper(ProxyURL, "stdin:%s:%s", Destination);
         if (tmpS)
         {
             usleep(200000);
@@ -432,19 +513,14 @@ int ConnectHopSSH(STREAM *S, int Type, const char *ProxyURL, const char *Destina
             S->out_fd=tmpS->out_fd;
         }
 
-				//STREAMDestroy is like STREAMClose, except it doesn't close any file descriptors
+        //STREAMDestroy is like STREAMClose, except it doesn't close any file descriptors
         if (tmpS) STREAMDestroy(tmpS);
+        break;
     }
 
     if (! result) RaiseError(0, "ConnectHopSSH", "failed to sshtunnel via %s to %s", ProxyURL, Destination);
 
-    DestroyString(Tempstr);
-    DestroyString(Token2);
-    DestroyString(Token);
-    DestroyString(Host);
-    DestroyString(User);
-    DestroyString(Pass);
-
+    Destroy(Tempstr);
     return(result);
 }
 
@@ -480,7 +556,7 @@ int STREAMProcessConnectHops(STREAM *S, const char *HopList)
             if (count > 0) result=TRUE;
             else
             {
-                if (STREAMDirectConnect(S, HopURL, 0)) result=TRUE;
+                if (STREAMConnect(S, HopURL, "")) result=TRUE;
                 else RaiseError(0, "ConnectHopTCP", "failed to connect to %s for destination %s", HopURL, Dest);
             }
             break;
@@ -491,6 +567,7 @@ int STREAMProcessConnectHops(STREAM *S, const char *HopList)
 
         case CONNECT_HOP_SSH:
         case CONNECT_HOP_SSHTUNNEL:
+        case CONNECT_HOP_SSHPROXY:
             if (count==0) result=ConnectHopSSH(S, val, HopURL, Dest);
             else
             {

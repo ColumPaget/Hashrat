@@ -80,6 +80,10 @@ int FileChGroup(const char *Path, const char *Group);
 //modify time access and modification times to imply it's been modified just now
 int FileTouch(const char *Path);
 
+
+int FileSystemParsePermissions(const char *Permissions);
+
+
 //mount a file system. 'Type' is the filesystem type (ext2, xfs, etc). If 'Type' is set to 'bind' then
 //on linux a 'bind mount' is performed. This mounts a directory onto another directory. In this case
 //'Dev' is the source directory rather than the more usual device file. If the 'ro' option is passed in
@@ -135,6 +139,8 @@ int FileSetXAttr(const char *Path, const char *Name, const char *Value);
 int FileSystemCopyDir(const char *Src, const char *Dest);
 
 int FileSystemRmDir(const char *Dir);
+
+
 
 #ifdef __cplusplus
 }

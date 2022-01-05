@@ -42,6 +42,7 @@ void HTTPInfoDestroy(void *p_Info)
     DestroyString(Info->Host);
     DestroyString(Info->Doc);
     DestroyString(Info->UserName);
+    DestroyString(Info->UserAgent);
     DestroyString(Info->Destination);
     DestroyString(Info->ResponseCode);
     DestroyString(Info->PreviousRedirect);
@@ -95,7 +96,7 @@ int HTTPChunkedRead(TProcessingModule *Mod, const char *InBuff, unsigned long In
     if (InLen > 0)
     {
         len=Chunk->BuffLen+InLen;
-        Chunk->Buffer=SetStrLen(Chunk->Buffer,len);
+        Chunk->Buffer=SetStrLen(Chunk->Buffer,len+10);
         ptr=Chunk->Buffer+Chunk->BuffLen;
         memcpy(ptr,InBuff,InLen);
         Chunk->Buffer[len]='\0';
@@ -111,14 +112,12 @@ int HTTPChunkedRead(TProcessingModule *Mod, const char *InBuff, unsigned long In
 
         //if there's nothing in our buffer, and nothing being added, then
         //we've already finished!
-        if ((Chunk->BuffLen==0) && (InLen==0)) return(STREAM_CLOSED);
+        if ((Chunk->BuffLen==0) && (InLen < 1)) return(STREAM_CLOSED);
 
-        ptr=Chunk->Buffer;
-        vptr=ptr;
+        vptr=Chunk->Buffer;
         //skip past any leading '\r' or '\n'
         if (*vptr=='\r') vptr++;
         if (*vptr=='\n') vptr++;
-
         ptr=memchr(vptr,'\n', end-vptr);
 
         //sometimes people seem to miss off the final '\n', so if we get told there's no more data
@@ -132,7 +131,7 @@ int HTTPChunkedRead(TProcessingModule *Mod, const char *InBuff, unsigned long In
 
         if (ptr)
         {
-            *ptr='\0';
+            StrTrunc(Chunk->Buffer, ptr - Chunk->Buffer);
             ptr++;
         }
         else return(0);
@@ -141,9 +140,9 @@ int HTTPChunkedRead(TProcessingModule *Mod, const char *InBuff, unsigned long In
         //if we got chunksize of 0 then we're done, return STREAM_CLOSED
         if (Chunk->ChunkSize==0) return(STREAM_CLOSED);
 
-        Chunk->BuffLen=end-ptr;
+        Chunk->BuffLen=end - ptr;
 
-        if (Chunk->BuffLen > 0)	memmove(Chunk->Buffer,ptr, Chunk->BuffLen);
+        if (Chunk->BuffLen > 0)	memmove(Chunk->Buffer, ptr, Chunk->BuffLen);
         //in case it went negative in the above calcuation
         else Chunk->BuffLen=0;
 
@@ -239,7 +238,7 @@ char *HTTPUnQuote(char *RetBuff, const char *Str)
 
     }
 
-		StrLenCacheAdd(RetStr, olen);
+    StrLenCacheAdd(RetStr, olen);
 
     DestroyString(Token);
     return(RetStr);
@@ -259,21 +258,21 @@ char *HTTPQuoteChars(char *RetBuff, const char *Str, const char *CharList)
     {
         if (strchr(CharList,*ptr))
         {
-					// replacing ' ' with '+' should work, but some servers seem to no longer support it
-					/*
-						if (*ptr==' ')
-						{
+            // replacing ' ' with '+' should work, but some servers seem to no longer support it
+            /*
+            	if (*ptr==' ')
+            	{
             RetStr=AddCharToBuffer(RetStr,olen,'+');
-						olen++;
-						}
-						else
-					*/
-						{
-            Token=FormatStr(Token,"%%%02X",*ptr);
-						StrLenCacheAdd(RetStr, olen);
-            RetStr=CatStr(RetStr,Token);
-            olen+=StrLen(Token);
-						}
+            	olen++;
+            	}
+            	else
+            */
+            {
+                Token=FormatStr(Token,"%%%02X",*ptr);
+                StrLenCacheAdd(RetStr, olen);
+                RetStr=CatStr(RetStr,Token);
+                olen+=StrLen(Token);
+            }
         }
         else
         {
@@ -284,7 +283,7 @@ char *HTTPQuoteChars(char *RetBuff, const char *Str, const char *CharList)
 
 
     RetStr[olen]='\0';
-		StrLenCacheAdd(RetStr, olen);
+    StrLenCacheAdd(RetStr, olen);
 
     DestroyString(Token);
     return(RetStr);
@@ -294,7 +293,18 @@ char *HTTPQuoteChars(char *RetBuff, const char *Str, const char *CharList)
 
 char *HTTPQuote(char *RetBuff, const char *Str)
 {
-return(HTTPQuoteChars(RetBuff, Str, " \t\r\n\"#%()[]{}?&!,+':;/"));
+    return(HTTPQuoteChars(RetBuff, Str, " \t\r\n\"#%()[]{}?&!,+':;/"));
+}
+
+
+
+static void HTTPSetLoginCreds(HTTPInfoStruct *Info, const char *User, const char *Password)
+{
+    Info->AuthFlags |= HTTP_AUTH_BASIC;
+    Info->UserName=CopyStr(Info->UserName, User);
+
+//if (StrValid(Password)) CredsStoreAdd(Info->Host, Info->UserName, Password);
+    Info->Credentials=CopyStr(Info->Credentials, Password);
 }
 
 
@@ -309,9 +319,8 @@ void HTTPInfoSetValues(HTTPInfoStruct *Info, const char *Host, int Port, const c
     Info->Doc=CopyStr(Info->Doc,Doc);
     Info->PostContentType=CopyStr(Info->PostContentType,ContentType);
     Info->PostContentLength=ContentLength;
-    Info->UserName=CopyStr(Info->UserName, Logon);
 
-    if (StrValid(Password)) CredsStoreAdd(Host, Logon, Password);
+    HTTPSetLoginCreds(Info, Logon, Password);
 }
 
 
@@ -322,7 +331,7 @@ HTTPInfoStruct *HTTPInfoCreate(const char *Protocol, const char *Host, int Port,
     HTTPInfoStruct *Info;
     const char *ptr;
 
-    Info=(HTTPInfoStruct *) calloc(1,sizeof(HTTPInfoStruct));
+    Info=(HTTPInfoStruct *) calloc(1, sizeof(HTTPInfoStruct));
     Info->Protocol=CopyStr(Info->Protocol,Protocol);
     HTTPInfoSetValues(Info, Host, Port, Logon, Password, Method, Doc, ContentType, ContentLength);
 
@@ -407,9 +416,10 @@ void HTTPInfoSetURL(HTTPInfoStruct *Info, const char *Method, const char *iURL)
     if (strcasecmp(Method,"POST")==0) ParseURL(p_URL, &Proto, &Info->Host, &Token, &User, &Pass, &Info->Doc, &Args);
     else ParseURL(p_URL, &Proto, &Info->Host, &Token, &User, &Pass, &Info->Doc, NULL);
 
+    if (! StrValid(Info->Doc)) Info->Doc=CopyStr(Info->Doc, "/");
+
     if (StrValid(Token)) Info->Port=atoi(Token);
 
-    if (StrValid(User) || StrValid(Pass)) Info->UserName=CopyStr(Info->UserName, User);
 
     if (StrValid(Proto) && (strcmp(Proto,"https")==0)) Info->Flags |= HTTP_SSL;
 
@@ -424,21 +434,23 @@ void HTTPInfoSetURL(HTTPInfoStruct *Info, const char *Method, const char *iURL)
         }
         else if (strcasecmp(Token, "hostauth")==0) Info->AuthFlags |= HTTP_AUTH_HOST;
         else if (strcasecmp(Token, "http1.0")==0) Info->Flags |= HTTP_VER1_0;
+        else if (strcasecmp(Token, "method")==0)   Info->Method=CopyStr(Info->Method, Value);
         else if (strcasecmp(Token, "content-type")==0)   Info->PostContentType=CopyStr(Info->PostContentType, Value);
         else if (strcasecmp(Token, "content-length")==0) Info->PostContentLength=atoi(Value);
-        else if (strcasecmp(Token, "user")==0) Info->UserName=CopyStr(Info->UserName, Value);
         else if (strcasecmp(Token, "useragent")==0) Info->UserAgent=CopyStr(Info->UserAgent, Value);
         else if (strcasecmp(Token, "user-agent")==0) Info->UserAgent=CopyStr(Info->UserAgent, Value);
+        else if (strcasecmp(Token, "user")==0) User=CopyStr(User, Value);
+        else if (strcasecmp(Token, "password")==0) Pass=CopyStr(Pass, Value);
+        else if (strcasecmp(Token, "keepalive")==0) Info->Flags |= HTTP_KEEPALIVE;
+        else if (strcasecmp(Token, "timeout")==0) Info->Timeout=atoi(Value);
         else SetVar(Info->CustomSendHeaders, Token, Value);
         ptr=GetNameValuePair(ptr,"\\S","=",&Token, &Value);
     }
 
-		if (Info->PostContentLength > 0) Info->Doc=MCatStr(Info->Doc, "?", Args, NULL);
-		else HTTPInfoPOSTSetContent(Info, "", Args, 0, 0);
+    HTTPInfoPOSTSetContent(Info, "", Args, 0, 0);
+    HTTPSetLoginCreds(Info, User, Pass);
 
-    if (StrValid(Pass)) CredsStoreAdd(Info->Host, User, Pass);
-
-		if (StrEnd(Info->Doc)) Info->Doc=CopyStr(Info->Doc, "/");
+    if (StrEnd(Info->Doc)) Info->Doc=CopyStr(Info->Doc, "/");
 
     DestroyString(User);
     DestroyString(Pass);
@@ -589,23 +601,23 @@ static int HTTPHandleWWWAuthenticate(const char *Line, int *Type, char **Config)
 
 static void HTTPParseLocationHeader(HTTPInfoStruct *Info, const char *Header)
 {
-   if (
-         (strncasecmp(Header,"http:",5)==0) ||
-         (strncasecmp(Header,"https:",6)==0)
-      )
-      {
-         Info->RedirectPath=HTTPQuoteChars(Info->RedirectPath, Header, " ");
-      }
-	 		else if (strncmp(Header, "//",2)==0)
-			{
+    if (
+        (strncasecmp(Header,"http:",5)==0) ||
+        (strncasecmp(Header,"https:",6)==0)
+    )
+    {
+        Info->RedirectPath=HTTPQuoteChars(Info->RedirectPath, Header, " ");
+    }
+    else if (strncmp(Header, "//",2)==0)
+    {
         if (Info->Flags & HTTP_SSL) Info->RedirectPath=MCopyStr(Info->RedirectPath,"https:",Header,NULL);
-         else Info->RedirectPath=MCopyStr(Info->RedirectPath,"http:",Header,NULL);
-			}
-      else
-      {
-         if (Info->Flags & HTTP_SSL) Info->RedirectPath=FormatStr(Info->RedirectPath,"https://%s:%d%s",Info->Host,Info->Port,Header);
-         else Info->RedirectPath=FormatStr(Info->RedirectPath,"http://%s:%d%s",Info->Host,Info->Port,Header);
-      }
+        else Info->RedirectPath=MCopyStr(Info->RedirectPath,"http:",Header,NULL);
+    }
+    else
+    {
+        if (Info->Flags & HTTP_SSL) Info->RedirectPath=FormatStr(Info->RedirectPath,"https://%s:%d%s",Info->Host,Info->Port,Header);
+        else Info->RedirectPath=FormatStr(Info->RedirectPath,"http://%s:%d%s",Info->Host,Info->Port,Header);
+    }
 
 }
 
@@ -756,7 +768,10 @@ char *HTTPDigest(char *RetStr, const char *Method, const char *Logon, const char
 }
 
 
-static char *HTTPHeadersAppendAuth(char *RetStr, char *AuthHeader, HTTPInfoStruct *Info, char *AuthInfo)
+
+
+
+static char *HTTPHeadersAppendAuth(char *RetStr, char *AuthHeader, HTTPInfoStruct *Info, const char *AuthInfo)
 {
     char *SendStr=NULL, *Tempstr=NULL, *Realm=NULL, *Nonce=NULL;
     const char *ptr;
@@ -773,35 +788,48 @@ static char *HTTPHeadersAppendAuth(char *RetStr, char *AuthHeader, HTTPInfoStruc
     ptr=GetToken(ptr,":",&Nonce,0);
 
     passlen=CredsStoreLookup(Realm, Info->UserName, &p_Password);
-
+    if (! passlen)
+    {
+        Tempstr=FormatStr(Tempstr, "https://%s:%d",Info->Host, Info->Port);
+        passlen=CredsStoreLookup(Tempstr, Info->UserName, &p_Password);
+    }
     if (! passlen) passlen=CredsStoreLookup(Info->Host, Info->UserName, &p_Password);
-
-		if (passlen)
-		{
-    if (Info->AuthFlags & HTTP_AUTH_DIGEST)
+    if (!passlen)
     {
-        Tempstr=HTTPDigest(Tempstr, Info->Method, Info->UserName, p_Password, Realm, Info->Doc, Nonce);
-        SendStr=MCatStr(SendStr,AuthHeader,": Digest ", Tempstr, "\r\n",NULL);
-    }
-    else
-    {
-        Tempstr=MCopyStr(Tempstr,Info->UserName,":",NULL);
-        //Beware! Password will not be null terminated
-        Tempstr=CatStrLen(Tempstr,p_Password,passlen);
-        len=strlen(Tempstr);
-
-        //We should now have Logon:Password
-        Nonce=SetStrLen(Nonce,len * 2);
-
-        to64frombits((unsigned char *) Nonce, (unsigned char *) Tempstr, len);
-        SendStr=MCatStr(SendStr,AuthHeader,": Basic ",Nonce,"\r\n",NULL);
-
-        //wipe Tempstr, because it held password for a while
-        xmemset(Tempstr,0,len);
+        p_Password=Info->Credentials;
+        passlen=StrLen(Info->Credentials);
     }
 
+
+    if (passlen)
+    {
+        if (Info->AuthFlags & HTTP_AUTH_DIGEST)
+        {
+            Tempstr=HTTPDigest(Tempstr, Info->Method, Info->UserName, p_Password, Realm, Info->Doc, Nonce);
+            SendStr=MCatStr(SendStr,AuthHeader,": Digest ", Tempstr, "\r\n",NULL);
+        }
+        else
+        {
+            Tempstr=MCopyStr(Tempstr,Info->UserName,":",NULL);
+            //Beware! Password will not be null terminated
+            Tempstr=CatStrLen(Tempstr,p_Password,passlen);
+            len=strlen(Tempstr);
+
+            //We should now have Logon:Password
+            Nonce=SetStrLen(Nonce,len * 2);
+
+            to64frombits((unsigned char *) Nonce, (unsigned char *) Tempstr, len);
+            SendStr=MCatStr(SendStr,AuthHeader,": Basic ",Nonce,"\r\n",NULL);
+
+            //wipe Tempstr, because it held password for a while
+            xmemset(Tempstr,0,len);
+        }
+
+    }
+
+    //even if we didn't send the password, say we did so here in order that
+    //we're not stuck in an eternal loop of sending passwords
     Info->AuthFlags |= HTTP_AUTH_SENT;
-		}
 
     DestroyString(Tempstr);
     DestroyString(Logon);
@@ -835,8 +863,16 @@ void HTTPSendHeaders(STREAM *S, HTTPInfoStruct *Info)
         SendStr=CatStr(SendStr,Tempstr);
     }
 
-		//probably need to find some other way of detecting need for sending ContentLength other than whitelisting methods
-    if ((strcasecmp(Info->Method,"POST")==0) || (strcasecmp(Info->Method,"PUT")==0) || (strcasecmp(Info->Method,"PATCH")==0))
+    //probably need to find some other way of detecting need for sending ContentLength other than whitelisting methods
+    if ((Info->PostContentLength > 0) &&
+            (
+                (strcasecmp(Info->Method,"POST")==0) ||
+                (strcasecmp(Info->Method,"PUT")==0) ||
+                (strcasecmp(Info->Method,"PROPFIND")==0) ||
+                (strcasecmp(Info->Method,"PROPPATCH")==0) ||
+                (strcasecmp(Info->Method,"PATCH")==0)
+            )
+       )
     {
         Tempstr=FormatStr(Tempstr,"Content-Length: %d\r\n",Info->PostContentLength);
         SendStr=CatStr(SendStr,Tempstr);
@@ -848,13 +884,15 @@ void HTTPSendHeaders(STREAM *S, HTTPInfoStruct *Info)
         SendStr=CatStr(SendStr,Tempstr);
     }
 
+
     /* If we have authorisation details then send them */
     if (Info->AuthFlags & HTTP_AUTH_OAUTH)
     {
         Info->Authorization=MCopyStr(Info->Authorization, "Bearer ", OAuthLookup(Info->Credentials, FALSE), NULL);
     }
-    if (StrValid(Info->Authorization)) SendStr=HTTPHeadersAppendAuth(SendStr, "Authorization", Info, Info->Authorization);
-    else if (Info->AuthFlags & HTTP_AUTH_HOST) SendStr=HTTPHeadersAppendAuth(SendStr, "Authorization", Info, Info->Host);
+    else if (StrValid(Info->Authorization)) SendStr=HTTPHeadersAppendAuth(SendStr, "Authorization", Info, Info->Authorization);
+    else if (Info->AuthFlags & (HTTP_AUTH_HOST | HTTP_AUTH_BASIC | HTTP_AUTH_DIGEST)) SendStr=HTTPHeadersAppendAuth(SendStr, "Authorization", Info, Info->Host);
+
     if (Info->ProxyAuthorization) SendStr=HTTPHeadersAppendAuth(SendStr, "Proxy-Authorization", Info, Info->ProxyAuthorization);
 
     if (Info->Flags & HTTP_NOCACHE) SendStr=CatStr(SendStr,"Pragma: no-cache\r\nCache-control: no-cache\r\n");
@@ -1084,13 +1122,13 @@ int HTTPProcessResponse(HTTPInfoStruct *HTTPInfo)
 
 STREAM *HTTPSetupConnection(HTTPInfoStruct *Info, int ForceHTTPS)
 {
-    char *Proto=NULL, *Host=NULL, *Tempstr=NULL;
+    char *Proto=NULL, *Host=NULL, *URL=NULL, *Tempstr=NULL;
     const char *ptr;
     int Port=0, Flags=0;
     STREAM *S;
 
 
-		//proto in here will not be http/https but tcp/ssl/tls
+    //proto in here will not be http/https but tcp/ssl/tls
     Proto=CopyStr(Proto,"tcp");
     if (Info->Flags & HTTP_PROXY)
     {
@@ -1113,10 +1151,12 @@ STREAM *HTTPSetupConnection(HTTPInfoStruct *Info, int ForceHTTPS)
         }
     }
 
-    if (StrValid(Info->ConnectionChain)) Tempstr=FormatStr(Tempstr,"%s|%s:%s:%d/",Info->ConnectionChain,Proto,Host,Port);
-    else Tempstr=FormatStr(Tempstr,"%s:%s:%d/",Proto,Host,Port);
+    if (StrValid(Info->ConnectionChain)) URL=FormatStr(URL,"%s|%s:%s:%d/",Info->ConnectionChain,Proto,Host,Port);
+    else URL=FormatStr(URL,"%s:%s:%d/",Proto,Host,Port);
 
-		S=STREAMOpen(Tempstr, "");
+    Tempstr=FormatStr(Tempstr, "rw timeout=%d", Info->Timeout);
+
+    S=STREAMOpen(URL, Tempstr);
     if (S)
     {
         S->Type=STREAM_TYPE_HTTP;
@@ -1131,9 +1171,10 @@ STREAM *HTTPSetupConnection(HTTPInfoStruct *Info, int ForceHTTPS)
 
     Info->S=S;
 
-    DestroyString(Proto);
     DestroyString(Tempstr);
+    DestroyString(Proto);
     DestroyString(Host);
+    DestroyString(URL);
 
     return(S);
 }
@@ -1193,6 +1234,8 @@ STREAM *HTTPTransact(HTTPInfoStruct *Info)
                     if (strcasecmp(Info->Method,"POST")==0) break;
                     if (strcasecmp(Info->Method,"PUT")==0) break;
                     if (strcasecmp(Info->Method,"PATCH")==0) break;
+                    if (strcasecmp(Info->Method,"PROPFIND")==0) break;
+                    if (strcasecmp(Info->Method,"PROPPATCH")==0) break;
                 }
             }
 
@@ -1241,6 +1284,7 @@ STREAM *HTTPTransact(HTTPInfoStruct *Info)
                     (Info->AuthFlags & HTTP_AUTH_RETURN) ||
                     (StrEnd(Info->Authorization))
                 ) break;
+
             }
 
             //if we got asked for proxy authentication bu have no auth details, then give up
@@ -1305,14 +1349,24 @@ STREAM *HTTPWithConfig(const char *URL, const char *Config)
     {
         for (cptr=Token; *cptr !='\0'; cptr++)
         {
-						switch(*cptr)
-						{
-            case 'w': p_Method="POST"; break;
-            case 'W': p_Method="PUT"; break;
-            case 'P': p_Method="PATCH"; break;
-            case 'D': p_Method="DELETE"; break;
-            case 'H': p_Method="HEAD"; break;
-						}
+            switch(*cptr)
+            {
+            case 'w':
+                p_Method="POST";
+                break;
+            case 'W':
+                p_Method="PUT";
+                break;
+            case 'P':
+                p_Method="PATCH";
+                break;
+            case 'D':
+                p_Method="DELETE";
+                break;
+            case 'H':
+                p_Method="HEAD";
+                break;
+            }
         }
     }
 
@@ -1330,17 +1384,17 @@ STREAM *HTTPWithConfig(const char *URL, const char *Config)
 int HTTPDownload(char *URL, STREAM *S)
 {
     STREAM *Con;
-		const char *ptr;
+    const char *ptr;
 
     Con=HTTPGet(URL);
     if (! Con) return(-1);
 
-		ptr=STREAMGetValue(Con, "HTTP:ResponseCode");
-		if ((! ptr) || (*ptr !='2'))
-		{
-			STREAMClose(Con);
-			return(-1);
-		}
+    ptr=STREAMGetValue(Con, "HTTP:ResponseCode");
+    if ((! ptr) || (*ptr !='2'))
+    {
+        STREAMClose(Con);
+        return(-1);
+    }
     return(STREAMSendFile(Con, S, 0, SENDFILE_LOOP));
 }
 

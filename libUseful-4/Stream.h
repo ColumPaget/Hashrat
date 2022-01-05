@@ -19,6 +19,7 @@ S=STREAMOpen("/tmp/myfile.txt", "w");
 The first argument can be any of the following types:
 
 /tmp/myfile.txt                          file
+file:///tmp/myfile.txt                   file, web-browser style. Note 3 '/' symbols. 
 mmap:/tmp/myfile.txt                     memory mapped file
 tty:/dev/ttyS0:38400                     open a serial device, in this case at 38400 baud
 udp:192.168.2.1:53                       udp network connection
@@ -31,6 +32,11 @@ http:user:password@www.google.com        http network connection
 https:www.google.com                     https network connection
 cmd:cat /etc/hosts                       run command 'cat /etc/hosts' and read/write to/from it
 ssh:192.168.2.1:1022/cat /etc/hosts      ssh connect, running the command 'cat /etc/hosts'
+stdin:                                   standard in
+stdout:                                  standard out
+stdio:                                   both standard in and standard out
+
+'file://' is provided for compatiblity with web-browser environments. In this url format the protocol part is 'file://'. If a third '/' is present, like so 'file:///etc/services' then the url is a full path from the filesystem root. Any lesser number of '/' indicates a relative path from the current directory
 
 in the case of SSH stream the default action, if no 'config' flags are passed, is to run a command. 'x' config flag will also explictly run a command. 'r' will cat a file from the remote server. 'w' will cat from the stream TO a file on the remote server. 
 
@@ -69,6 +75,28 @@ S     file contents are sorted
 x     treat file path as a command to execute (currently on in ssh: streams) 
 z     compress/uncompress with gzip
 
+
+for tcp/unix/udp network connections the 'config argument' is normally 'rw' followed by name-value pairs with the following values
+
+r  - 'read' mode (a non-op as all sockets are readable)
+w  - 'write' mode (a non-op as all sockets are writeable)
+n  - nonblocking socket
+E  - report socket connection errors
+k  - TURN OFF socket keep alives
+B  - broadcast socket
+F  - TCP Fastopen
+R  - Don't route (equivalent to applying SOCKOPT_DONTROUTE)
+N  - TCP no-delay (disable Nagle algo)
+
+Name-value pairs are:
+
+ttl=<seconds>       set ttl of socket
+tos=<value>         set tos of socket
+mark=<value>        set SOCKOPT_MARK if supported
+keepalive=<y/n>     turn on/off socket keepalives
+timeout=<centisecs> connect/read timeout for socket
+
+
 for 'http' and 'https' URLs the first argument is a character list (though only one character long) with the following values
 
 r    GET method (default if no method specified)
@@ -86,6 +114,7 @@ content-length=<content length>
 user=<username>
 useragent=<user agent>
 user-agent=<user agent>
+timeout=<centisecs>
 hostauth
 
 Note, 'hostauth' is not a name/value pair, just a config flag that enables sending authentication without waiting for a 401 Response from the server. This means that we can't know the authentication realm for the server, and so internally use the hostname as the realm for looking up logon credentials. This is mostly useful for the github api.
@@ -284,6 +313,12 @@ STREAM *STREAMFileOpen(const char *Path, int Flags);
 //Free a stream object without closing any associated file descriptors (e.g. if you're using a stream to read from stdin, but don't want
 //to close stdin, use this function  to free the STREAM object
 void STREAMDestroy(void *S);
+
+//close a stream and free most associated data, but don't destroy/free the stream object.
+//you would not normally use this except if you were linking libUseful to some kind of 
+//environment that expects to garbage-collect destroyed items itself (libUseful-lua is an
+//example of this situation)
+void STREAMShutdown(STREAM *Stream);
 
 //Close a file/connection and free the STREAM object
 void STREAMClose(STREAM *Stream);

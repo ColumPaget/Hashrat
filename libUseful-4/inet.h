@@ -13,7 +13,7 @@ Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 extern "C" {
 #endif
 
-char *ExtractFromWebpage(char *RetStr, char *URL, char *ExtractStr, int MinLength);
+char *ExtractFromWebpage(char *RetStr, const char *URL, const char *ExtractStr, int MinLength);
 char *GetExternalIP(char *RetStr);
 int IPGeoLocate(const char *IP, ListNode *Vars);
 

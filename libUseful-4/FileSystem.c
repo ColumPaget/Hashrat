@@ -19,11 +19,11 @@
 #ifndef HAVE_GET_CURR_DIR
 char *get_current_dir_name()
 {
-char *path;
+    char *path;
 
-path=(char *) calloc(1, PATH_MAX+1);
-getcwd(path, PATH_MAX+1);
-return(path);
+    path=(char *) calloc(1, PATH_MAX+1);
+    getcwd(path, PATH_MAX+1);
+    return(path);
 }
 #endif
 
@@ -135,7 +135,7 @@ int FileMoveToDir(const char *FilePath, const char *Dir)
     char *ptr;
     int result;
 
-    Tempstr=MCopyStr(Tempstr, Dir, "/", GetBasename(FilePath));
+    Tempstr=MCopyStr(Tempstr, Dir, "/", GetBasename(FilePath), NULL);
     MakeDirPath(Tempstr, 0700);
     result=rename(FilePath,Tempstr);
     if (result !=0) RaiseError(ERRFLAG_ERRNO, "FileMoveToDir", "cannot rename '%s' to '%s'",FilePath, Tempstr);
@@ -259,15 +259,15 @@ int FileChGroup(const char *FileName, const char *Group)
 
 int FileTouch(const char *Path)
 {
-struct utimbuf times;
+    struct utimbuf times;
 
-times.actime=time(NULL); 
-times.modtime=time(NULL); 
+    times.actime=time(NULL);
+    times.modtime=time(NULL);
 
-if (utime(Path, &times)==0) return(TRUE); 
+    if (utime(Path, &times)==0) return(TRUE);
 
-RaiseError(ERRFLAG_ERRNO, "FileTouch", "failed to update file mtime");
-return(FALSE);
+    RaiseError(ERRFLAG_ERRNO, "FileTouch", "failed to update file mtime");
+    return(FALSE);
 }
 
 unsigned long FileCopyWithProgress(const char *SrcPath, const char *DestPath, DATA_PROGRESS_CALLBACK Callback)
@@ -291,20 +291,20 @@ int FileGetBinaryXAttr(char **RetStr, const char *Path, const char *Name)
 
     *RetStr=CopyStr(*RetStr, "");
 #ifdef HAVE_XATTR
-	#ifdef __APPLE__ //'cos some idiot's always got to 'think different'
+#ifdef __APPLE__ //'cos some idiot's always got to 'think different'
     len=getxattr(Path, Name, NULL, 0, 0, 0);
-	#else
+#else
     len=getxattr(Path, Name, NULL, 0);
-	#endif 
+#endif
 
     if (len > 0)
     {
         *RetStr=SetStrLen(*RetStr,len);
-        #ifdef __APPLE__
+#ifdef __APPLE__
         getxattr(Path, Name, *RetStr, len, 0, 0);
-        #else
+#else
         getxattr(Path, Name, *RetStr, len);
-        #endif
+#endif
     }
 #else
     RaiseError(0, "FileGetXAttr", "xattr support not compiled in");
@@ -327,11 +327,11 @@ char *FileGetXAttr(char *RetStr, const char *Path, const char *Name)
 int FileSetBinaryXAttr(const char *Path, const char *Name, const char *Value, int Len)
 {
 #ifdef HAVE_XATTR
-	#ifdef __APPLE__
+#ifdef __APPLE__
     return(setxattr(Path, Name, Value, Len, 0, 0));
-	#else
+#else
     return(setxattr(Path, Name, Value, Len, 0));
-	#endif
+#endif
 #else
     RaiseError(0, "FileSetXAttr", "xattr support not compiled in");
 #endif
@@ -458,64 +458,64 @@ int FileSystemMount(const char *Dev, const char *MountPoint, const char *Type, c
 
 int FileSystemUnMountFlagsDepth(const char *MountPoint, int UnmountFlags, int ExtraFlags, int Depth, int MaxDepth)
 {
-int result, i;
-char *Path=NULL;
-struct stat FStat;
-glob_t Glob;
+    int result, i;
+    char *Path=NULL;
+    struct stat FStat;
+    glob_t Glob;
 
-if (strcmp(MountPoint,"/proc")==0) MaxDepth=10;
-if (strcmp(MountPoint,"/sys")==0) MaxDepth=10;
-if (strcmp(MountPoint,"/dev")==0) MaxDepth=10;
+    if (strcmp(MountPoint,"/proc")==0) MaxDepth=10;
+    if (strcmp(MountPoint,"/sys")==0) MaxDepth=10;
+    if (strcmp(MountPoint,"/dev")==0) MaxDepth=10;
 
 
 
-if (ExtraFlags & UMOUNT_RECURSE)
-{
-	if ((MaxDepth ==0) || (Depth <= MaxDepth))
-	{
-   Path=MCopyStr(Path,MountPoint,"/*",NULL);
-   glob(Path, 0, 0, &Glob);
-   for (i=0; i < Glob.gl_pathc; i++)
-   {
-       if (stat(Glob.gl_pathv[i],&FStat)==0)
-			 {
-       if (S_ISDIR(FStat.st_mode))
-       {
-           FileSystemUnMountFlagsDepth(Glob.gl_pathv[i], UnmountFlags, ExtraFlags & ~UMOUNT_SUBDIRS, Depth+1, MaxDepth);
-       }
-			 else if (ExtraFlags & UMOUNT_RMFILE) unlink(Glob.gl_pathv[i]);
-			 }
+    if (ExtraFlags & UMOUNT_RECURSE)
+    {
+        if ((MaxDepth ==0) || (Depth <= MaxDepth))
+        {
+            Path=MCopyStr(Path,MountPoint,"/*",NULL);
+            glob(Path, 0, 0, &Glob);
+            for (i=0; i < Glob.gl_pathc; i++)
+            {
+                if (stat(Glob.gl_pathv[i],&FStat)==0)
+                {
+                    if (S_ISDIR(FStat.st_mode))
+                    {
+                        FileSystemUnMountFlagsDepth(Glob.gl_pathv[i], UnmountFlags, ExtraFlags & ~UMOUNT_SUBDIRS, Depth+1, MaxDepth);
+                    }
+                    else if (ExtraFlags & UMOUNT_RMFILE) unlink(Glob.gl_pathv[i]);
+                }
+            }
+            globfree(&Glob);
+        }
     }
-		globfree(&Glob);
-	}
-}
 
-if (ExtraFlags & UMOUNT_SUBDIRS) return(0);
+    if (ExtraFlags & UMOUNT_SUBDIRS) return(0);
 
-result=0;
-while (result > -1)
-{
+    result=0;
+    while (result > -1)
+    {
 #ifdef HAVE_UMOUNT2
-    result=umount2(MountPoint, UnmountFlags);
+        result=umount2(MountPoint, UnmountFlags);
 #elif HAVE_UMOUNT
-    result=umount(MountPoint);
+        result=umount(MountPoint);
 #elif HAVE_UNMOUNT
-    result=unmount(MountPoint,0);
+        result=unmount(MountPoint,0);
 #else
-    result=-1;
+        result=-1;
 #endif
-}
+    }
 
-if (ExtraFlags & UMOUNT_RMDIR) rmdir(MountPoint);
+    if (ExtraFlags & UMOUNT_RMDIR) rmdir(MountPoint);
 
-Destroy(Path);
-return(result);
+    Destroy(Path);
+    return(result);
 }
 
 
 int FileSystemUnMountFlags(const char *MountPoint, int UnmountFlags, int ExtraFlags)
 {
-return(FileSystemUnMountFlagsDepth(MountPoint, UnmountFlags, ExtraFlags, 0, 0));
+    return(FileSystemUnMountFlagsDepth(MountPoint, UnmountFlags, ExtraFlags, 0, 0));
 }
 
 int FileSystemUnMount(const char *MountPoint, const char *Args)
@@ -539,7 +539,7 @@ int FileSystemUnMount(const char *MountPoint, const char *Args)
         ptr=GetToken(ptr, " |,", &Token, GETTOKEN_MULTI_SEP);
     }
 
-		result=FileSystemUnMountFlags(MountPoint, Flags, ExtraFlags);
+    result=FileSystemUnMountFlags(MountPoint, Flags, ExtraFlags);
     DestroyString(Token);
 
     return(result);
@@ -548,50 +548,121 @@ int FileSystemUnMount(const char *MountPoint, const char *Args)
 
 int FileSystemRmDir(const char *Dir)
 {
-	return(FileSystemUnMountFlagsDepth(Dir, 0, UMOUNT_RECURSE | UMOUNT_RMDIR | UMOUNT_RMFILE, 0, 0));
+    return(FileSystemUnMountFlagsDepth(Dir, 0, UMOUNT_RECURSE | UMOUNT_RMDIR | UMOUNT_RMFILE, 0, 0));
 }
 
 
 int FileSystemCopyDir(const char *Src, const char *Dest)
 {
-glob_t Glob;
-const char *ptr;
-struct stat Stat;
-char *Tempstr=NULL, *Path=NULL;
-int i;
+    glob_t Glob;
+    const char *ptr;
+    struct stat Stat;
+    char *Tempstr=NULL, *Path=NULL;
+    int i;
 
-Tempstr=MCopyStr(Tempstr, Dest, "/", NULL);
-MakeDirPath(Tempstr, 0777);
-Tempstr=MCopyStr(Tempstr, Src, "/*", NULL);
-glob(Tempstr, 0, 0, &Glob);
-for (i=0; i < Glob.gl_pathc; i++)
+    Tempstr=MCopyStr(Tempstr, Dest, "/", NULL);
+    MakeDirPath(Tempstr, 0777);
+    Tempstr=MCopyStr(Tempstr, Src, "/*", NULL);
+    glob(Tempstr, 0, 0, &Glob);
+    Tempstr=MCopyStr(Tempstr, Src, "/.*", NULL);
+    glob(Tempstr, GLOB_APPEND, NULL, &Glob);
+    for (i=0; i < Glob.gl_pathc; i++)
+    {
+        ptr=GetBasename(Glob.gl_pathv[i]);
+
+        if ((strcmp(ptr,".") !=0) && (strcmp(ptr, "..") !=0) )
+        {
+            ptr=Glob.gl_pathv[i];
+            lstat(ptr, &Stat);
+
+            Path=MCopyStr(Path, Dest, "/", GetBasename(ptr), NULL);
+            if (S_ISLNK(Stat.st_mode))
+            {
+                Tempstr=SetStrLen(Tempstr, PATH_MAX);
+                readlink(ptr, Tempstr, PATH_MAX);
+                symlink(Path, Tempstr);
+            }
+            else if (S_ISDIR(Stat.st_mode))
+            {
+                FileSystemCopyDir(ptr, Path);
+            }
+            else if (S_ISREG(Stat.st_mode))
+            {
+                FileCopy(ptr, Path);
+            }
+            else
+            {
+                RaiseError(0, "FileSystemCopyDir", "WARNING: not copying %s. Files of this type aren't yet supported for copy", Src);
+            }
+        }
+    }
+
+    globfree(&Glob);
+
+    Destroy(Tempstr);
+    Destroy(Path);
+}
+
+
+static int FileSystemParsePermissionsTri(const char **ptr, int ReadPerm, int WritePerm, int ExecPerm)
 {
-	ptr=Glob.gl_pathv[i];
-	lstat(ptr, &Stat);
+    int Perms=0;
 
-	Path=MCopyStr(Path, Dest, "/", GetBasename(ptr), NULL);
-	if (S_ISLNK(Stat.st_mode))
-	{
-		Tempstr=SetStrLen(Tempstr, PATH_MAX);
-		readlink(ptr, Tempstr, PATH_MAX);
-		symlink(Path, Tempstr);
-	}
-	else if (S_ISDIR(Stat.st_mode))
-	{
-		FileSystemCopyDir(ptr, Path);
-	}
-	else if (S_ISREG(Stat.st_mode))
-	{
-		FileCopy(ptr, Path); 
-	}
-	else
-	{
-		 RaiseError(0, "FileSystemCopyDir", "WARNING: not copying %s. Files of this type aren't yet supported for copy", Src);
-	}
+    if (**ptr=='r') Perms |= ReadPerm;
+    if (ptr_incr(ptr, 1) ==0) return(Perms);
+    if (**ptr=='w') Perms |= WritePerm;
+    if (ptr_incr(ptr, 1) ==0) return(Perms);
+    if (**ptr=='x') Perms |= ExecPerm;
+    if (ptr_incr(ptr, 1) ==0) return(Perms);
+
+    return(Perms);
 }
 
-globfree(&Glob);
 
-Destroy(Tempstr);
-Destroy(Path);
+int FileSystemParsePermissions(const char *PermsStr)
+{
+    int Perms=0;
+    const char *ptr;
+
+    if (! StrValid(PermsStr)) return(0);
+    ptr=PermsStr;
+
+    switch(*ptr)
+    {
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+        return(strtol(PermsStr,NULL,8));
+        break;
+
+    case 'a':
+        Perms |= FileSystemParsePermissionsTri(&ptr, S_IRUSR|S_IRGRP|S_IROTH, S_IWUSR|S_IWGRP|S_IWOTH, S_IXUSR|S_IXGRP|S_IXOTH);
+        break;
+
+    case 'u':
+        Perms |= FileSystemParsePermissionsTri(&ptr, S_IRUSR, S_IWUSR, S_IXUSR);
+        break;
+
+    case 'g':
+        Perms |= FileSystemParsePermissionsTri(&ptr, S_IRGRP, S_IWGRP, S_IXGRP);
+        break;
+
+    case 'o':
+        Perms |= FileSystemParsePermissionsTri(&ptr, S_IROTH, S_IWOTH, S_IXOTH);
+        break;
+
+    default:
+        Perms |= FileSystemParsePermissionsTri(&ptr, S_IRUSR, S_IWUSR, S_IXUSR);
+        Perms |= FileSystemParsePermissionsTri(&ptr, S_IRGRP, S_IWGRP, S_IXGRP);
+        Perms |= FileSystemParsePermissionsTri(&ptr, S_IROTH, S_IWOTH, S_IXOTH);
+        break;
+    }
+
+    return(Perms);
 }
+

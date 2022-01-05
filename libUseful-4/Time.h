@@ -46,6 +46,8 @@ void SetTimeout(int timeout, SIGNAL_HANDLER_FUNC);
 
 long TimezoneOffset(const char *TimeZone);
 
+void MillisecsToTV(int millisecs, struct timeval *tv);
+
 #ifdef __cplusplus
 }
 #endif

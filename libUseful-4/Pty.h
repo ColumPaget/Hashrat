@@ -42,8 +42,18 @@ void PTYSetGeometry(int pty, int wid, int high);
 //open a tty device (like /dev/ttyS0). Flags are as 'TTYFLAG_' #defines above
 int TTYOpen(const char *devname, int LineSpeed, int Flags);
 
+
+
 //change config of an already opened tty device. Flags are as 'TTYFLAG_' #defines above
 void TTYConfig(int tty, int LineSpeed, int Flags);
+
+//get config flags of an already opened tty device
+int TTYGetConfig(int tty);
+
+//change config of an already opened tty device. Flags are as 'TTYFLAG_' #defines above
+#define TTYSetConfig(tty,speed,flags) (TTYConfig((tty,(speed),(flags)))
+
+
 
 //TTYOpen except accepting text config, not flags. Intended for bindings to languages like lua that don't handle
 //bit-flags well. possible config text options are:
@@ -71,6 +81,12 @@ int TTYParseConfig(const char *Config, int *Speed);
 //master and slave are two ends of a PseudoTTY 'pipe'. This is a two-way pipe with all the properties (like line-speed, tty modes etc) of
 // a tty. I normally attach 'slave' to stdin and stdout of some process, and use 'master' as the end I read/write from/to
 int PseudoTTYGrab(int *master, int *slave, int Flags);
+
+//turn tty local echo on or off
+void TTYSetEcho(int tty, int OnOrOff);
+
+//switch canonical (line editing) mode on or off
+void TTYSetCanonical(int tty, int OnOrOff);
 
 #ifdef __cplusplus
 }

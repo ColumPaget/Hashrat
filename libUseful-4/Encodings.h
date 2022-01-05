@@ -58,6 +58,8 @@ If you *KNOW* that your output of DecodeBytes is going to be null-terminated tex
 */
 
 #define ENCODE_NONE 0
+#define ENCODE_QUOTED_MIME 1
+#define ENCODE_QUOTED_HTTP 2
 #define ENCODE_OCTAL 8
 #define ENCODE_DECIMAL 10
 #define ENCODE_HEX  16

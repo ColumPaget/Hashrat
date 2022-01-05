@@ -740,17 +740,17 @@ int HashSTREAM(char **Return, const char *Type, STREAM *S, int Encoding)
 
 int HashFile(char **Return, const char *Type, const char *Path, int Encoding)
 {
-int result=FALSE;
-STREAM *S;
+    int result=FALSE;
+    STREAM *S;
 
-S=STREAMOpen(Path,"r");
-if (S) 
-{
-	result=HashSTREAM(Return, Type, S, Encoding);
-	STREAMClose(S);
-}
+    S=STREAMOpen(Path,"r");
+    if (S)
+    {
+        result=HashSTREAM(Return, Type, S, Encoding);
+        STREAMClose(S);
+    }
 
-return(result);
+    return(result);
 }
 
 

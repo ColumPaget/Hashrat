@@ -271,7 +271,7 @@ int LogFileInternalWrite(TLogFile *LF, STREAM *S, int Flags, const char *Str)
     if (Flags & LOGFILE_TIMESTAMP)
     {
         LogStr=CopyStr(LogStr, GetDateStr("%Y/%m/%d %H:%M:%S",NULL));
-				
+
         if (Flags & LOGFILE_MILLISECS)
         {
             Tempstr=FormatStr(Tempstr,".%03d ", GetTime(TIME_CACHED | TIME_MILLISECS) % 1000);

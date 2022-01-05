@@ -8,35 +8,37 @@
 
 static const char *GetTokenStepThru(const char *Str, int Flags)
 {
-const char *ptr;
+    const char *ptr;
 
-	switch (*Str)
-	{
-	case '\0': return(Str); break;
+    switch (*Str)
+    {
+    case '\0':
+        return(Str);
+        break;
 
-	case '\\':
-  	if (! (Flags & GETTOKEN_BACKSLASH))
-		{
-			//if we got a backslash, then skip past it and the character it quotes,
-			//unless it's quoting a NULL character (which just ain't allowed)
-			if ( *(Str+1) != '\0' ) return(Str+2);
-		}
-	break;
+    case '\\':
+        if (! (Flags & GETTOKEN_BACKSLASH))
+        {
+            //if we got a backslash, then skip past it and the character it quotes,
+            //unless it's quoting a NULL character (which just ain't allowed)
+            if ( *(Str+1) != '\0' ) return(Str+2);
+        }
+        break;
 
-	case '"':
-	case '\'':
-  	if (Flags & GETTOKEN_HONOR_QUOTES) 
-		{
-			ptr=traverse_quoted(Str);
-			ptr++;
-			return(ptr);
-		}
-		else return(Str+1);
-	break;
-	}
+    case '"':
+    case '\'':
+        if (Flags & GETTOKEN_HONOR_QUOTES)
+        {
+            ptr=traverse_quoted(Str);
+            ptr_incr(&ptr, 1);
+            return(ptr);
+        }
+        else return(Str+1);
+        break;
+    }
 
-	//default result
-	return(Str+1);
+    //default result
+    return(Str+1);
 }
 
 
@@ -67,7 +69,7 @@ int GetTokenSepMatch(const char *Pattern,const char **start, const char **end, i
 
         //Quoted char
         case '\\':
-            pptr++;
+            ptr_incr(&pptr, 1);
             if (*pptr=='S') MatchType=TOK_SPACE;
             if (*pptr=='X') MatchType=TOK_CODE;
             break;
@@ -97,7 +99,7 @@ int GetTokenSepMatch(const char *Pattern,const char **start, const char **end, i
             }
             else
             {
-                eptr++;
+                ptr_incr(&eptr, 1);
                 *start=eptr;
                 return(FALSE);
             }
@@ -138,8 +140,8 @@ int GetTokenSepMatch(const char *Pattern,const char **start, const char **end, i
             break;
         }
 
-        pptr++;
-        eptr++;
+        ptr_incr(&pptr, 1);
+        ptr_incr(&eptr, 1);
     }
 
     return(FALSE);
@@ -159,8 +161,7 @@ int GetTokenFindSeparator(const char *Pattern, const char *String, const char **
     {
         if ((*start_ptr=='\\') && (! (Flags & GETTOKEN_BACKSLASH)))
         {
-            start_ptr++;
-            start_ptr++;
+            ptr_incr(&start_ptr, 2);
             continue;
         }
 
@@ -171,7 +172,7 @@ int GetTokenFindSeparator(const char *Pattern, const char *String, const char **
             return(TRUE);
         }
 
-				start_ptr=GetTokenStepThru(start_ptr, Flags);
+        start_ptr=GetTokenStepThru(start_ptr, Flags);
     }
 
 //We found nothing, set sep start to equal end of string
@@ -234,23 +235,23 @@ int GetTokenMultiSepMatch(char **Separators, const char **start_ptr, const char 
 
     while (*sptr !='\0')
     {
-    sep_ptr=Separators;
+        sep_ptr=Separators;
 
-    while (*sep_ptr !=NULL)
-    {
-        //we have to protect sptr just like start_ptr, or else GetTokenSepMatch will change it
-        tptr=sptr;
-        if (GetTokenSepMatch(*sep_ptr, &tptr, &eptr, Flags))
+        while (*sep_ptr !=NULL)
         {
-            *start_ptr=tptr;
-            *end_ptr=eptr;
-            return(TRUE);
+            //we have to protect sptr just like start_ptr, or else GetTokenSepMatch will change it
+            tptr=sptr;
+            if (GetTokenSepMatch(*sep_ptr, &tptr, &eptr, Flags))
+            {
+                *start_ptr=tptr;
+                *end_ptr=eptr;
+                return(TRUE);
+            }
+
+            sep_ptr++;
         }
 
-        sep_ptr++;
-    }
-
-    sptr=GetTokenStepThru(sptr, Flags);
+        sptr=GetTokenStepThru(sptr, Flags);
     }
 
     *start_ptr=*end_ptr;
@@ -265,11 +266,11 @@ const char *GetTokenPostProcess(const char *SearchStr, const char *SepStart, con
 {
     const char *sptr, *eptr;
 
-		if (! SepStart)
-		{
-			*Token=CopyStr(*Token, SearchStr);
-			return(SearchStr+StrLen(SearchStr));
-		}
+    if (! SepStart)
+    {
+        *Token=CopyStr(*Token, SearchStr);
+        return(SearchStr+StrLen(SearchStr));
+    }
 
     sptr=SearchStr;
     if (Flags & GETTOKEN_INCLUDE_SEP)
@@ -324,8 +325,8 @@ const char *GetTokenSeparators(const char *SearchStr, char **Separators, char **
     /* this is a safety measure so that there is always something in Token*/
     if (Token) *Token=CopyStr(*Token,"");
     if ((! Token) || StrEnd(SearchStr)) return(NULL);
-		SepStart=SearchStr;
-		GetTokenMultiSepMatch(Separators, &SepStart, &SepEnd, Flags);
+    SepStart=SearchStr;
+    GetTokenMultiSepMatch(Separators, &SepStart, &SepEnd, Flags);
     return(GetTokenPostProcess(SearchStr, SepStart, SepEnd, Token, Flags));
 }
 
@@ -349,16 +350,26 @@ const char *GetToken(const char *SearchStr, const char *Separator, char **Token,
         return(NULL);
     }
 
-//if we've only got one character than just keep it simple
+//if we've only got one character in the separator than just keep it simple
     if (
         (! (Flags & GETTOKEN_HONOR_QUOTES)) &&
         (*(Separator+1)=='\0')
     )
     {
         SepStart=strchr(SearchStr,*Separator);
-        if (! SepStart) SepStart=SearchStr+StrLen(SearchStr);
+        //if there's no more instances of separator in the string, then copy remaining string into Token
+        //and point 'SepEnd' to the end of the string, and return it
+        if (! SepStart)
+        {
+            SepEnd=SearchStr+StrLen(SearchStr);
+            *Token=CopyStr(*Token,SearchStr);
+            return(SepEnd);
+        }
+
+        //as we have a 1 character seperator, then SepEnd is 1 char beyond it
         if (*SepStart=='\0') SepEnd=SepStart;
         else SepEnd=SepStart+1;
+
         if (Flags) return(GetTokenPostProcess(SearchStr, SepStart, SepEnd, Token, Flags));
         *Token=CopyStrLen(*Token, SearchStr, SepStart-SearchStr);
         return(SepEnd);
@@ -372,9 +383,9 @@ const char *GetToken(const char *SearchStr, const char *Separator, char **Token,
         if (Flags & GETTOKEN_MULTI_SEPARATORS)
         {
             separators=BuildMultiSeparators(Separator);
-						SepStart=SearchStr;
-						GetTokenMultiSepMatch(separators, &SepStart, &SepEnd, Flags);
-						StringArrayDestroy(separators);
+            SepStart=SearchStr;
+            GetTokenMultiSepMatch(separators, &SepStart, &SepEnd, Flags);
+            StringArrayDestroy(separators);
         }
         else GetTokenFindSeparator(Separator, SearchStr, &SepStart, &SepEnd, Flags);
     }
@@ -427,41 +438,34 @@ const char *GetNameValuePair(const char *Input, const char *PairDelim, const cha
 
     *Name=CopyStr(*Name,"");
     *Value=CopyStr(*Value,"");
-    ptr=GetToken(Input,PairDelim,&Token,GETTOKEN_HONOR_QUOTES);
+    ptr=GetToken(Input,PairDelim,&Token,GETTOKEN_QUOTES);
     if (StrValid(Token))
     {
-        if ((Token[0]=='"') || (Token[0]=='\''))
-        {
-           // StripQuotes(Token);
-        }
         ptr2=GetToken(Token,NameValueDelim,Name,GETTOKEN_QUOTES);
-//ptr2=GetToken(ptr2,PairDelim,Value,GETTOKEN_HONOR_QUOTES);
         *Value=CopyStr(*Value,ptr2);
-
-        StripQuotes(*Name);
-        StripQuotes(*Value);
+        if (StrValid(*Value)) StripQuotes(*Value);
     }
 
-    DestroyString(Token);
+    Destroy(Token);
     return(ptr);
 }
 
 
 char *GetNameValue(char *RetStr, const char *Input, const char *PairDelim, const char *NameValueDelim, const char *SearchName)
 {
-char *Name=NULL, *Value=NULL;
-const char *ptr;
+    char *Name=NULL, *Value=NULL;
+    const char *ptr;
 
-RetStr=CopyStr(RetStr, "");
-ptr=GetNameValuePair(Input, PairDelim, NameValueDelim, &Name, &Value);
-while (ptr)
-{
-	if (strcmp(Name, SearchName)==0) RetStr=CopyStr(RetStr, Value);
-	ptr=GetNameValuePair(ptr, PairDelim, NameValueDelim, &Name, &Value);
-}
+    RetStr=CopyStr(RetStr, "");
+    ptr=GetNameValuePair(Input, PairDelim, NameValueDelim, &Name, &Value);
+    while (ptr)
+    {
+        if (strcmp(Name, SearchName)==0) RetStr=CopyStr(RetStr, Value);
+        ptr=GetNameValuePair(ptr, PairDelim, NameValueDelim, &Name, &Value);
+    }
 
-Destroy(Name);
-Destroy(Value);
+    Destroy(Name);
+    Destroy(Value);
 
-return(RetStr);
+    return(RetStr);
 }

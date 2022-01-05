@@ -68,6 +68,65 @@ void PTYSetGeometry(int pty, int wid, int high)
 }
 
 
+int TTYGetConfig(int tty)
+{
+    struct termios tty_data;
+    int Flags=0;
+
+    memset(&tty_data, 0, sizeof(struct termios));
+    tcgetattr(tty, &tty_data);
+
+
+    if (tty_data.c_lflag & ISIG) Flags |= TTYFLAG_IGNSIG;
+    if (tty_data.c_lflag & ECHO) Flags |= TTYFLAG_ECHO;
+    if (tty_data.c_lflag & ICANON) Flags |= TTYFLAG_CANON;
+
+    if (tty_data.c_iflag & (IXON | IXOFF)) Flags |= TTYFLAG_SOFTWARE_FLOW;
+#ifdef CRTSCTS
+    if (tty_data.c_cflag & CRTSCTS) Flags |= TTYFLAG_HARDWARE_FLOW;
+#endif
+
+    if (tty_data.c_iflag & ICRNL) Flags |= TTYFLAG_IN_CRLF;
+    if (tty_data.c_iflag & INLCR) Flags |= TTYFLAG_IN_LFCR;
+    if (tty_data.c_oflag & ONLCR) Flags |= TTYFLAG_OUT_CRLF;
+
+    return(Flags);
+}
+
+
+void TTYSetEcho(int tty, int OnOrOff)
+{
+    struct termios tty_data;
+
+    memset(&tty_data, 0, sizeof(struct termios));
+    tcgetattr(tty, &tty_data);
+    if (OnOrOff) tty_data.c_lflag |= ECHO;
+    else tty_data.c_lflag &= ~ECHO;
+    tcsetattr(tty,TCSANOW,&tty_data);
+}
+
+
+void TTYSetCanonical(int tty, int OnOrOff)
+{
+    struct termios tty_data;
+
+    memset(&tty_data, 0, sizeof(struct termios));
+    tcgetattr(tty, &tty_data);
+
+    if (OnOrOff)
+    {
+        tty_data.c_lflag |= ICANON;
+    }
+    else
+    {
+        tty_data.c_lflag &= ~ICANON;
+        tty_data.c_cc[VMIN]=1;
+        tty_data.c_cc[VTIME]=0;
+    }
+    tcsetattr(tty,TCSANOW,&tty_data);
+}
+
+
 void TTYConfig(int tty, int LineSpeed, int Flags)
 {
     struct termios tty_data, *old_tty_data;
@@ -89,6 +148,12 @@ void TTYConfig(int tty, int LineSpeed, int Flags)
 
 //ignore break characters and parity errors
     tty_data.c_iflag=IGNBRK | IGNPAR;
+
+    //copy some values from old tty data
+        tty_data.c_cc[VEOF]=old_tty_data->c_cc[VEOF];
+        tty_data.c_cc[VEOL]=old_tty_data->c_cc[VEOL];
+        tty_data.c_cc[VKILL]=old_tty_data->c_cc[VKILL];
+        tty_data.c_cc[VERASE]=old_tty_data->c_cc[VERASE];
 
 
     if (! (Flags & TTYFLAG_CRLF_KEEP))
@@ -123,7 +188,7 @@ void TTYConfig(int tty, int LineSpeed, int Flags)
     }
 
 #ifdef CRTSCTS
-    if (Flags & TTYFLAG_HARDWARE_FLOW) tty_data.c_cflag |=CRTSCTS;
+    if (Flags & TTYFLAG_HARDWARE_FLOW) tty_data.c_cflag |= CRTSCTS;
 #endif
 
 // 'local' input flags
@@ -131,26 +196,14 @@ void TTYConfig(int tty, int LineSpeed, int Flags)
 
     if (! (Flags & TTYFLAG_IGNSIG))
     {
-        tty_data.c_lflag=ISIG;
+        tty_data.c_lflag |= ISIG;
         tty_data.c_cc[VQUIT]=old_tty_data->c_cc[VQUIT];
         tty_data.c_cc[VSUSP]=old_tty_data->c_cc[VSUSP];
         tty_data.c_cc[VINTR]=old_tty_data->c_cc[VINTR];
     }
+
     if (Flags & TTYFLAG_ECHO) tty_data.c_lflag |= ECHO;
 
-    if (Flags & TTYFLAG_CANON)
-    {
-        tty_data.c_lflag|= ICANON;
-        tty_data.c_cc[VEOF]=old_tty_data->c_cc[VEOF];
-        tty_data.c_cc[VEOL]=old_tty_data->c_cc[VEOL];
-        tty_data.c_cc[VKILL]=old_tty_data->c_cc[VKILL];
-        tty_data.c_cc[VERASE]=old_tty_data->c_cc[VERASE];
-    }
-    else
-    {
-        tty_data.c_cc[VMIN]=1;
-        tty_data.c_cc[VTIME]=0;
-    }
 
 //Higher line speeds protected with #ifdef because not all
 //operating systems seem to have them
@@ -238,6 +291,10 @@ void TTYConfig(int tty, int LineSpeed, int Flags)
     tcflush(tty,TCIFLUSH);
     tcsetattr(tty,TCSANOW,&tty_data);
 
+//must call this last, or else changes made by this function will
+//be overwritten by tcsetattr above	
+    TTYSetCanonical(tty, Flags & TTYFLAG_CANON);
+
     DestroyString(Tempstr);
 }
 
@@ -298,6 +355,7 @@ int TTYParseConfig(const char *Config, int *Speed)
         else if (strcasecmp(Token,"icrlf")==0) Flags |= TTYFLAG_IN_CRLF;
         else if (strcasecmp(Token,"ocrlf")==0) Flags |= TTYFLAG_OUT_CRLF;
         else if (strcasecmp(Token,"nosig")==0) Flags |= TTYFLAG_IGNSIG;
+        else if (strcasecmp(Token,"ignsig")==0) Flags |= TTYFLAG_IGNSIG;
         else if (strcasecmp(Token,"save")==0) Flags |= TTYFLAG_SAVE;
         else if (isnum(Token) && Speed) *Speed=atoi(Token);
 
@@ -331,20 +389,21 @@ int PseudoTTYGrabUnix98(int *master, int *slave, int TermFlags)
     {
         if (grantpt(*master)==-1) RaiseError(ERRFLAG_ERRNO, "pty", "grantpt failed");
         if (unlockpt(*master)==-1) RaiseError(ERRFLAG_ERRNO, "pty", "unlockpt failed");
-        Tempstr=SetStrLen(Tempstr,100);
-				memset(Tempstr, 0, 100);
 
 #ifdef HAVE_PTSNAME_R
-        if (ptsname_r(*master,Tempstr,100) != 0)
+        Tempstr=SetStrLen(Tempstr,100);
+        memset(Tempstr, 0, 100);
+        if (ptsname_r(*master,Tempstr,100) != 0) Tempstr=CopyStr(Tempstr, ptsname(*master));
+#else
+        Tempstr=CopyStr(Tempstr, ptsname(*master));
 #endif
 
-        Tempstr=CopyStr(Tempstr, ptsname(*master));
         if (StrValid(Tempstr))
         {
             if ( (*slave=open(Tempstr,O_RDWR)) >-1)
             {
                 if (TermFlags !=0) TTYConfig(*slave,0,TermFlags);
-                DestroyString(Tempstr);
+                Destroy(Tempstr);
                 return(TRUE);
             }
             else RaiseError(ERRFLAG_ERRNO, "pty", "failed to open %s", Tempstr);
@@ -356,8 +415,8 @@ int PseudoTTYGrabUnix98(int *master, int *slave, int TermFlags)
         RaiseError(ERRFLAG_ERRNO, "pty", "failed to open /dev/ptmx");
     }
 
-Destroy(Tempstr);
-return(FALSE);
+    Destroy(Tempstr);
+    return(FALSE);
 }
 
 
@@ -398,10 +457,10 @@ int PseudoTTYGrabBSD(int *master, int *slave, int TermFlags)
 
 int PseudoTTYGrab(int *master, int *slave, int TermFlags)
 {
-if (PseudoTTYGrabUnix98(master, slave, TermFlags)) return(TRUE);
-if (PseudoTTYGrabBSD(master, slave, TermFlags)) return(TRUE);
+    if (PseudoTTYGrabUnix98(master, slave, TermFlags)) return(TRUE);
+    if (PseudoTTYGrabBSD(master, slave, TermFlags)) return(TRUE);
 
-return(FALSE);
+    return(FALSE);
 }
 
 

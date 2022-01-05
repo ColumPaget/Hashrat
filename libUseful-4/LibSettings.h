@@ -87,6 +87,8 @@ SSL:VerifyCertFile    set path to file containing a concatanated list of C.A. ce
 
 Net:Timeout           set default timeout for all network connections
 TCP:keep_alives       use tcp keepalives for all network connections
+
+Unicode:NamesFile     path to file that maps names->unicode code points
 */
 
 

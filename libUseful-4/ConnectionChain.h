@@ -73,7 +73,7 @@ tcp:  this is just a host/port that we connect to and are instantly bounced thro
 For example, ssh connection forwarding using -L creates such a port.
 
 ssh:  this launches an ssh connection using the -W host:port proxy method. SSH proxy connections can only
-appear as the FIRST hop in a chain. Comamnd-line ssh must be available on your machine for this to work,
+appear as the FIRST hop in a chain. Command-line ssh must be available on your machine for this to work,
 as libUseful spawns off an ssh process to achieve this.
 
 SSH supports a named connection configuration method where user+password+keyfile+host+port combinations
@@ -83,6 +83,9 @@ entry in the config file.
 sshtunnel: this launches an ssh connection using the -L localport:remotehost:remoteport method. This ssh
 tunnel will be available to all users on the local machine, so the previous ssh -W method is generally
 preferred. Everything else about this connection is the same as for 'ssh' connection hops.
+
+sshproxy: this launches an ssh connection using the -D 127.0.0.1:localport method. This creates a socks5
+proxy on a randomly generated local port on 127.0.0.1 (ip4 local interface). 
 
 socks4:  connect via a SOCKS version 4 proxy. These can usually be concatenated into long connection chains.
 SOCKS version 4 requires DNS lookups to happen locally, which means there's some leakage of information
