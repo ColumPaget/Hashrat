@@ -1,5 +1,6 @@
 #include "xdialog.h"
-#include "encodings.h"
+#include "frontend.h"
+
 
 char *XDialogFindXDialogCommand(char *Cmd, const char *XDialogCommandList)
 {
@@ -28,7 +29,6 @@ char *XDialogFindXDialogCommand(char *Cmd, const char *XDialogCommandList)
 
 char *XDialogFormInit(char *Cmd, const char *DialogCmd, const char *Title)
 {
-
     Cmd=MCopyStr(Cmd, "cmd:", DialogCmd, " --title='", Title, "'", NULL);
     return(Cmd);
 }
@@ -100,6 +100,7 @@ STREAM *XDialogDisplayPage(const char *Dialog, HashratCtx *Config)
     Cmd=XDialogFormAddList(Cmd, Dialog, "Line Ending", Tempstr, "");
     Cmd=XDialogFormAddTextEntry(Cmd, Dialog, "Input");
 
+		printf("CMD: %s\n", Cmd);
     S=STREAMOpen(Cmd, "rw");
 
     Destroy(Tempstr);
@@ -108,13 +109,14 @@ STREAM *XDialogDisplayPage(const char *Dialog, HashratCtx *Config)
     return(S);
 }
 
-void XDialogDisplayHash(const char *DialogCmd, const char *Hash, HashratCtx *Config)
+void XDialogDisplayHash(const char *DialogCmd, const char *Hash)
 {
     char *Cmd=NULL, *Tempstr=NULL;
     STREAM *S;
 
-		Tempstr=ReformatHash(Tempstr, Hash, Config);
-    Cmd=MCopyStr(Cmd, "cmd:", DialogCmd, " --info --title='Your Hash Value' --text='", Tempstr, "'", NULL);
+
+		if (strcmp(GetBasename(DialogCmd), "yad")==0) Cmd=MCopyStr(Cmd, "cmd:", DialogCmd, " --info --selectable-labels --title='Your Hash Value' --text='", Hash, "'", NULL);
+		else Cmd=MCopyStr(Cmd, "cmd:", DialogCmd, " --info --title='Your Hash Value' --text='", Hash, "'", NULL);
     S=STREAMOpen(Cmd, "rw");
     Tempstr=STREAMReadLine(Tempstr, S);
     STREAMClose(S);
@@ -134,7 +136,6 @@ int XDialogProcess(const char *Cmd, HashratCtx *Config)
 
     S=XDialogDisplayPage(Cmd, Config);
     Tempstr=STREAMReadLine(Tempstr, S);
-		StripCRLF(Tempstr);
     STREAMClose(S);
 
     if (StrValid(Tempstr))
@@ -143,6 +144,9 @@ int XDialogProcess(const char *Cmd, HashratCtx *Config)
 
         Ctx=(HashratCtx *) calloc(1,sizeof(HashratCtx));
         Ctx->Encoding |=ENCODE_HEX;
+//    Ctx->OutputLength=OutputLength;
+//    Ctx->SegmentLength=SegmentLength;
+//    Ctx->SegmentChar=SegmentChar[0];
 
         ptr=GetToken(Tempstr, "|", &Ctx->HashType, 0);
         ptr=GetToken(ptr, "|", &Text, 0);
@@ -150,9 +154,17 @@ int XDialogProcess(const char *Cmd, HashratCtx *Config)
         if (i > -1) Ctx->Encoding=Encodings[i];
         ptr=GetToken(ptr, "|", &LineEnding, 0);
 
-				Text=PreProcessInput(Text, ptr, GetVar(Ctx->Vars,"InputPrefix"), LineEnding);
+        if (StrLen(LineEnding))
+        {
+            if (strcmp(LineEnding, "crlf")==0) Text=CatStr(Text,"\r\n");
+            if (strcmp(LineEnding, "lf")==0) Text=CatStr(Text,"\n");
+            if (strcmp(LineEnding, "cr")==0) Text=CatStr(Text,"\r");
+        }
+
+        Text=CopyStr(Text, ptr);
+
         ProcessData(&Tempstr, Ctx, Text, StrLen(Text));
-        XDialogDisplayHash(Cmd, Tempstr, Ctx);
+        XDialogDisplayHash(Cmd, Tempstr);
     }
 
     Destroy(LineEnding);
@@ -167,7 +179,7 @@ void XDialogFrontend(HashratCtx *Config)
 {
     char *Cmd=NULL;
 
-    Cmd=XDialogFindXDialogCommand(Cmd, "yad,zenity,qarma");
+    Cmd=XDialogFindXDialogCommand(Cmd, GetVar(Config->Vars, "DialogTypes"));
     while (XDialogProcess(Cmd, Config))
     {
 

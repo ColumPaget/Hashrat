@@ -6,7 +6,7 @@ INSTALL=/bin/install -c
 prefix=/usr/local
 bindir=$(prefix)${exec_prefix}/bin
 FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -D_FILE_OFFSET_BITS=64 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1
-OBJ=common.o encodings.o command-line-args.o ssh.o http.o fingerprint.o include-exclude.o files.o filesigning.o xattr.o check-hash.o find.o memcached.o cgi.o xdialog.o
+OBJ=common.o encodings.o command-line-args.o ssh.o http.o fingerprint.o include-exclude.o files.o filesigning.o xattr.o check-hash.o find.o memcached.o frontend.o cgi.o xdialog.o
 EXE=hashrat
 
 all: hashrat
@@ -49,6 +49,9 @@ ssh.o: ssh.h ssh.c
 
 http.o: http.h http.c
 	$(CC) $(FLAGS) -c http.c
+
+frontend.o: frontend.h frontend.c
+	$(CC) $(FLAGS) -c frontend.c
 
 cgi.o: cgi.h cgi.c
 	$(CC) $(FLAGS) -c cgi.c

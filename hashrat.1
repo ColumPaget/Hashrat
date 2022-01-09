@@ -255,6 +255,22 @@ Read lines from stdin and \fIhash\fP each line independantly, INCLUDING any trai
 Run in HTTP CGI mode.
 .TP
 .B
+\fB-xdialog\fP
+Run in 'xdialog' (zenity, yad or qarama) mode.
+.TP
+.B
+\fB-dialog-types\fP
+Specify a list of dialog commands and use the first found on the system. Default is 'yad,zenity,qarma'. 
+.TP
+.B
+\fB-iprefix\fP <prefix>
+String to prefix all input before hashing
+.TP
+.B
+\fB-oprefix\fP <prefix>
+Prefix to add to the front of output hashes
+.TP
+.B
 \fB-net\fP
 Treat '\fIfile\fP' arguments as either ssh or http URLs, and pull files over the network and then \fIhash\fP them (allows hashing of files on remote machines).
 URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port].

@@ -96,7 +96,7 @@
 
 #define IGNORE -1
 
-#define VERSION "1.13"
+#define VERSION "1.14"
 
 
 typedef struct
@@ -131,11 +131,6 @@ ListNode *Vars;
 } HashratCtx;
 
 
-
-extern const char *LineEndingNames[];
-extern const char *LineEndingDescriptions[];
-
-
 extern int Flags;
 extern char *DiffHook;
 extern char *Key;
@@ -152,6 +147,5 @@ void HashratStoreHash(HashratCtx *Ctx, const char *Path, struct stat *Stat, cons
 int HashratOutputInfo(HashratCtx *Ctx, STREAM *S, const char *Path, struct stat *Stat, const char *Hash);
 void RunHookScript(const char *Hook, const char *Path, const char *Other);
 char *ReformatHash(char *RetStr, const char *Str, HashratCtx *Ctx);
-char *PreProcessInput(char *RetStr, const char *Text, const char *Prefix, const char *LineEnding);
 
 #endif

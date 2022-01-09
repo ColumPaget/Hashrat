@@ -13,9 +13,6 @@ uint64_t HashStartTime;
 
 const char *HashratHashTypes[]= {"md5","sha1","sha256","sha512","whirl","whirlpool","jh-224","jh-256","jh-384","jh-512",NULL};
 
-const char *LineEndingNames[]= {"none","lf","crlf","cr",NULL};
-const char *LineEndingDescriptions[]= {"None","Unix newline","DOS carriage-return and newline","carriage-return",NULL};
-typedef enum {LINEEND_NONE, LINEEND_LF, LINEEND_CRLF, LINEEND_CR};
 
 
 
@@ -30,27 +27,6 @@ void HashratCtxDestroy(void *p_Ctx)
     Destroy(Ctx->Targets);
     HashDestroy(Ctx->Hash);
     free(Ctx);
-}
-
-
-
-char *PreProcessInput(char *RetStr, const char *Text, const char *Prefix, const char *LineEnding)
-{
-int i;
-
-  RetStr=MCopyStr(RetStr, Prefix, Text, NULL);
-
-  i=MatchTokenFromList(LineEnding, LineEndingDescriptions, 0);
-	if (i == -1) i=MatchTokenFromList(LineEnding, LineEndingNames, 0);
-
-  switch (i)
-  {
-		case LINEEND_CRLF: RetStr=CatStr(RetStr,"\r\n"); break;
-    case LINEEND_LF: RetStr=CatStr(RetStr,"\n"); break;
-    case LINEEND_CR: RetStr=CatStr(RetStr,"\r"); break;
-  }
-
-return(RetStr);
 }
 
 
@@ -76,6 +52,8 @@ char *ReformatHash(char *RetStr, const char *Str, HashratCtx *Ctx)
             RetStr=AddCharToBuffer(RetStr, opos++, Ctx->SegmentChar);
         }
     }
+
+
 
     return(RetStr);
 }

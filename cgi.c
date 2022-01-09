@@ -1,6 +1,6 @@
 #include "cgi.h"
 #include "files.h"
-#include "encodings.h"
+#include "frontend.h"
 
 //This file provides an HTTP Common Gateway Interface for Hashrat
 
@@ -251,7 +251,9 @@ void CGIDisplayPage()
 
         if (StrLen(LineEnding))
         {
-      		Text=PreProcessInput(Text, ptr, GetVar(Ctx->Vars,"InputPrefix"), LineEnding);
+            if (strcmp(LineEnding, "crlf")==0) Text=CatStr(Text,"\r\n");
+            if (strcmp(LineEnding, "lf")==0) Text=CatStr(Text,"\n");
+            if (strcmp(LineEnding, "cr")==0) Text=CatStr(Text,"\r");
         }
 
         ProcessData(&Hash, Ctx, Text, StrLen(Text));

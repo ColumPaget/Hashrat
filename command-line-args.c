@@ -146,6 +146,7 @@ HashratCtx *CommandLineParseArg0()
     Ctx->Vars=ListCreate();
     Ctx->Out=STREAMFromFD(1);
     SetVar(Ctx->Vars,"HashType","md5");
+    SetVar(Ctx->Vars,"DialogTypes","yad,zenity,qarma");
 
 
 //argv[0] might be full path to the program, or just its name
@@ -283,6 +284,8 @@ HashratCtx *CommandLineParseArgs(int argc, char *argv[])
         else if (strcmp(arg,"-f")==0) CommandLineHandleArg( Ctx,FLAG_NEXTARG, "ItemsListSource", "", Ctx->Vars);
         else if (strcmp(arg,"-iprefix")==0) CommandLineHandleArg( Ctx, FLAG_NEXTARG, "InputPrefix", "", Ctx->Vars);
         else if (strcmp(arg,"-oprefix")==0) CommandLineHandleArg( Ctx, FLAG_NEXTARG, "OutputPrefix", "", Ctx->Vars);
+        else if (strcmp(arg,"-dialog-type")==0) CommandLineHandleArg(Ctx, FLAG_NEXTARG, "DialogTypes", "",Ctx->Vars);
+        else if (strcmp(arg,"-dialog-types")==0) CommandLineHandleArg(Ctx, FLAG_NEXTARG, "DialogTypes", "",Ctx->Vars);
         else if (strcmp(arg,"-i")==0) CommandLineSetCtx(Ctx, CTX_INCLUDE,0);
         else if (strcmp(arg,"-name")==0) CommandLineSetCtx(Ctx, CTX_INCLUDE,0);
         else if (strcmp(arg,"-mtime")==0) CommandLineSetCtx(Ctx, CTX_MTIME,0);
@@ -492,6 +495,11 @@ void CommandLinePrintUsage()
     printf("  %-15s %s\n","-rawlines", "Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')");
     printf("  %-15s %s\n","-rl", "Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')");
     printf("  %-15s %s\n","-cgi", "Run in HTTP CGI mode");
+    printf("  %-15s %s\n","-cgi", "Run in HTTP CGI mode");
+    printf("  %-15s %s\n","-xdialog","Run in 'xdialog' (zenity, yad or qarama) mode");
+    printf("  %-15s %s\n","-dialog-types <list>","Specify a list of dialog commands and use the first found on the system. Default is 'yad,zenity,qarma'"); 
+    printf("  %-15s %s\n","-iprefix <prefix>","String to prefix all input before hashing"); 
+    printf("  %-15s %s\n","-oprefix <prefix>","Prefix to add to the front of output hashes"); 
     printf("  %-15s %s\n","-net", "Treat 'file' arguments as either ssh or http URLs, and pull files over the network and then hash them (Allows hashing of files on remote machines).");
     printf("  %-15s %s\n","", "URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..");
     printf("  %-15s %s\n","-idfile <path>", "Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.");
