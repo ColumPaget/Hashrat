@@ -150,10 +150,10 @@ void TTYConfig(int tty, int LineSpeed, int Flags)
     tty_data.c_iflag=IGNBRK | IGNPAR;
 
     //copy some values from old tty data
-        tty_data.c_cc[VEOF]=old_tty_data->c_cc[VEOF];
-        tty_data.c_cc[VEOL]=old_tty_data->c_cc[VEOL];
-        tty_data.c_cc[VKILL]=old_tty_data->c_cc[VKILL];
-        tty_data.c_cc[VERASE]=old_tty_data->c_cc[VERASE];
+    tty_data.c_cc[VEOF]=old_tty_data->c_cc[VEOF];
+    tty_data.c_cc[VEOL]=old_tty_data->c_cc[VEOL];
+    tty_data.c_cc[VKILL]=old_tty_data->c_cc[VKILL];
+    tty_data.c_cc[VERASE]=old_tty_data->c_cc[VERASE];
 
 
     if (! (Flags & TTYFLAG_CRLF_KEEP))
@@ -292,7 +292,7 @@ void TTYConfig(int tty, int LineSpeed, int Flags)
     tcsetattr(tty,TCSANOW,&tty_data);
 
 //must call this last, or else changes made by this function will
-//be overwritten by tcsetattr above	
+//be overwritten by tcsetattr above
     TTYSetCanonical(tty, Flags & TTYFLAG_CANON);
 
     DestroyString(Tempstr);

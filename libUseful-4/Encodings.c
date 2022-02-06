@@ -33,7 +33,7 @@ char *Ascii85(char *RetStr, const char *Bytes, int ilen, const char *CharMap)
 {
     const char *ptr, *block, *end;
     uint32_t val, mod;
-    int olen=0, i;
+    int i;
     char Buff[6];
 
     end=Bytes+ilen;

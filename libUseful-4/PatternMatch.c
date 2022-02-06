@@ -290,6 +290,7 @@ static int pmatch_repeat(const char **P_PtrPtr, const char **S_PtrPtr, const cha
 {
     char *Tempstr=NULL;
     const char *ptr;
+    char *wptr;
     int count=0, val=0, result=MATCH_FAIL;
 
     //if prev match is also a +, then it's a fail
@@ -300,7 +301,8 @@ static int pmatch_repeat(const char **P_PtrPtr, const char **S_PtrPtr, const cha
         while ( ((**P_PtrPtr) != '}') && ((**P_PtrPtr) != '\0') ) (*P_PtrPtr)++;
         if ((**P_PtrPtr)=='\0') return(MATCH_FAIL);
         Tempstr=CopyStrLen(Tempstr, ptr, *P_PtrPtr - ptr);
-        val=strtol(Tempstr, &ptr, 10);
+        val=strtol(Tempstr, &wptr, 10);
+        ptr=wptr;
     }
 
     while (1)
@@ -476,11 +478,11 @@ static int pmatch_many(const char **P_PtrPtr, const char **S_PtrPtr, const char 
 //Somewhat ugly, as we need to iterate through the string, so we need it passed as a **
 static int pmatch_search(const char **P_PtrPtr, const char **S_PtrPtr, const char *S_End, const char **MatchStart, const char **MatchEnd, int *Flags)
 {
-    const char *ptr, *S_Start, *P_tmp, *S_tmp;
     //Prev1 and Prev2 are for the 'repeat last match' system. If we consider, for instance, '\D+' we will match a number with '\D'
     //and then come to '+' which means one or more of the same. Unfortunately, by the time we've read '+' and realized what it is, the
     //'\D' is now to matches behind, so we have to use two 'Prev' variables to deal with that
     const char *Prev1=NULL, *Prev2=NULL;
+    const char *S_Start;
     int result;
 
     if (*Flags & PMATCH_SUBSTR)
@@ -657,7 +659,6 @@ static int pmatch_process(const char **Compiled, const char *String, int len, co
 //p_ptr points to the pattern from 'Compiled' that's currently being
 //tested. s_ptr holds our progress through the string
     const char **p_ptr;
-    int result;
     TPMatch *Match;
     int NoOfItems=0;
 

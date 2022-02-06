@@ -2,22 +2,67 @@
 #include "Http.h"
 #include "Markup.h"
 #include "DataParser.h"
+#include "Encodings.h"
+#include "Hash.h"
 
 
 static ListNode *OAuthTypes=NULL;
 static ListNode *OAuthKeyChain=NULL;
 
+void AddOAuthType(const char *Name, const char *Stage1Args, const char *Stage2Args, const char *VerifyTemplate)
+{
+    char *Tempstr=NULL;
+
+    if (! OAuthTypes) OAuthTypes=ListCreate();
+    Tempstr=MCopyStr(Tempstr, Stage1Args, ",", Stage2Args, ",", VerifyTemplate, NULL);
+    SetVar(OAuthTypes, Name, Tempstr);
+
+    Destroy(Tempstr);
+}
 
 void SetupOAuthTypes()
 {
-    OAuthTypes=ListCreate();
-    SetVar(OAuthTypes, "implicit", "response_type=token&client_id=$(client_id)&redirect_uri=$(redirect_uri)&scope=basic&state=$(session)");
-    SetVar(OAuthTypes, "device", "client_id=$(client_id)&scope=$(scope),client_id=$(client_id)&client_secret=$(client_secret)&code=$(device_code)&grant_type=http://oauth.net/grant_type/device/1.0");
-    SetVar(OAuthTypes, "password", "client_name=$(client_id)&scope=$(scope)&redirect_uris=$(redirect_uri)&grant_type=password,client_id=$(client_id)&client_secret=$(client_secret)&grant_type=password&username=$(username)&password=$(password)");
-    SetVar(OAuthTypes, "getpocket.com", "consumer_key=$(client_id)&scope=$(scope)&redirect_uri=$(redirect_uri),consumer_key=$(client_id)&code=$(code),https://getpocket.com/auth/authorize?request_token=$(code)&redirect_uri=$(redirect_uri)");
-    SetVar(OAuthTypes, "auth", ",client_id=$(client_id)&client_secret=$(client_secret)&code=$(code)&grant_type=authorization_code&redirect_uri=$(redirect_uri),$(url)?response_type=code&client_id=$(client_id)&redirect_uri=$(redirect_uri)&scope=$(scope)&state=$(session)");
+    AddOAuthType( "implicit",  "response_type=token&client_id=$(client_id)&redirect_uri=$(redirect_uri)&scope=basic&state=$(session)", "", "");
+    AddOAuthType( "device",  "client_id=$(client_id)&scope=$(scope)", "client_id=$(client_id)&client_secret=$(client_secret)&code=$(device_code)&grant_type=http://oauth.net/grant_type/device/1.0", "");
+    AddOAuthType( "password",  "client_name=$(client_id)&scope=$(scope)&redirect_uris=$(redirect_uri)&grant_type=password", "client_id=$(client_id)&client_secret=$(client_secret)&grant_type=password&username=$(username)&password=$(password)", "");
+    AddOAuthType( "getpocket.com",  "consumer_key=$(client_id)&scope=$(scope)&redirect_uri=$(redirect_uri)", "consumer_key=$(client_id)&code=$(code)", "https://getpocket.com/auth/authorize?request_token=$(code)&redirect_uri=$(redirect_uri)");
+    AddOAuthType( "auth",  "", "client_id=$(client_id)&client_secret=$(client_secret)&code=$(code)&grant_type=authorization_code&redirect_uri=$(redirect_uri)", "$(url)?response_type=code&client_id=$(client_id)&redirect_uri=$(redirect_uri)&scope=$(scope)&state=$(session)");
+    AddOAuthType( "pkce", "", "client_id=$(client_id)&client_secret=$(client_secret)&code=$(code)&grant_type=authorization_code&code_verifier=$(code_verifier)&redirect_uri=$(redirect_uri)", "$(url)?client_id=$(client_id)&response_type=code&code_challenge=$(code_challenge)&code_challenge_method=S256&redirect_uri=$(redirect_uri)&scope=$(scope)");
 }
 
+
+//Only include Arguments in the URL if they have values. Some oauth implementations will balk at '&redirect_uri=&' but will happily accept
+//no redirect_uri at all.
+char *OAuthBuildURL(char *RetStr, const char *Template, ListNode *Vars)
+{
+    char *Tempstr=NULL, *Name=NULL, *Value=NULL;
+    const char *ptr;
+
+    Tempstr=SubstituteVarsInString(Tempstr, Template, Vars, 0);
+    if (strchr(Tempstr, '?'))
+    {
+        ptr=GetToken(Tempstr, "?", &Value, 0);
+        RetStr=MCopyStr(RetStr, Value, "?", NULL);
+    }
+    else
+    {
+        RetStr=CopyStr(RetStr,"");
+        ptr=Tempstr;
+    }
+
+    ptr=GetNameValuePair(ptr, "&", "=", &Name, &Value);
+    while (ptr)
+    {
+        if (StrValid(Name) && StrValid(Value)) RetStr=MCatStr(RetStr, Name, "=", Value, "&", NULL);
+        ptr=GetNameValuePair(ptr, "&", "=", &Name, &Value);
+    }
+
+    Destroy(Tempstr);
+    Destroy(Name);
+    Destroy(Value);
+
+    return(RetStr);
+}
 
 
 
@@ -59,6 +104,17 @@ OAUTH *OAuthCreate(const char *Type, const char *Name, const char *ClientID, con
 //Ctx->VerifyURL=MCopyStr(Ctx->VerifyURL,"https://getpocket.com/auth/authorize?request_token=",Ctx->AccessToken,"&redirect_uri=",Args,NULL);
     }
     else if (strcasecmp(Type, "implicit")==0) Ctx->Flags |= OAUTH_IMPLICIT;
+    else if (strcasecmp(Type, "pkce")==0)
+    {
+        GenerateRandomBytes(&Token, 44, ENCODE_RBASE64);
+        strrep(Token, '=', '\0');
+        StripTrailingWhitespace(Token);
+        SetVar(Ctx->Vars,"code_verifier",Token);
+        HashBytes(&Tempstr, "sha256", Token, StrLen(Token), ENCODE_RBASE64);
+        strrep(Tempstr, '=', '\0');
+        StripTrailingWhitespace(Tempstr);
+        SetVar(Ctx->Vars,"code_challenge",Tempstr);
+    }
 
     if (! OAuthKeyChain) OAuthKeyChain=ListCreate();
     ListAddNamedItem(OAuthKeyChain, Name, Ctx);
@@ -309,7 +365,8 @@ int OAuthFinalize(OAUTH *Ctx, const char *URL)
     char *Tempstr=NULL;
     int result;
 
-    Tempstr=SubstituteVarsInString(Tempstr, Ctx->Stage2, Ctx->Vars,0);
+    //Tempstr=SubstituteVarsInString(Tempstr, Ctx->Stage2, Ctx->Vars,0);
+    Tempstr=OAuthBuildURL(Tempstr, Ctx->Stage2, Ctx->Vars);
     result=OAuthGrant(Ctx, URL, Tempstr);
     if (StrValid(Ctx->AccessToken)) OAuthSave(Ctx, "");
 
@@ -348,7 +405,8 @@ int OAuthStage1(OAUTH *Ctx, const char *URL)
     Tempstr=GetRandomAlphabetStr(Tempstr, 10);
     SetVar(Ctx->Vars, "session",Tempstr);
     SetVar(Ctx->Vars, "url",URL);
-    Tempstr=SubstituteVarsInString(Tempstr, Ctx->Stage1, Ctx->Vars, 0);
+    //Tempstr=SubstituteVarsInString(Tempstr, Ctx->Stage1, Ctx->Vars, 0);
+    Tempstr=OAuthBuildURL(Tempstr, Ctx->Stage1, Ctx->Vars);
 
     if (StrLen(Tempstr))
     {
@@ -359,6 +417,7 @@ int OAuthStage1(OAUTH *Ctx, const char *URL)
     if (StrLen(Ctx->VerifyTemplate))
     {
         Ctx->VerifyURL=SubstituteVarsInString(Ctx->VerifyURL, Ctx->VerifyTemplate, Ctx->Vars,0);
+        Ctx->VerifyURL=OAuthBuildURL(Ctx->VerifyURL, Ctx->VerifyTemplate, Ctx->Vars);
     }
 
     DestroyString(Tempstr);

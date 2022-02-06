@@ -383,7 +383,7 @@ int CredsStoreAdd(const char *Realm, const char *User, const char *Cred)
 }
 
 
-int SecureStoreFieldMatch(SECURESTORE *SS, char **Input, const char *Match)
+int SecureStoreFieldMatch(SECURESTORE *SS, const char **Input, const char *Match)
 {
     const char *sptr, *eptr;
     int mlen, slen, result;

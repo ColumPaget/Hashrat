@@ -9,7 +9,7 @@ STREAM *SSHConnect(const char *Host, int Port, const char *User, const char *Pas
     char *Tempstr=NULL, *KeyFile=NULL, *Token=NULL, *RemoteCmd=NULL, *TTYConfigs=NULL;
     const char *ptr;
     STREAM *S;
-    int val, i, IsTunnel=FALSE;
+    int IsTunnel=FALSE;
 
 
 //If we are using the .ssh/config connection-config system then there won't be a username, and 'Host' will

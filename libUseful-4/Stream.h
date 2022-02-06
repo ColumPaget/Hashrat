@@ -238,8 +238,8 @@ typedef struct
 
     unsigned int InStart, InEnd;
     unsigned int OutEnd;
-    char *InputBuff;
-    char *OutputBuff;
+    unsigned char *InputBuff;
+    unsigned char *OutputBuff;
 
     unsigned long Size;
     unsigned long BytesRead;

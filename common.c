@@ -65,8 +65,6 @@ int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, const char *Path, struct sta
     const char *p_Type="unknown";
     uint64_t diff;
 
-//printf("SEG: %d %d\n", Ctx->OutputLength, Ctx->SegmentLength);
-
     if (Ctx->SegmentLength > 0) Hash=ReformatHash(Hash, iHash, Ctx);
     else Hash=CopyStr(Hash, iHash);
 
@@ -111,10 +109,9 @@ int HashratOutputInfo(HashratCtx *Ctx, STREAM *Out, const char *Path, struct sta
         //This dance is to handle the fact that on some 32-bit OS, like openbsd, stat with have 64-bit members
         //even if we've not asked for 'largefile' support, while on Linux it will have 32-bit members
 
-        //Let's hope the compiler optimizes the fuck out of this
-
         if (sizeof(Stat->st_size)==sizeof(unsigned long long)) Tempstr=FormatStr(Tempstr, "size='%llu' ",Stat->st_size);
         else Tempstr=FormatStr(Tempstr, "size='%lu' ",Stat->st_size);
+
         Line=CatStr(Line, Tempstr);
 
         if (sizeof(Stat->st_mtime)==sizeof(unsigned long long)) Tempstr=FormatStr(Tempstr, "mtime='%llu' ",Stat->st_mtime);

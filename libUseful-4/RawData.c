@@ -31,7 +31,6 @@ int RAWDATAAppend(RAWDATA *RD, const char *Data, const char *Encoding, int MaxBu
 RAWDATA *RAWDATACreate(const char *Data, const char *Encoding, int MaxBuffLen)
 {
     RAWDATA *Item;
-    int encode;
 
     Item=(RAWDATA *) calloc(1,sizeof(RAWDATA));
     if (StrValid(Data))

@@ -28,7 +28,7 @@ static const char *ParseHostDetailsExtractAuth(const char *Data, char **User, ch
 
 const char *ParseHostDetails(const char *Data, char **Host,char **Port,char **User, char **Password)
 {
-    char *Token=NULL, *wptr;
+    char *Token=NULL;
     const char *ptr, *tptr;
 
     if (Port) *Port=CopyStr(*Port, "");
@@ -95,7 +95,7 @@ void ParseURL(const char *URL, char **Proto, char **Host, char **Port, char **Us
 
     // either we've cut out a protocol, or we haven't. If not the next thing is going to be the hostname
     // maybe there we be a path coming after '/', even if '/' is absent this GetToken will return the Host part
-    ptr=GetToken(ptr,"/",&Token,0);
+    ptr=GetToken(ptr,"/|?",&Token,GETTOKEN_MULTI_SEP);
     ParseHostDetails(Token, Host, Port, User, Password);
 
     if (StrValid(ptr))

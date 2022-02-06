@@ -620,12 +620,17 @@ int ProcessItem(HashratCtx *Ctx, const char *Path, struct stat *Stat, int IsTopL
 {
     char *HashStr=NULL;
     int result=FALSE, Flags;
+		const char *p_Path;
+
+		p_Path=Path;
+		if (strncmp(p_Path, "./", 2)==0) p_Path+=2;
+
 
     if (! Visited) Visited=MapCreate(1025, LIST_FLAG_CACHE);
-    if (! ListFindNamedItem(Visited, Path))
+    if (! ListFindNamedItem(Visited, p_Path))
     {
-        ListAddNamedItem(Visited, Path, NULL);
-        switch (ConsiderItem(Ctx, Path, Stat))
+        ListAddNamedItem(Visited, p_Path, NULL);
+        switch (ConsiderItem(Ctx, p_Path, Stat))
         {
         case CTX_EXCLUDE:
         case CTX_ONE_FS:
@@ -633,17 +638,17 @@ int ProcessItem(HashratCtx *Ctx, const char *Path, struct stat *Stat, int IsTopL
             break;
 
         case CTX_RECURSE:
-            result=HashratRecurse(Ctx, Path, &HashStr);
+            result=HashratRecurse(Ctx, p_Path, &HashStr);
             break;
 
         case CTX_HASH_AND_RECURSE:
-            result=HashratAction(Ctx, Path, Stat);
-            result=HashratRecurse(Ctx, Path, &HashStr);
+            result=HashratAction(Ctx, p_Path, Stat);
+            result=HashratRecurse(Ctx, p_Path, &HashStr);
             break;
 
 
         default:
-            result=HashratAction(Ctx, Path, Stat);
+            result=HashratAction(Ctx, p_Path, Stat);
             break;
         }
     }

@@ -41,7 +41,7 @@ printf("AccessToken: %s RefreshToken: %s\n",Ctx->AccessToken, Ctx->RefreshToken)
 
 
 
-OAuthCreate sets up an OAuth context. The first argument is the flow type, the second argument is a unique name for this oauth session, then come the client-id and client-secret which will have been provided by the website when you registered the application. The forth argument is what's known as a 'scope', google is unusual in sometimes using URLs as scopes, normally it's a word like 'basic' or 'advanced'. The scope defines what subset of permissions you want to use on the site. Finally there's the 'refresh URL', which is a URL to connect to to exchange a refresh token for another access token. 
+OAuthCreate sets up an OAuth context. The first argument is the flow type, the second argument is a unique name for this oauth session, then come the client-id and client-secret which will have been provided by the website when you registered the application. The forth argument is what's known as a 'scope', google is unusual in sometimes using URLs as scopes, normally it's a word like 'basic' or 'advanced'. The scope defines what subset of permissions you want to use on the site. Finally there's the 'refresh URL', which is a URL to connect to to exchange a refresh token for another access token. Note that the URLs supplied here dont include arguments, as these are auto-configured to the flow type.
 
 The first step of the process, 'OAuthStage1' results in a 'VerifyURL' that the user must go to and type in a 'VerifyCode'. They will then be asked to acknowledge that they want to grant access to this application. If they grant access then they'll be given another code which they then paste back into the application. The application then uses this code to finalize the transaction and get an access token and perhaps a refresh token too (depending on the site's oauth implementation).
 
@@ -94,6 +94,28 @@ read(0,&result, 1);
 OAuthFinalize(Ctx, "https://getpocket.com/v3/oauth/authorize");
 }
 
+
+Since libUseful-4.71 PKCE flow is supported, which is basically the same as auth-flow, but with some extra cryptographic elements that are handled internally by libUseful
+
+    Ctx=OAuthCreate("pkce", FS->URL, DROPBOX_CLIENT_ID, "", "", "https://www.dropbox.com/oauth2/token");
+    if (! OAuthLoad(Ctx, FS->URL, ""))
+    {
+        SetVar(Ctx->Vars, "redirect_uri", ""); //no redirect_uri used in dropbox authentication
+        OAuthStage1(Ctx, "https://www.dropbox.com/oauth2/authorize");
+        printf("GOTO: %s\n",Ctx->VerifyURL);
+        printf("Login and/or grant access, then cut and past the access code back to this program.\n\nAccess Code: ");
+        fflush(NULL);
+
+        Tempstr=SetStrLen(Tempstr,1024);
+        read(0,Tempstr,1024);
+        StripTrailingWhitespace(Tempstr);
+        SetVar(Ctx->Vars, "code", Tempstr);
+        OAuthFinalize(Ctx, "https://api.dropbox.com/oauth2/token");
+    } 
+          
+    printf("AccessToken: %s RefreshToken: %s\n",Ctx->AccessToken, Ctx->RefreshToken);
+
+
 */
 
 
@@ -123,6 +145,10 @@ typedef struct
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+// add template for a new/custom oauth type
+void AddOAuthType(const char *Name, const char *Stage1Args, const char *Stage2Args, const char *VerifyTemplate);
 
 
 OAUTH *OAuthCreate(const char *Type, const char *Name, const char *ClientID, const char *ClientSecret, const char *Scopes, const char *RefreshURL);

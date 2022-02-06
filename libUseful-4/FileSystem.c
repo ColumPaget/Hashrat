@@ -132,7 +132,6 @@ int FileChangeExtension(const char *FilePath, const char *NewExt)
 int FileMoveToDir(const char *FilePath, const char *Dir)
 {
     char *Tempstr=NULL;
-    char *ptr;
     int result;
 
     Tempstr=MCopyStr(Tempstr, Dir, "/", GetBasename(FilePath), NULL);
@@ -558,7 +557,7 @@ int FileSystemCopyDir(const char *Src, const char *Dest)
     const char *ptr;
     struct stat Stat;
     char *Tempstr=NULL, *Path=NULL;
-    int i;
+    int i, RetVal=FALSE;
 
     Tempstr=MCopyStr(Tempstr, Dest, "/", NULL);
     MakeDirPath(Tempstr, 0777);
@@ -573,26 +572,28 @@ int FileSystemCopyDir(const char *Src, const char *Dest)
         if ((strcmp(ptr,".") !=0) && (strcmp(ptr, "..") !=0) )
         {
             ptr=Glob.gl_pathv[i];
-            lstat(ptr, &Stat);
-
-            Path=MCopyStr(Path, Dest, "/", GetBasename(ptr), NULL);
-            if (S_ISLNK(Stat.st_mode))
+            if (lstat(ptr, &Stat) == 0)
             {
-                Tempstr=SetStrLen(Tempstr, PATH_MAX);
-                readlink(ptr, Tempstr, PATH_MAX);
-                symlink(Path, Tempstr);
-            }
-            else if (S_ISDIR(Stat.st_mode))
-            {
-                FileSystemCopyDir(ptr, Path);
-            }
-            else if (S_ISREG(Stat.st_mode))
-            {
-                FileCopy(ptr, Path);
-            }
-            else
-            {
-                RaiseError(0, "FileSystemCopyDir", "WARNING: not copying %s. Files of this type aren't yet supported for copy", Src);
+                RetVal=TRUE;
+                Path=MCopyStr(Path, Dest, "/", GetBasename(ptr), NULL);
+                if (S_ISLNK(Stat.st_mode))
+                {
+                    Tempstr=SetStrLen(Tempstr, PATH_MAX);
+                    readlink(ptr, Tempstr, PATH_MAX);
+                    symlink(Path, Tempstr);
+                }
+                else if (S_ISDIR(Stat.st_mode))
+                {
+                    FileSystemCopyDir(ptr, Path);
+                }
+                else if (S_ISREG(Stat.st_mode))
+                {
+                    FileCopy(ptr, Path);
+                }
+                else
+                {
+                    RaiseError(0, "FileSystemCopyDir", "WARNING: not copying %s. Files of this type aren't yet supported for copy", Src);
+                }
             }
         }
     }
@@ -601,6 +602,8 @@ int FileSystemCopyDir(const char *Src, const char *Dest)
 
     Destroy(Tempstr);
     Destroy(Path);
+
+    return(RetVal);
 }
 
 

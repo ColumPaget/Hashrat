@@ -213,7 +213,6 @@ const char *ToSIUnit(double Value, int Base, int Precision)
 int LookupUID(const char *User)
 {
     struct passwd *pwent;
-    char *ptr;
 
     if (! StrValid(User)) return(-1);
     pwent=getpwnam(User);
@@ -225,7 +224,6 @@ int LookupUID(const char *User)
 int LookupGID(const char *Group)
 {
     struct group *grent;
-    char *ptr;
 
     if (! StrValid(Group)) return(-1);
     grent=getgrnam(Group);
@@ -237,7 +235,6 @@ int LookupGID(const char *Group)
 const char *LookupUserName(uid_t uid)
 {
     struct passwd *pwent;
-    char *ptr;
 
     pwent=getpwuid(uid);
     if (! pwent) return("");
@@ -248,7 +245,6 @@ const char *LookupUserName(uid_t uid)
 const char *LookupGroupName(gid_t gid)
 {
     struct group *grent;
-    char *ptr;
 
     grent=getgrgid(gid);
     if (! grent) return("");

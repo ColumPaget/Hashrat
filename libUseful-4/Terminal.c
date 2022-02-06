@@ -24,8 +24,8 @@ int TerminalConsumeCharacter(const char **ptr)
     int IsRealChar=FALSE;
 
 
-		switch (**ptr)
-		{
+    switch (**ptr)
+    {
     case '~':
         ptr_incr(ptr, 1);
         switch (**ptr)
@@ -47,7 +47,7 @@ int TerminalConsumeCharacter(const char **ptr)
             IsRealChar=TRUE;
             break;
         }
-		break;
+        break;
 
     case '\\':
         ptr_incr(ptr, 1);
@@ -72,24 +72,24 @@ int TerminalConsumeCharacter(const char **ptr)
             IsRealChar=TRUE;
             break;
         }
-		break;
+        break;
 
-		default:
-    //handle unicode
-    if (**ptr & 128)
-    {
-        switch (**ptr & 224)
+    default:
+        //handle unicode
+        if (**ptr & 128)
         {
-        case 224:
-            ptr_incr(ptr, 1);
-        case 192:
-            ptr_incr(ptr, 1);
-        }
+            switch (**ptr & 224)
+            {
+            case 224:
+                ptr_incr(ptr, 1);
+            case 192:
+                ptr_incr(ptr, 1);
+            }
 
-        IsRealChar=TRUE;
-    }
-    else IsRealChar=TRUE;
-		break;
+            IsRealChar=TRUE;
+        }
+        else IsRealChar=TRUE;
+        break;
     }
 
     return(IsRealChar);
@@ -139,14 +139,14 @@ char *TerminalStrTrunc(char *Str, int MaxLen)
     ptr=Str;
     for (ptr=Str; *ptr !='\0'; ptr++)
     {
-        if (TerminalConsumeCharacter(&ptr)) len++;
-    		if (len > MaxLen) 
-				{
-					*ptr='\0';
-					StrLenCacheAdd(Str, len);
-					break;
-				}
-		}
+        if (TerminalConsumeCharacter((const char **) &ptr)) len++;
+        if (len > MaxLen)
+        {
+            *ptr='\0';
+            StrLenCacheAdd(Str, len);
+            break;
+        }
+    }
 
 
     return(Str);
@@ -2449,7 +2449,7 @@ char *TerminalReadPrompt(char *RetStr, const char *Prompt, int Flags, STREAM *S)
 {
     int TTYFlags=0;
 
-    TerminalPutStr("\r~>",S);
+    TerminalPutStr("~>",S);
     TerminalPutStr(Prompt, S);
     STREAMFlush(S);
     if (Flags & (TERM_HIDETEXT | TERM_SHOWSTARS | TERM_SHOWTEXTSTARS))

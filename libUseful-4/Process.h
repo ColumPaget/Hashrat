@@ -72,7 +72,8 @@ void ProcessTitleCaptureBuffer(char **argv);
 //arguments. ProcessTitleCaptureBuffer must be called first
 void ProcessSetTitle(const char *FmtStr, ...);
 
-
+// set 'fd' to be a processes controling tty
+void ProcessSetControlTTY(int fd);
 
 /*
 ProcessApplyConfig()  changes aspects of a running process. This function is not normally used in C programming, and is instead either called from the Spawn or fork functions in SpawnCommands.c or is used when binding libUseful functionality to scripting languages that have limited types, and where structures cannot easily be used to pass data.

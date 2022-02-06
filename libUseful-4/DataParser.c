@@ -62,7 +62,6 @@ static const char *ParserJSONItems(int ParserType, const char *Doc, ListNode *Pa
 {
     const char *ptr;
     char *Token=NULL, *PrevToken=NULL, *Name=NULL;
-    ListNode *Node;
     int BreakOut=FALSE;
 
     ptr=GetToken(Doc, JSON_TOKENS, &Token,GETTOKEN_MULTI_SEP|GETTOKEN_INCLUDE_SEP|GETTOKEN_HONOR_QUOTES);
@@ -136,7 +135,6 @@ static const char *ParserYAMLItems(int ParserType, const char *Doc, ListNode *Pa
     const char *ptr, *tptr;
     char *Token=NULL, *PrevToken=NULL, *Name=NULL;
     int count=0, BreakOut=FALSE;
-    ListNode *Node;
 
     ptr=GetToken(Doc, "\n|#|[|]|{|}|:",&Token,GETTOKEN_MULTI_SEP|GETTOKEN_INCLUDE_SEP|GETTOKEN_HONOR_QUOTES);
     while (ptr)
@@ -233,7 +231,6 @@ static const char *ParserConfigItems(int ParserType, const char *Doc, ListNode *
 {
     const char *ptr;
     char *Token=NULL, *PrevToken=NULL, *Name=NULL, *Value=NULL;
-    ListNode *Node;
     int BreakOut=FALSE, NewKey=TRUE;
 
 
@@ -332,7 +329,6 @@ static const char *ParserRSSEnclosure(ListNode *Parent, const char *Data)
 {
     const char *ptr;
     char *Token=NULL, *Name=NULL;
-    ListNode *Node;
     int InTag=TRUE;
 
     ptr=Data;
@@ -368,7 +364,6 @@ static const char *ParserRSSItems(int ParserType, const char *Doc, ListNode *Par
 {
     const char *ptr;
     char *Token=NULL, *PrevToken=NULL, *Name=NULL;
-    ListNode *Node;
     int BreakOut=FALSE, InTag=FALSE;
 
 
@@ -611,9 +606,9 @@ const char *ParserParseItems(int Type, const char *Doc, ListNode *Parent, int In
 
 ListNode *ParserParseDocument(const char *TypeStr, const char *Doc)
 {
-    ListNode *Node, *Items;
     const char *Types[]= {"json","xml","rss","yaml","config","ini","url",NULL};
     const char *ptr;
+    ListNode *Items;
     char *Token=NULL;
     int Type;
 
@@ -660,7 +655,7 @@ void ListDump(ListNode *List)
 
 ListNode *ParserFindItem(ListNode *Items, const char *Name)
 {
-    ListNode *Node, *Curr;
+    ListNode *Node=NULL;
     char *Token=NULL;
     const char *ptr;
 

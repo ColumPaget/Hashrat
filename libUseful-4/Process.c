@@ -126,7 +126,7 @@ void ProcessSetControlTTY(int fd)
 //block of memory with our new command-line arguments.
 void ProcessTitleCaptureBuffer(char **argv)
 {
-    char *end=NULL, *tmp;
+    char *end=NULL;
     int i;
 
     TitleBuffer=*argv;
@@ -258,7 +258,6 @@ void CloseOpenFiles()
 
 int SwitchUID(int uid)
 {
-    const char *ptr;
     struct passwd *pw;
 
 #ifdef HAVE_SETRESUID
@@ -294,8 +293,6 @@ int SwitchUser(const char *NewUser)
 
 int SwitchGID(int gid)
 {
-    const char *ptr;
-
     if ((gid==-1) || (setgid(gid) !=0))
     {
         RaiseError(ERRFLAG_ERRNO, "SwitchGID", "Switch group failed. gid=%d",gid);
@@ -348,11 +345,8 @@ void InitSigHandler(int sig)
 
 void ProcessContainerInit(int tunfd, int linkfd, pid_t Child, int RemoveRootDir)
 {
-    int i;
     ListNode *Connections=NULL;
     STREAM *TunS=NULL, *LinkS=NULL, *S;
-    char *Token=NULL;
-    const char *ptr;
     struct sigaction sa;
 
     /* //this feature not working yet
@@ -619,7 +613,7 @@ int ProcessContainer(const char *Config)
     char *Name=NULL, *Value=NULL;
     char *Tempstr=NULL;
     const char *ptr;
-    int i, val, Flags=0;
+    int Flags=0;
     int result=TRUE;
     pid_t child;
 

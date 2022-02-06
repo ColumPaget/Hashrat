@@ -2,6 +2,7 @@
 #include "Process.h"
 #include "Log.h"
 #include "Pty.h"
+#include "SecureMem.h"
 #include "Stream.h"
 #include "String.h"
 #include "Errors.h"

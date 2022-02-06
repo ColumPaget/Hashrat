@@ -815,7 +815,7 @@ int NetConnectWithAttributes(const char *Proto, const char *LocalHost, const cha
     memset(&Settings, 0, sizeof(TSockSettings));
     SocketParseConfig(Config, &Settings);
 
-return(NetConnectWithSettings(Proto, LocalHost, Host, Port, &Settings));
+    return(NetConnectWithSettings(Proto, LocalHost, Host, Port, &Settings));
 }
 
 
@@ -917,13 +917,13 @@ static int STREAMWaitConnect(STREAM *S)
 
     if ((S->in_fd > -1) && (S->Timeout > 0) )
     {
-	//timeout is expressed in centisecs, so multiply by 10 to give millsecs then convert to a tv
+        //timeout is expressed in centisecs, so multiply by 10 to give millsecs then convert to a tv
         MillisecsToTV(S->Timeout * 10, &tv);
 
-	if (FDSelect(S->in_fd, SELECT_WRITE, &tv) != SELECT_WRITE) return(FALSE);
+        if (FDSelect(S->in_fd, SELECT_WRITE, &tv) != SELECT_WRITE) return(FALSE);
     }
 
-return(STREAMIsConnected(S));
+    return(STREAMIsConnected(S));
 }
 
 
@@ -941,7 +941,7 @@ int STREAMNetConnect(STREAM *S, const char *Proto, const char *Host, int Port, c
     {
         //Flags are handled in this function
         S->in_fd=NetConnectWithSettings(Proto, STREAMGetValue(S, "LocalAddress"), Host, Port, &Settings);
-	S->Timeout=Settings.Timeout;
+        S->Timeout=Settings.Timeout;
         S->out_fd=S->in_fd;
         if (S->in_fd > -1) result=TRUE;
     }
@@ -964,7 +964,7 @@ int STREAMNetConnect(STREAM *S, const char *Proto, const char *Host, int Port, c
             S->Flags |=SF_NONBLOCK;
         }
 
-	if (STREAMWaitConnect(S)) result=STREAMDoPostConnect(S, S->Flags);
+        if (STREAMWaitConnect(S)) result=STREAMDoPostConnect(S, S->Flags);
     }
 
     return(result);

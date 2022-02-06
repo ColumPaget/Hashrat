@@ -59,7 +59,7 @@ static void ConnectionHopCloseAll()
 int ConnectHopHTTPSProxy(STREAM *S, const char *Proxy, const char *Destination)
 {
     char *Tempstr=NULL, *Token=NULL;
-    char *Proto=NULL, *Host=NULL, *User=NULL, *Pass=NULL;
+    char *Host=NULL, *User=NULL, *Pass=NULL;
     const char *ptr=NULL;
     int result=FALSE, Port;
 
@@ -449,7 +449,6 @@ int ConnectHopSSH(STREAM *S, int Type, const char *ProxyURL, const char *Destina
     STREAM *tmpS;
     ListNode *Node;
     char *Tempstr=NULL;
-    const char *ptr;
     int result=FALSE, i;
     unsigned int Port=0;
 

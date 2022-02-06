@@ -72,6 +72,11 @@ char *strrep(char *str, char oldchar, char newchar)
     {
         if (*ptr==oldchar) *ptr=newchar;
     }
+
+    //if replacement char is a null, then replacing it will change length of string
+    //so detete it from strlen cache
+    if (newchar=='\0') StrLenCacheDel(str);
+
     return(str);
 }
 
@@ -84,6 +89,11 @@ char *strmrep(char *str, char *oldchars, char newchar)
     {
         if (strchr(oldchars,*ptr)) *ptr=newchar;
     }
+
+    //if replacement char is a null, then replacing it will change length of string
+    //so detete it from strlen cache
+    if (newchar=='\0') StrLenCacheDel(str);
+
     return(str);
 }
 
@@ -136,11 +146,6 @@ void StrLenCacheAdd(const char *Str, size_t len)
         StrLenCacheMinLen=100;
     }
 
-//strlen caching has been seen to give a benefit with very large strings, but modern processors with built-in strlen
-//functions are proabably faster.
-    //don't pollute cache with short strings that don't take long to look up
-    if (len > StrLenCacheMinLen)
-    {
         //is string already in cache?
         for (i=0; i < StrLenCacheSize; i++)
         {
@@ -152,6 +157,11 @@ void StrLenCacheAdd(const char *Str, size_t len)
             }
         }
 
+//strlen caching has been seen to give a benefit with very large strings, but modern processors with built-in strlen
+//functions are proabably faster.
+//don't pollute cache with short strings that don't take long to look up
+    if (len > StrLenCacheMinLen)
+    {
         //if we get here than string isn't in cache and we add it
         if (emptyslot == -1) emptyslot=rand() % StrLenCacheSize;
 

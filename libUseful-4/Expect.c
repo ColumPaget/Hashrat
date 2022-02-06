@@ -133,7 +133,7 @@ int STREAMExpectAndReply(STREAM *S, const char *Expect, const char *Reply)
 int STREAMExpectSilence(STREAM *S, int wait)
 {
     int inchar;
-    int len=0, SavedTimeout;
+    int SavedTimeout;
 
     SavedTimeout=S->Timeout;
     S->Timeout=wait;

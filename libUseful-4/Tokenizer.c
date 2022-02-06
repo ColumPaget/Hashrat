@@ -154,7 +154,7 @@ int GetTokenSepMatch(const char *Pattern,const char **start, const char **end, i
 //Searches through 'String' for a match of a Pattern
 int GetTokenFindSeparator(const char *Pattern, const char *String, const char **SepStart, const char **SepEnd, int Flags)
 {
-    const char *start_ptr=NULL, *end_ptr=NULL, *ptr;
+    const char *start_ptr=NULL, *end_ptr=NULL;
 
     start_ptr=String;
     while (*start_ptr != '\0')
@@ -335,7 +335,6 @@ const char *GetToken(const char *SearchStr, const char *Separator, char **Token,
 {
     const char *SepStart=NULL, *SepEnd=NULL;
     char **separators;
-    int len;
 
     if (! Token) return(NULL);
     if (StrEnd(SearchStr))

@@ -105,11 +105,14 @@ TFingerprint *FindPathMatches(HashratCtx *Ctx, TFingerprint *Head, const char *P
 TFingerprint *CheckForMatch(HashratCtx *Ctx, const char *Path, struct stat *FStat, const char *HashStr)
 {
     TFingerprint *Lookup, *Head=NULL, *Prev=NULL, *Item=NULL, *Result=NULL;
+		const char *p_Path;
     void *ptr;
 
     if (! StrValid(Path)) return(NULL);
 
-    Lookup=TFingerprintCreate(HashStr,"","",Path);
+		p_Path=Path;
+		if (strncmp(p_Path, "./", 2)==0) p_Path++;
+    Lookup=TFingerprintCreate(HashStr,"","",p_Path);
     switch (Ctx->Action)
     {
     case ACT_FINDMATCHES_MEMCACHED:
@@ -133,7 +136,7 @@ TFingerprint *CheckForMatch(HashratCtx *Ctx, const char *Path, struct stat *FSta
         ptr=tfind(Lookup, &Tree, MatchCompareFunc);
         if (ptr)
         {
-            Item=FindPathMatches(Ctx, *(TFingerprint **) ptr, Path);
+            Item=FindPathMatches(Ctx, *(TFingerprint **) ptr, p_Path);
             if (Item)
             {
                 Result=TFingerprintCreate(Item->Hash, Item->HashType, Item->Data, Item->Path);
@@ -166,6 +169,7 @@ TFingerprint *CheckForMatch(HashratCtx *Ctx, const char *Path, struct stat *FSta
 void OutputUnmatchedItem(const void *p_Item, const VISIT which, const int depth)
 {
     TFingerprint *Item;
+		char *Tempstr=NULL;
 
     if ((which==preorder) || (which==leaf))
     {
@@ -175,20 +179,26 @@ void OutputUnmatchedItem(const void *p_Item, const VISIT which, const int depth)
         {
             //if a root node of the linked list has been deleted, its path is
             //set blank, rather than actually deleting it, as we need it to
-            //continue acting as the head node
+            //continue acting as the head node, so we check StrValid rather
+						//than checking for NULL
             if (StrValid(Item->Path))
             {
                 if (access(Item->Path, F_OK) !=0) HandleCheckFail(Item->Path, "Missing");
+								//else HashSingleFile(&Tempstr, Ctx, Ctx->HashType, Item->Path);
+
+								
             }
             Item=Item->Next;
         }
     }
+
+Destroy(Tempstr);
 }
 
 
 void OutputUnmatched(HashratCtx *Ctx)
 {
-    twalk (Tree, OutputUnmatchedItem);
+    twalk(Tree, OutputUnmatchedItem);
 }
 
 
