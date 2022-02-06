@@ -57,7 +57,7 @@ void HashRatSetXAttr(HashratCtx *Ctx, const char *Path, struct stat *Stat, const
     char **ptr;
     int result;
 
-    Tempstr=FormatStr(Tempstr,"%llu:%llu:%s",(unsigned long) time(NULL),(unsigned long long) Stat->st_size,Hash);
+    Tempstr=FormatStr(Tempstr,"%llu:%llu:%s",(unsigned long long) time(NULL), (unsigned long long) Stat->st_size, Hash);
 
 
 #ifdef USE_XATTR
@@ -65,12 +65,12 @@ void HashRatSetXAttr(HashratCtx *Ctx, const char *Path, struct stat *Stat, const
     else Attr=MCopyStr(Attr,"user.","hashrat:",HashType,NULL);
 
     result=setxattr(Path, Attr, Tempstr, StrLen(Tempstr)+1, 0);
-    if (result != 0) fprintf(stderr,"ERROR: Failed to store hash in extended attributes for %s\n", Path);
+    if (result != 0) fprintf(stderr,"ERROR: Failed to store hash in extended attributes for '%s'  error was '%s'\n", Path, strerror(errno));
 #elif defined USE_EXTATTR
     Attr=MCopyStr(Attr,"hashrat:",HashType,NULL);
     if ((Ctx->Flags & CTX_XATTR_ROOT) && (getuid()==0)) result=extattr_set_file(Path, EXTATTR_NAMESPACE_SYSTEM, Attr, Tempstr, StrLen(Tempstr)+1);
     else result=extattr_set_file(Path, EXTATTR_NAMESPACE_USER, Attr, Tempstr, StrLen(Tempstr)+1);
-    if (result < 1) fprintf(stderr,"ERROR: Failed to store hash in extended attributes for %s\n", Path);
+    if (result < 1) fprintf(stderr,"ERROR: Failed to store hash in extended attributes for '%s'  error was '%s'\n", Path, strerror(errno));
 #else
     fprintf(stderr,"XATTR Support not compiled in.\n");
     exit(1);
@@ -111,6 +111,8 @@ int XAttrGetHash(HashratCtx *Ctx, const char *XattrType, const char *HashType, c
     Tempstr=MCopyStr(Tempstr,"hashrat:",HashType,NULL);
     if ((strcmp(XattrType,"trusted")==0) || (strcmp(XattrType,"system")==0)) len=extattr_get_file(Path, EXTATTR_NAMESPACE_SYSTEM, Tempstr, *Hash, 255);
     else len=extattr_get_file(Path, EXTATTR_NAMESPACE_USER, Tempstr, *Hash, 255);
+#else
+    fprintf(stderr,"XATTR Support not compiled in.\n");
 #endif
 
     if (len > 0)

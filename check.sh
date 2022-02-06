@@ -163,7 +163,7 @@ TestHash z85 "ZEROMQ85 encoding" "wX%ElWFTQ9+Z=X4h"
 Title "Testing Misc. Features"
 
 HR_OUT=`./hashrat -version`
-if [ "$HR_OUT" = "version: 1.12" ]
+if [ "$HR_OUT" = "version: 1.15" ]
 then
 	OkayMessage "Version (-version) works"
 else
@@ -235,12 +235,12 @@ fi
 
 Title "Testing File Locate using different input formats"
 
-TestLocate "hash='md5:6ec9de513a8ff1768eb4768236198cf3' mode='100644' uid='0' gid='0' size='621' mtime='1423180289' inode='2359456' path='test file'" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 'test file ' at ./tests/help.txt" "Locating files with native format input"
-TestLocate "6ec9de513a8ff1768eb4768236198cf3  test file" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 'test file ' at ./tests/help.txt" "Locating files with traditional (md5sum) format input"
-TestLocate "MD5 (test file) = 6ec9de513a8ff1768eb4768236198cf3" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 'test file ' at ./tests/help.txt" "Locating files with bsd format input"
+TestLocate "hash='md5:6ec9de513a8ff1768eb4768236198cf3' mode='100644' uid='0' gid='0' size='621' mtime='1423180289' inode='2359456' path='test file'" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 'test file ' at tests/help.txt" "Locating files with native format input"
+TestLocate "6ec9de513a8ff1768eb4768236198cf3  test file" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 'test file ' at tests/help.txt" "Locating files with traditional (md5sum) format input"
+TestLocate "MD5 (test file) = 6ec9de513a8ff1768eb4768236198cf3" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 'test file ' at tests/help.txt" "Locating files with bsd format input"
 
 HR_INPUT=`cat tests/test.ioc`
-TestLocate "$HR_INPUT" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 ' Hashrat Test IOC' at ./tests/help.txt" "Locating files with OpenIOC input"
+TestLocate "$HR_INPUT" "LOCATED: 6ec9de513a8ff1768eb4768236198cf3 ' Hashrat Test IOC' at tests/help.txt" "Locating files with OpenIOC input"
 
 Title "Test hook functions"
 TestLocateHook "hash='md5:6ec9de513a8ff1768eb4768236198cf3' mode='100644' uid='0' gid='0' size='621' mtime='1423180289' inode='2359456' path='test file'" "" "Hook function for file locate"

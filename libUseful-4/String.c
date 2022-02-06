@@ -146,16 +146,16 @@ void StrLenCacheAdd(const char *Str, size_t len)
         StrLenCacheMinLen=100;
     }
 
-        //is string already in cache?
-        for (i=0; i < StrLenCacheSize; i++)
+    //is string already in cache?
+    for (i=0; i < StrLenCacheSize; i++)
+    {
+        if (StrLenCache[i].Str == NULL) emptyslot=i;
+        else if (StrLenCache[i].Str == Str)
         {
-            if (StrLenCache[i].Str == NULL) emptyslot=i;
-            else if (StrLenCache[i].Str == Str)
-            {
-                StrLenCache[i].len=len;
-                return;
-            }
+            StrLenCache[i].len=len;
+            return;
         }
+    }
 
 //strlen caching has been seen to give a benefit with very large strings, but modern processors with built-in strlen
 //functions are proabably faster.
@@ -501,7 +501,7 @@ char *VFormatStr(char *InBuff, const char *InputFmtStr, va_list args)
         //This is just plain WRONG, it's a long-standing bug. The solution is to
         //us va_copy to make a new one every time and pass that in.
         va_copy(argscopy,args);
-        result=vsnprintf(Tempstr,result,FmtStr,argscopy);
+        result=vsnprintf(Tempstr, result, FmtStr, argscopy);
         va_end(argscopy);
 
         /* old style returns -1 to say couldn't fit data into buffer.. so we */

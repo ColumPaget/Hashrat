@@ -462,8 +462,7 @@ int HashratAction(HashratCtx *Ctx, const char *Path, struct stat *Stat)
             if (FP)
             {
                 HashItem(Ctx, FP->HashType, Path, Stat, &HashStr);
-                if (FP->Flags & FP_HASSTAT) if (HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) result=FALSE;
-                    else if (HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) result=FALSE;
+                if (HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) result=FALSE;
             }
             else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
         }
@@ -620,10 +619,10 @@ int ProcessItem(HashratCtx *Ctx, const char *Path, struct stat *Stat, int IsTopL
 {
     char *HashStr=NULL;
     int result=FALSE, Flags;
-		const char *p_Path;
+    const char *p_Path;
 
-		p_Path=Path;
-		if (strncmp(p_Path, "./", 2)==0) p_Path+=2;
+    p_Path=Path;
+    if (strncmp(p_Path, "./", 2)==0) p_Path+=2;
 
 
     if (! Visited) Visited=MapCreate(1025, LIST_FLAG_CACHE);

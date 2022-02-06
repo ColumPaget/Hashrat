@@ -181,7 +181,7 @@ void RunHookScript(const char *Hook, const char *Path, const char *Other)
         //must quote twice to get through system comamnd
         QuotedPath=QuoteCharsInStr(QuotedPath, Path,"\"'`!|;<> 	");
         QuotedOther=QuoteCharsInStr(QuotedOther, Other,"\"'`!|;<> 	");
-        S=STREAMSpawnCommand("/bin/sh",0);
+        S=STREAMSpawnCommand("/bin/sh", "");
         if (S)
         {
             Tempstr=MCopyStr(Tempstr, DiffHook," ",QuotedPath, " ", QuotedOther, ";exit\n",NULL);

@@ -497,9 +497,9 @@ void CommandLinePrintUsage()
     printf("  %-15s %s\n","-cgi", "Run in HTTP CGI mode");
     printf("  %-15s %s\n","-cgi", "Run in HTTP CGI mode");
     printf("  %-15s %s\n","-xdialog","Run in 'xdialog' (zenity, yad or qarama) mode");
-    printf("  %-15s %s\n","-dialog-types <list>","Specify a list of dialog commands and use the first found on the system. Default is 'yad,zenity,qarma'"); 
-    printf("  %-15s %s\n","-iprefix <prefix>","String to prefix all input before hashing"); 
-    printf("  %-15s %s\n","-oprefix <prefix>","Prefix to add to the front of output hashes"); 
+    printf("  %-15s %s\n","-dialog-types <list>","Specify a list of dialog commands and use the first found on the system. Default is 'yad,zenity,qarma'");
+    printf("  %-15s %s\n","-iprefix <prefix>","String to prefix all input before hashing");
+    printf("  %-15s %s\n","-oprefix <prefix>","Prefix to add to the front of output hashes");
     printf("  %-15s %s\n","-net", "Treat 'file' arguments as either ssh or http URLs, and pull files over the network and then hash them (Allows hashing of files on remote machines).");
     printf("  %-15s %s\n","", "URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..");
     printf("  %-15s %s\n","-idfile <path>", "Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.");

@@ -100,7 +100,7 @@ STREAM *XDialogDisplayPage(const char *Dialog, HashratCtx *Config)
     Cmd=XDialogFormAddList(Cmd, Dialog, "Line Ending", Tempstr, "");
     Cmd=XDialogFormAddTextEntry(Cmd, Dialog, "Input");
 
-		printf("CMD: %s\n", Cmd);
+    printf("CMD: %s\n", Cmd);
     S=STREAMOpen(Cmd, "rw");
 
     Destroy(Tempstr);
@@ -115,8 +115,8 @@ void XDialogDisplayHash(const char *DialogCmd, const char *Hash)
     STREAM *S;
 
 
-		if (strcmp(GetBasename(DialogCmd), "yad")==0) Cmd=MCopyStr(Cmd, "cmd:", DialogCmd, " --info --selectable-labels --title='Your Hash Value' --text='", Hash, "'", NULL);
-		else Cmd=MCopyStr(Cmd, "cmd:", DialogCmd, " --info --title='Your Hash Value' --text='", Hash, "'", NULL);
+    if (strcmp(GetBasename(DialogCmd), "yad")==0) Cmd=MCopyStr(Cmd, "cmd:", DialogCmd, " --info --selectable-labels --title='Your Hash Value' --text='", Hash, "'", NULL);
+    else Cmd=MCopyStr(Cmd, "cmd:", DialogCmd, " --info --title='Your Hash Value' --text='", Hash, "'", NULL);
     S=STREAMOpen(Cmd, "rw");
     Tempstr=STREAMReadLine(Tempstr, S);
     STREAMClose(S);
