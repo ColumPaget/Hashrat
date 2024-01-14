@@ -1,21 +1,20 @@
-
 CC = gcc
 CFLAGS = -g -O2
-LIBS =  libUseful-4/libUseful.a
+LIBS = -lssl -lcrypto  libUseful-5/libUseful.a
 INSTALL=/bin/install -c
 prefix=/usr/local
 bindir=$(prefix)${exec_prefix}/bin
-FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -D_FILE_OFFSET_BITS=64
-OBJ=common.o encodings.o command-line-args.o ssh.o http.o fingerprint.o include-exclude.o files.o filesigning.o xattr.o check-hash.o find.o memcached.o frontend.o cgi.o xdialog.o
+FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -D_FILE_OFFSET_BITS=64 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1
+OBJ=common.o encodings.o command-line-args.o ssh.o http.o fingerprint.o include-exclude.o files.o filesigning.o xattr.o check-hash.o find.o otp.o memcached.o frontend.o cgi.o xdialog.o output.o
 EXE=hashrat
 
 all: hashrat
 
-hashrat: $(OBJ) main.c libUseful-4/libUseful.a
+hashrat: $(OBJ) main.c libUseful-5/libUseful.a
 	$(CC) $(FLAGS) -o$(EXE) $(OBJ) main.c $(LIBS) 
 
-libUseful-4/libUseful.a:
-	@cd libUseful-4; $(MAKE)
+libUseful-5/libUseful.a:
+	@cd libUseful-5; $(MAKE)
 
 common.o: common.h common.c
 	$(CC) $(FLAGS) -c common.c
@@ -50,8 +49,14 @@ ssh.o: ssh.h ssh.c
 http.o: http.h http.c
 	$(CC) $(FLAGS) -c http.c
 
+otp.o: otp.h otp.c
+	$(CC) $(FLAGS) -c otp.c
+
 frontend.o: frontend.h frontend.c
 	$(CC) $(FLAGS) -c frontend.c
+
+output.o: output.h output.c
+	$(CC) $(FLAGS) -c output.c
 
 cgi.o: cgi.h cgi.c
 	$(CC) $(FLAGS) -c cgi.c
@@ -69,7 +74,7 @@ check: hashrat
 	@./check.sh
 
 clean:
-	-rm -f *.o */*.o */*.a */*.so $(EXE)
+	-rm -f *.o */*.o */*.a */*.so *.orig $(EXE)
 	-rm -f config.log config.status */config.log */config.status
 	-rm -fr autom4te.cache */autom4te.cache
 

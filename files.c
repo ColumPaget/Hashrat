@@ -427,7 +427,7 @@ int HashratAction(HashratCtx *Ctx, const char *Path, struct stat *Stat)
         HashStartTime=GetTime(TIME_MILLISECS);
         if (HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr))
         {
-            HashratOutputInfo(Ctx, Ctx->Out, Path, Stat, HashStr);
+            HashratOutputFileInfo(Ctx, Ctx->Out, Path, Stat, HashStr);
             HashratStoreHash(Ctx, Path, Stat, HashStr);
             result=TRUE;
         }
@@ -604,7 +604,7 @@ static int HashratRecurse(HashratCtx *Ctx, const char *Path, char **HashStr)
         if (! ProcessDir(Ctx, Path)) result=FALSE;
         HashratFinishHash(HashStr, Ctx, Ctx->Hash);
         stat(Path, &FStat);
-        HashratOutputInfo(Ctx, Ctx->Out, Path, &FStat, *HashStr);
+        HashratOutputFileInfo(Ctx, Ctx->Out, Path, &FStat, *HashStr);
         result=TRUE;
     }
     else if (ProcessDir(Ctx, Path)) result=TRUE;
@@ -654,7 +654,7 @@ int ProcessItem(HashratCtx *Ctx, const char *Path, struct stat *Stat, int IsTopL
 
     if (IsTopLevel)
     {
-        MapClear(Visited, NULL);
+        ListClear(Visited, NULL);
     }
     Destroy(HashStr);
 

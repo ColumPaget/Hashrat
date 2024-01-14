@@ -1,0 +1,5 @@
+v1.16 (2024-01-14)
+  * Added base32 hash encoding
+  * TOTP authentication support
+  * Clipboard support using xsel, xclip or pbcopy
+  * QRCode support using qrencode and an image viewer

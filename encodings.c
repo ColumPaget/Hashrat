@@ -5,7 +5,7 @@ const char *EncodingDescriptions[]= {"Octal","Decimal","Hexadecimal","Uppercase 
 int Encodings[]= {ENCODE_OCTAL, ENCODE_DECIMAL, ENCODE_HEX, ENCODE_HEXUPPER, ENCODE_BASE64, ENCODE_IBASE64, ENCODE_PBASE64, ENCODE_XXENC, ENCODE_UUENC, ENCODE_CRYPT, ENCODE_ASCII85, ENCODE_Z85, -1};
 
 
-char *EncodingNameFromID(int id)
+const char *EncodingNameFromID(int id)
 {
     int i;
 
@@ -18,7 +18,7 @@ char *EncodingNameFromID(int id)
 }
 
 
-char *EncodingDescriptionFromID(int id)
+const char *EncodingDescriptionFromID(int id)
 {
     int i;
 

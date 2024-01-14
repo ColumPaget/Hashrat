@@ -681,8 +681,8 @@ ac_user_opts='
 enable_option_checking
 enable_largefile
 enable_xattr
-with_system_libuseful
 enable_ssl
+with_system_libuseful
 '
       ac_precious_vars='build_alias
 host_alias
@@ -693,7 +693,7 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP'
-ac_subdirs_all='libUseful-4'
+ac_subdirs_all='libUseful-5'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -3661,253 +3661,11 @@ fi
 	fi
 fi
 
-
-
-# Check whether --with-system-libuseful was given.
-if test "${with_system_libuseful+set}" = set; then :
-  withval=$with_system_libuseful; cf_with_libuseful=$withval
-fi
-
-
-echo "$cf_with_libuseful"
-
-if test "$cf_with_libuseful" != "no" -a "$cf_with_libuseful" != ""
-then
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenSSLVerifyCallback in -lUseful" >&5
-$as_echo_n "checking for OpenSSLVerifyCallback in -lUseful... " >&6; }
-if ${ac_cv_lib_Useful_OpenSSLVerifyCallback+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lUseful -lssl -lcrypto -lz $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char OpenSSLVerifyCallback ();
-int
-main ()
-{
-return OpenSSLVerifyCallback ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_Useful_OpenSSLVerifyCallback=yes
-else
-  ac_cv_lib_Useful_OpenSSLVerifyCallback=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_Useful_OpenSSLVerifyCallback" >&5
-$as_echo "$ac_cv_lib_Useful_OpenSSLVerifyCallback" >&6; }
-if test "x$ac_cv_lib_Useful_OpenSSLVerifyCallback" = xyes; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_new in -lssl" >&5
-$as_echo_n "checking for SSL_new in -lssl... " >&6; }
-if ${ac_cv_lib_ssl_SSL_new+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lssl -lcrypto -lz $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char SSL_new ();
-int
-main ()
-{
-return SSL_new ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_ssl_SSL_new=yes
-else
-  ac_cv_lib_ssl_SSL_new=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_new" >&5
-$as_echo "$ac_cv_lib_ssl_SSL_new" >&6; }
-if test "x$ac_cv_lib_ssl_SSL_new" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBSSL 1
-_ACEOF
-
-  LIBS="-lssl $LIBS"
-
-fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ERR_load_CRYPTO_strings in -lcrypto" >&5
-$as_echo_n "checking for ERR_load_CRYPTO_strings in -lcrypto... " >&6; }
-if ${ac_cv_lib_crypto_ERR_load_CRYPTO_strings+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcrypto -lz $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char ERR_load_CRYPTO_strings ();
-int
-main ()
-{
-return ERR_load_CRYPTO_strings ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_crypto_ERR_load_CRYPTO_strings=yes
-else
-  ac_cv_lib_crypto_ERR_load_CRYPTO_strings=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_ERR_load_CRYPTO_strings" >&5
-$as_echo "$ac_cv_lib_crypto_ERR_load_CRYPTO_strings" >&6; }
-if test "x$ac_cv_lib_crypto_ERR_load_CRYPTO_strings" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBCRYPTO 1
-_ACEOF
-
-  LIBS="-lcrypto $LIBS"
-
-fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for inflate in -lz" >&5
-$as_echo_n "checking for inflate in -lz... " >&6; }
-if ${ac_cv_lib_z_inflate+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lz  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char inflate ();
-int
-main ()
-{
-return inflate ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_z_inflate=yes
-else
-  ac_cv_lib_z_inflate=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_inflate" >&5
-$as_echo "$ac_cv_lib_z_inflate" >&6; }
-if test "x$ac_cv_lib_z_inflate" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBZ 1
-_ACEOF
-
-  LIBS="-lz $LIBS"
-
-fi
-
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GetToken in -lUseful" >&5
-$as_echo_n "checking for GetToken in -lUseful... " >&6; }
-if ${ac_cv_lib_Useful_GetToken+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lUseful  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char GetToken ();
-int
-main ()
-{
-return GetToken ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_Useful_GetToken=yes
-else
-  ac_cv_lib_Useful_GetToken=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_Useful_GetToken" >&5
-$as_echo "$ac_cv_lib_Useful_GetToken" >&6; }
-if test "x$ac_cv_lib_Useful_GetToken" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBUSEFUL 1
-_ACEOF
-
-  LIBS="-lUseful $LIBS"
-
-fi
-
-
-LUSEFUL="system"
-else
-LUSEFUL="bundled"
-STATIC_LIBS="libUseful-4/libUseful.a"
-
-
-
-subdirs="$subdirs libUseful-4"
-
-fi
-
 # Check whether --enable-ssl was given.
 if test "${enable_ssl+set}" = set; then :
   enableval=$enable_ssl; cf_use_ssl=$enableval
+else
+  cf_use_ssl=yes
 fi
 
 
@@ -4122,6 +3880,306 @@ fi
 		cf_have_libssl=$ac_cv_lib_ssl_OPENSSL_init_ssl
 	fi
 fi
+fi
+
+
+
+# Check whether --with-system-libuseful was given.
+if test "${with_system_libuseful+set}" = set; then :
+  withval=$with_system_libuseful; cf_with_libuseful=$withval
+fi
+
+
+
+if test "$cf_with_libuseful" != "no" -a "$cf_with_libuseful" != ""
+then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GetToken in -lUseful" >&5
+$as_echo_n "checking for GetToken in -lUseful... " >&6; }
+if ${ac_cv_lib_Useful_GetToken+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lUseful  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char GetToken ();
+int
+main ()
+{
+return GetToken ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_Useful_GetToken=yes
+else
+  ac_cv_lib_Useful_GetToken=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_Useful_GetToken" >&5
+$as_echo "$ac_cv_lib_Useful_GetToken" >&6; }
+if test "x$ac_cv_lib_Useful_GetToken" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBUSEFUL 1
+_ACEOF
+
+  LIBS="-lUseful $LIBS"
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for TOTP in -lUseful" >&5
+$as_echo_n "checking for TOTP in -lUseful... " >&6; }
+if ${ac_cv_lib_Useful_TOTP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lUseful  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char TOTP ();
+int
+main ()
+{
+return TOTP ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_Useful_TOTP=yes
+else
+  ac_cv_lib_Useful_TOTP=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_Useful_TOTP" >&5
+$as_echo "$ac_cv_lib_Useful_TOTP" >&6; }
+if test "x$ac_cv_lib_Useful_TOTP" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBUSEFUL 1
+_ACEOF
+
+  LIBS="-lUseful $LIBS"
+
+fi
+
+fi
+
+if test "$ac_cv_lib_Useful_GetToken" == "yes" -a "$ac_cv_lib_Useful_TOTP" == "yes"
+then
+echo "Found suitable installed libUseful."
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenSSLVerifyCallback in -lUseful" >&5
+$as_echo_n "checking for OpenSSLVerifyCallback in -lUseful... " >&6; }
+if ${ac_cv_lib_Useful_OpenSSLVerifyCallback+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lUseful -lssl -lcrypto -lz $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char OpenSSLVerifyCallback ();
+int
+main ()
+{
+return OpenSSLVerifyCallback ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_Useful_OpenSSLVerifyCallback=yes
+else
+  ac_cv_lib_Useful_OpenSSLVerifyCallback=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_Useful_OpenSSLVerifyCallback" >&5
+$as_echo "$ac_cv_lib_Useful_OpenSSLVerifyCallback" >&6; }
+if test "x$ac_cv_lib_Useful_OpenSSLVerifyCallback" = xyes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_new in -lssl" >&5
+$as_echo_n "checking for SSL_new in -lssl... " >&6; }
+if ${ac_cv_lib_ssl_SSL_new+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lssl -lcrypto -lz $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char SSL_new ();
+int
+main ()
+{
+return SSL_new ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ssl_SSL_new=yes
+else
+  ac_cv_lib_ssl_SSL_new=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_new" >&5
+$as_echo "$ac_cv_lib_ssl_SSL_new" >&6; }
+if test "x$ac_cv_lib_ssl_SSL_new" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBSSL 1
+_ACEOF
+
+  LIBS="-lssl $LIBS"
+
+fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ERR_load_CRYPTO_strings in -lcrypto" >&5
+$as_echo_n "checking for ERR_load_CRYPTO_strings in -lcrypto... " >&6; }
+if ${ac_cv_lib_crypto_ERR_load_CRYPTO_strings+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcrypto -lz $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char ERR_load_CRYPTO_strings ();
+int
+main ()
+{
+return ERR_load_CRYPTO_strings ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_crypto_ERR_load_CRYPTO_strings=yes
+else
+  ac_cv_lib_crypto_ERR_load_CRYPTO_strings=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_ERR_load_CRYPTO_strings" >&5
+$as_echo "$ac_cv_lib_crypto_ERR_load_CRYPTO_strings" >&6; }
+if test "x$ac_cv_lib_crypto_ERR_load_CRYPTO_strings" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBCRYPTO 1
+_ACEOF
+
+  LIBS="-lcrypto $LIBS"
+
+fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for inflate in -lz" >&5
+$as_echo_n "checking for inflate in -lz... " >&6; }
+if ${ac_cv_lib_z_inflate+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lz  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char inflate ();
+int
+main ()
+{
+return inflate ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_z_inflate=yes
+else
+  ac_cv_lib_z_inflate=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_inflate" >&5
+$as_echo "$ac_cv_lib_z_inflate" >&6; }
+if test "x$ac_cv_lib_z_inflate" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBZ 1
+_ACEOF
+
+  LIBS="-lz $LIBS"
+
+fi
+
+
+fi
+
+LUSEFUL="system"
+else
+
+if test "$ac_cv_lib_Useful_GetToken" == "yes"
+then
+echo "Installed libUseful too old, lacks base32 and TOTP functions. Using bundled libUseful."
+else
+echo "No installed libUseful found, using bundled version."
+fi
+
+LUSEFUL="bundled"
+STATIC_LIBS="libUseful-5/libUseful.a"
+
+
+
+subdirs="$subdirs libUseful-5"
+
 fi
 
 echo

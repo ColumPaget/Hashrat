@@ -1,5 +1,5 @@
 Name:           hashrat
-Version:        1.13
+Version:        1.16
 Release:        1%{?dist}
 Summary:        A hash-generation utility
 

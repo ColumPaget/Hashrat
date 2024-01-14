@@ -9,7 +9,7 @@ extern const char *EncodingNames[];
 extern const char *EncodingDescriptions[];
 extern int Encodings[];
 
-char *EncodingNameFromID(int id);
-char *EncodingDescriptionFromID(int id);
+const char *EncodingNameFromID(int id);
+const char *EncodingDescriptionFromID(int id);
 
 #endif

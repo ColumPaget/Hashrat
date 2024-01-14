@@ -30,29 +30,7 @@ then
 	fi
 fi
 
-
-AC_ARG_WITH(system-libuseful, [  --with-system-libuseful       use systemwide libUseful.so rather than bundled version], cf_with_libuseful=$withval )
-
-echo "$cf_with_libuseful"
-
-if test "$cf_with_libuseful" != "no" -a "$cf_with_libuseful" != ""
-then
-AC_CHECK_LIB([Useful],[OpenSSLVerifyCallback], 
-  [AC_CHECK_LIB([ssl],[SSL_new],,,[-lcrypto -lz])] 
-  [AC_CHECK_LIB([crypto],[ERR_load_CRYPTO_strings],,,[-lz])]
-  [AC_CHECK_LIB([z],[inflate])]
-  ,,[-lssl -lcrypto -lz])
-AC_CHECK_LIB(Useful,GetToken)
-
-LUSEFUL="system"
-else
-LUSEFUL="bundled"
-STATIC_LIBS="libUseful-4/libUseful.a"
-AC_SUBST(STATIC_LIBS)
-AC_CONFIG_SUBDIRS([libUseful-4])
-fi
-
-AC_ARG_ENABLE(ssl, [  --enable-ssl       use Secure Sockets Layer], cf_use_ssl=$enableval )
+AC_ARG_ENABLE(ssl, [  --enable-ssl       use Secure Sockets Layer], cf_use_ssl=$enableval, cf_use_ssl=yes )
 
 if test "$cf_use_ssl" = "yes"
 then
@@ -81,6 +59,40 @@ then
 		cf_have_libssl=$ac_cv_lib_ssl_OPENSSL_init_ssl
 	fi
 fi
+fi
+
+
+AC_ARG_WITH(system-libuseful, [  --with-system-libuseful       use systemwide libUseful.so rather than bundled version], cf_with_libuseful=$withval )
+
+
+if test "$cf_with_libuseful" != "no" -a "$cf_with_libuseful" != ""
+then
+AC_CHECK_LIB(Useful,[GetToken])
+AC_CHECK_LIB(Useful,[TOTP])
+fi
+
+if test "$ac_cv_lib_Useful_GetToken" == "yes" -a "$ac_cv_lib_Useful_TOTP" == "yes"
+then
+echo "Found suitable installed libUseful."
+AC_CHECK_LIB([Useful],[OpenSSLVerifyCallback], 
+  [AC_CHECK_LIB([ssl],[SSL_new],,,[-lcrypto -lz])] 
+  [AC_CHECK_LIB([crypto],[ERR_load_CRYPTO_strings],,,[-lz])]
+  [AC_CHECK_LIB([z],[inflate])]
+  ,,[-lssl -lcrypto -lz])
+LUSEFUL="system"
+else
+
+if test "$ac_cv_lib_Useful_GetToken" == "yes"
+then
+echo "Installed libUseful too old, lacks base32 and TOTP functions. Using bundled libUseful."
+else
+echo "No installed libUseful found, using bundled version."
+fi
+
+LUSEFUL="bundled"
+STATIC_LIBS="libUseful-5/libUseful.a"
+AC_SUBST(STATIC_LIBS)
+AC_CONFIG_SUBDIRS([libUseful-5])
 fi
 
 echo

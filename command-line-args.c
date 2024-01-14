@@ -1,6 +1,7 @@
 #include "command-line-args.h"
 #include "include-exclude.h"
 #include "xattr.h"
+#include "otp.h"
 
 CMDLINE CmdLine;
 
@@ -20,9 +21,9 @@ void HMACSetup(HashratCtx *Ctx)
             write(1, "Enter HMAC Key: ",16);
 
             S=STREAMFromFD(0);
-            Tempstr=STREAMReadLine(Tempstr,S);
+            Tempstr=STREAMReadLine(Tempstr, S);
             StripTrailingWhitespace(Tempstr);
-            SetVar(Ctx->Vars,"EncryptionKey",Tempstr);
+            SetVar(Ctx->Vars, "EncryptionKey", Tempstr);
             ptr=Tempstr;
             STREAMDestroy(S);
         }
@@ -96,7 +97,6 @@ void CommandLineSetCtx(HashratCtx *Ctx, int Flag, int Encoding)
         Ctx->Flags |= Flag;
         break;
     }
-
 }
 
 
@@ -145,8 +145,13 @@ HashratCtx *CommandLineParseArg0()
 
     Ctx->Vars=ListCreate();
     Ctx->Out=STREAMFromFD(1);
-    SetVar(Ctx->Vars,"HashType","md5");
+    SetVar(Ctx->Vars,"HashType","sha1");
+    SetVar(Ctx->Vars, "OTP:Digits", "6");
+    SetVar(Ctx->Vars, "OTP:Period", "30");
     SetVar(Ctx->Vars,"DialogTypes","yad,zenity,qarma");
+		SetVar(Ctx->Vars, "clipboard_commands", "xsel -i -p -b,xclip -selection clipboard,pbcopy");
+		SetVar(Ctx->Vars, "image_viewers", "imlib2_view,fim,feh,display,xv,phototonic,qimageviewer,pix,sxiv,qimgv,qview,nomacs,geeqie,ristretto,mirage,fotowall,links -g");
+    Ctx->SegmentChar='-';
 
 
 //argv[0] might be full path to the program, or just its name
@@ -186,7 +191,6 @@ HashratCtx *CommandLineParseArgs(int argc, char *argv[])
 
     CommandLineParserInit(&CmdLine, argc, argv);
     Ctx=CommandLineParseArg0();
-    Ctx->SegmentChar='-';
 
     arg=CommandLineNext(&CmdLine);
     while (arg)
@@ -259,6 +263,11 @@ HashratCtx *CommandLineParseArgs(int argc, char *argv[])
         else if (strcmp(arg,"-16")==0) CommandLineSetCtx(Ctx,  0, ENCODE_HEX);
         else if (strcmp(arg,"-H")==0)  CommandLineSetCtx(Ctx,  0, ENCODE_HEXUPPER);
         else if (strcmp(arg,"-HEX")==0) CommandLineSetCtx(Ctx,  0, ENCODE_HEXUPPER);
+        else if (strcmp(arg,"-32")==0) CommandLineSetCtx(Ctx,  0, ENCODE_BASE32);
+        else if (strcmp(arg,"-base32")==0) CommandLineSetCtx(Ctx,  0, ENCODE_BASE32);
+        else if (strcmp(arg,"-c32")==0) CommandLineSetCtx(Ctx,  0, ENCODE_CBASE32);
+        else if (strcmp(arg,"-w32")==0) CommandLineSetCtx(Ctx,  0, ENCODE_WBASE32);
+        else if (strcmp(arg,"-z32")==0) CommandLineSetCtx(Ctx,  0, ENCODE_ZBASE32);
         else if (strcmp(arg,"-64")==0) CommandLineSetCtx(Ctx,  0, ENCODE_BASE64);
         else if (strcmp(arg,"-base64")==0) CommandLineSetCtx(Ctx,  0, ENCODE_BASE64);
         else if (strcmp(arg,"-i64")==0) CommandLineSetCtx(Ctx,  0, ENCODE_IBASE64);
@@ -286,13 +295,15 @@ HashratCtx *CommandLineParseArgs(int argc, char *argv[])
         else if (strcmp(arg,"-oprefix")==0) CommandLineHandleArg( Ctx, FLAG_NEXTARG, "OutputPrefix", "", Ctx->Vars);
         else if (strcmp(arg,"-dialog-type")==0) CommandLineHandleArg(Ctx, FLAG_NEXTARG, "DialogTypes", "",Ctx->Vars);
         else if (strcmp(arg,"-dialog-types")==0) CommandLineHandleArg(Ctx, FLAG_NEXTARG, "DialogTypes", "",Ctx->Vars);
+        else if (strcmp(arg,"-digits")==0) CommandLineHandleArg(Ctx, FLAG_NEXTARG, "OTP:Digits", "",Ctx->Vars);
+        else if (strcmp(arg,"-period")==0) CommandLineHandleArg(Ctx, FLAG_NEXTARG, "OTP:Period", "",Ctx->Vars);
         else if (strcmp(arg,"-i")==0) CommandLineSetCtx(Ctx, CTX_INCLUDE,0);
         else if (strcmp(arg,"-name")==0) CommandLineSetCtx(Ctx, CTX_INCLUDE,0);
         else if (strcmp(arg,"-mtime")==0) CommandLineSetCtx(Ctx, CTX_MTIME,0);
         else if (strcmp(arg,"-mmin")==0) CommandLineSetCtx(Ctx, CTX_MMIN,0);
         else if (strcmp(arg,"-myear")==0) CommandLineSetCtx(Ctx, CTX_MYEAR,0);
         else if (strcmp(arg,"-x")==0) CommandLineSetCtx(Ctx, CTX_EXCLUDE,0);
-        else if (strcmp(arg,"-X")==0) IncludeExcludeLoadExcludesFromFile(Ctx, CommandLineNext(&CmdLine));
+        else if (strcmp(arg,"-X")==0) IncludeExcludeLoadExcludesFromFile(CommandLineNext(&CmdLine), Ctx);
         else if (strcmp(arg,"-devmode")==0) CommandLineHandleArg(Ctx,FLAG_DEVMODE, "", "",Ctx->Vars);
         else if (strcmp(arg,"-lines")==0) CommandLineHandleArg(Ctx,FLAG_LINEMODE, "", "",Ctx->Vars);
         else if (strcmp(arg,"-rawlines")==0) CommandLineHandleArg(Ctx,FLAG_RAW|FLAG_LINEMODE, "", "",Ctx->Vars);
@@ -309,7 +320,13 @@ HashratCtx *CommandLineParseArgs(int argc, char *argv[])
         else if (strcmp(arg,"-memcached")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG | FLAG_MEMCACHED, "Memcached:Server", "",Ctx->Vars);
         else if (strcmp(arg,"-mcd")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG | FLAG_MEMCACHED, "Memcached:Server", "",Ctx->Vars);
         else if (strcmp(arg,"-xsel")==0) CommandLineHandleArg(Ctx,FLAG_XSELECT, "", "",Ctx->Vars);
+        else if (strcmp(arg,"-clip")==0) CommandLineHandleArg(Ctx,FLAG_CLIPBOARD, "", "",Ctx->Vars);
+        else if (strcmp(arg,"-qr")==0) CommandLineHandleArg(Ctx,FLAG_QRCODE, "", "",Ctx->Vars);
+        else if (strcmp(arg,"-qrcode")==0) CommandLineHandleArg(Ctx,FLAG_QRCODE, "", "",Ctx->Vars);
+        else if (strcmp(arg,"-clipcmd")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG, "clipboard_commands", "",Ctx->Vars);
+        else if (strcmp(arg,"-viewcmd")==0) CommandLineHandleArg(Ctx,FLAG_NEXTARG, "image_viewers", "",Ctx->Vars);
         else if (strcmp(arg,"-v")==0) CommandLineHandleArg(Ctx,FLAG_VERBOSE, "", "",Ctx->Vars);
+        else if (strcmp(arg,"-totp")==0) OTPParse(Ctx, CommandLineNext(&CmdLine));
         else if ((strcmp(arg,"-dir")==0) || (strcmp(arg,"-dirmode")==0))
         {
             Ctx->Action = ACT_HASHDIR;
@@ -438,10 +455,19 @@ void CommandLinePrintUsage()
     printf("  %-15s %s\n","-jh384", "Use jh-384 hash algorithmn");
     printf("  %-15s %s\n","-jh512", "Use jh-512 hash algorithmn");
     printf("  %-15s %s\n","-hmac", "HMAC using specified hash algorithm");
+    printf("  %-15s %s\n","-totp <secret>", "TOTP code with secret, defaults to google-authenticator compatible setup");
+    printf("  %-15s %s\n","-totp <url>", "TOTP code from supplied otpauth url (option can distinguish between secret and url)");
+    printf("  %-15s %s\n","-digits <n>", "produce otp codes with <n> digits");
+    printf("  %-15s %s\n","-period <n>", "produce otp codes with period/lifetime of <n> seconds");
     printf("  %-15s %s\n","-8", "Encode with octal instead of hex");
     printf("  %-15s %s\n","-10", "Encode with decimal instead of hex");
     printf("  %-15s %s\n","-H", "Encode with UPPERCASE hexadecimal");
     printf("  %-15s %s\n","-HEX", "Encode with UPPERCASE hexadecimal");
+    printf("  %-15s %s\n","-32", "Encode with base32 instead of hex");
+    printf("  %-15s %s\n","-base32", "Encode with base32 instead of hex");
+    printf("  %-15s %s\n","-c32", "Encode with Crockford base32 instead of hex");
+    printf("  %-15s %s\n","-w32", "Encode with word-safe base32 instead of hex");
+    printf("  %-15s %s\n","-z32", "Encode with zbase32 instead of hex");
     printf("  %-15s %s\n","-64", "Encode with base64 instead of hex");
     printf("  %-15s %s\n","-base64", "Encode with base64 instead of hex");
     printf("  %-15s %s\n","-i64", "Encode with base64 with rearranged characters");
@@ -511,7 +537,11 @@ void CommandLinePrintUsage()
     printf("  %-15s %s\n","-hide-input", "When reading data from stdin in linemode, set the terminal to not echo characters, thus hiding typed input.");
     printf("  %-15s %s\n","-star-input", "When reading data from stdin in linemode replace characters with stars.");
     printf("  %-15s %s\n","-xsel", "Update X11 clipboard and primary selections to the current hash. This works using Xterm command sequences. The xterm resource 'allowWindowOps' must be set to 'true' for this to work.");
-
+    printf("  %-15s %s\n","-clip", "Update X11 clipboard to the current hash. This works using the 'xsel', 'xclip' or 'pbcopy' commands, or if none of those are installed falls back to Xterm clipboard as in the '-xsel' option .");
+    printf("  %-15s %s\n","-qr", "Display the current hash as a qrcode. This requires the 'qrencode' command to be installed, and also an image viewer like fim, feh, or imagemagick display to be installed.");
+    printf("  %-15s %s\n","-qrcode", "Display the current hash as a qrcode. This requires the 'qrencode' command to be installed, and also an image viewer like fim, feh, or imagemagick display to be installed.");
+    printf("  %-15s %s\n","-clipcmd <cmds>", "Comma separated list of clipboard-setter commands to use instead of the defaults.");
+    printf("  %-15s %s\n","-viewcmd <cmds>", "Comma separated list of image-viewer commands to use instead of the defaults.");
     printf("\n\nHashrat can also detect if it's being run under any of the following names (e.g., via symlinks)\n\n");
     printf("  %-15s %s\n","md5sum","run with '-trad -md5'");
     printf("  %-15s %s\n","shasum","run with '-trad -sha1'");

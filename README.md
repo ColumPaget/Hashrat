@@ -50,7 +50,6 @@ OPTIONS
   -?              Print this help
   --version       Print program version
   -version        Print program version
-	-type <type>    Use hash algorithmn <type>. Types can be chained together as a comma-seperated list.
   -md5            Use md5 hash algorithmn
   -sha1           Use sha1 hash algorithmn
   -sha256         Use sha256 hash algorithmn
@@ -62,10 +61,19 @@ OPTIONS
   -jh384          Use jh-384 hash algorithmn
   -jh512          Use jh-512 hash algorithmn
   -hmac           HMAC using specified hash algorithm
+  -totp <secret>  TOTP code from supplied secret (defaults to google authenticator compatible code).
+  -totp <url>     TOTP code from supplied otpauth url.
+	-digits <n>     Produce TOTP code with <n> digits.
+	-period <n>     Produce TOTP code with period/lifetime of <n> seconds.
   -8              Encode with octal instead of hex
   -10             Encode with decimal instead of hex
   -H              Encode with UPPERCASE hexadecimal
   -HEX            Encode with UPPERCASE hexadecimal
+  -32             Encode with base32 instead of hex
+  -base32         Encode with base32 instead of hex
+  -c32            Encode with Crockford base32 instead of hex
+  -w32            Encode with word-safe base32 instead of hex
+  -z32            Encode with zbase32 instead of hex
   -64             Encode with base64 instead of hex
   -base64         Encode with base64 instead of hex
   -i64            Encode with base64 with rearranged characters
@@ -86,52 +94,60 @@ OPTIONS
   -hid            Show hidden (starting with .) files
   -hidden         Show hidden (starting with .) files
   -f <listfile>   Hash files listed in <listfile>
-  -i <pattern>    Only hash items matching <pattern>
-  -x <pattern>    Exclude items matching <pattern>
-  -X <path>       Exclude items listed in file <path>. Items in the file can be wildcards.
-  -name  <patterns> Only hash items matching a comma-seperated list of shell patterns (-name as in the 'find' command)
+  -i <patterns>   Only hash items matching a comma-seperated list of shell patterns
+  -x <patterns>   Exclude items matching a comma-sepearted list of shell patterns
+  -X <file>       Exclude items matching shell patters stored in <file>
+  -name  <patterns> Only hash items matching a comma-seperated list of shell patterns (-name aka 'find')
   -mtime <days>   Only hash items <days> old. Has the same format as the find command, e.g. -10 is younger than ten days, +10 is older than ten, and 10 is ten days old
   -mmin  <mins>   Only hash items <min> minutes old. Has the same format as the find command, e.g. -10 is younger than ten mins, +10 is older than ten, and 10 is ten mins old
   -myear <years>  Only hash items <years> old. Has the same format as the find command, e.g. -10 is younger than ten years, +10 is older than ten, and 10 is ten years old
   -exec           In CHECK or MATCH mode only examine executable files.
   -dups           Search for duplicate files.
   -n <length>     Truncate hashes to <length> bytes
-  -segment <length> Break has up into segments of <length> characters seperated by '-'
+  -segment <length> Break hash up into segments of <length> chars seperated by '-'
   -c              CHECK hashes against list from file (or stdin)
-  -cf             CHECK hashes but only show failures
-  -C              CHECK files against list from file (or stdin) can spot new files
-  -Cf             CHECK files but only show failures
+  -cf             CHECK hashes against list but only show failures
+  -C <dir>        Recursively CHECK directory against list of files on stdin 
+  -Cf <dir>       Recursively CHECK directory against list but only show failures
   -m              MATCH files from a list read from stdin.
   -lm             Read hashes from stdin, upload them to a memcached server (requires the -memcached option).
   -memcached <server> Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
   -mcd <server>   Specify memcached server. (Overrides reading list from stdin if used with -m, -c or -cf).
-  -h <script>     Script to run when a file fails CHECK mode, or is found in MATCH mode. (see 'Hookscripts' below)
-  -hook <script>  Script to run when a file fails CHECK mode, or is found in MATCH mode. (see 'Hookscripts' below)
+  -h <script>     Script to run when a file fails CHECK mode, or is found in MATCH mode.
+  -hook <script>  Script to run when a file fails CHECK mode, or is found in FIND mode
   -color          Use ANSI color codes on output when checking hashes.
   -strict         Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
   -S              Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
   -d              dereference (follow) symlinks
   -fs             Stay on one file system
+  -dir            DirMode: Read all files in directory and create one hash for them!
   -dirmode        DirMode: Read all files in directory and create one hash for them!
   -devmode        DevMode: read from a file EVEN OF IT'S A DEVNODE
   -lines          Read lines from stdin and hash each line independantly.
   -rawlines       Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
   -rl             Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
   -cgi            Run in HTTP CGI mode
-  -xdialog        Run in 'xdialog' (zenity, yad or qarama) mode.
-  -dialog-types <types>  Specify a list of dialog commands and use the first found on the system. Default is 'yad,zenity,qarma'. 
+  -cgi            Run in HTTP CGI mode
+  -xdialog        Run in 'xdialog' (zenity, yad or qarama) mode
+  -dialog-types <list> Specify a list of dialog commands and use the first found on the system. Default is 'yad,zenity,qarma'
   -iprefix <prefix> String to prefix all input before hashing
   -oprefix <prefix> Prefix to add to the front of output hashes
   -net            Treat 'file' arguments as either ssh or http URLs, and pull files over the network and then hash them (Allows hashing of files on remote machines).
                   URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..
   -idfile <path>  Path to an ssh private key file to use to authenticate INSTEAD OF A PASSWORD when pulling files via ssh.
   -xattr          Use eXtended file ATTRibutes. In hash mode, store hashes in the file attributes, in check mode compare against hashes stored in file attributes.
-  -txattr         Use TRUSTED eXtended file ATTRibutes. In hash mode, store hashes in 'trusted' file attributes. 'trusted' attributes can only be read and written by root.
+  -txattr         Use TRUSTED eXtended file ATTRibutes. In hash mode, store hashes in 'trusted' file attributes. 'trusted' attributes can only be read and written by root. Under freebsd this menas SYSTEM attributes.
   -attrs          comma-separated list of filesystem attribute names to be set to the value of the hash.
   -cache          Use hashes stored in 'user' xattr if they're younger than the mtime of the file. This speeds up outputting hashes.
   -u <types>      Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.
   -hide-input     When reading data from stdin in linemode, set the terminal to not echo characters, thus hiding typed input.
   -star-input     When reading data from stdin in linemode replace characters with stars.
+  -xsel           Update X11 clipboard and primary selections to the current hash. This works using Xterm command sequences. The xterm resource 'allowWindowOps' must be set to 'true' for this to work.
+  -clip           Update X11 clipboard to the current hash. This works using the 'xsel', 'xclip' or 'pbcopy' commands, or if none of those are installed falls back to Xterm clipboard as in the '-xsel' option .
+  -qr             Display the current hash as a qrcode. This requires the 'qrencode' command to be installed, and also an image viewer like fim, feh, or imagemagick display to be installed.
+  -qrcode         Display the current hash as a qrcode. This requires the 'qrencode' command to be installed, and also an image viewer like fim, feh, or imagemagick display to be installed.
+  -clipcmd <cmds> Comma separated list of clipboard-setter commands to use instead of the defaults.
+  -viewcmd <cmds> Comma separated list of image-viewer commands to use instead of the defaults.
 ```
 
 
@@ -323,6 +339,16 @@ If run with the '-net' option, hashrat will treat paths starting with 'http://' 
 		hashrat -net ssh://username:password@server/usr/bin/*
  ```
 
+7) As a TOTP authenticator
+
+Hashrat can be used as a TOTP authenticator, and defaults to google-authenticator compatible codes.
+ ```
+		hashrat -otp 3EK4LIB2553CUPA7DBXJMMKDCYTEA2IZA
+ ```
+
+
+
+
 HOOKSCRIPTS
 ===========
 
@@ -371,6 +397,50 @@ SegmentLength=4
 SegmentChar=+
 NoOptions=Y
 ```
+
+
+TOTP MODE
+=========
+
+Hashrat can be used as a TOTP (Time-based One Time Password) authenticator and defaults to google-authenticator compatible codes. The simplest use case is:
+
+```
+hashrat -totp <secret>
+```
+
+It's possible to change the hash, period/lifetime and number of digits in the TOTP code like so:
+
+
+```
+hashrat -totp 3EK4LIB2553CUPA7DB -sha256 -period 90 -digits 8
+```
+
+
+CLIPBOARD OUTPUT
+================
+
+Hashes produced in standard-in input mode and TOTP codes can be pushed to the system clipboard using the `-clip` option. This option first tries to find a command that can set the clipboard, searching for one of 'xsel', 'xclip' or 'pbcopy'. If it can't find any of these, it falls back to using xterm's built in clipboard setting method.
+
+Alternatively the `-xsel` option only attempts to use the xterm clipboard setting method.
+
+The default list of clipboard commands can be overridden using the `-clipcmd` option.
+
+
+
+QRCODE OUTPUT
+=============
+
+Hashes produced in standard-in input mode and TOTP codes can be displayed as qrcodes using the `-qr` or `-qrcode` options. These options require the "qrencode" utility to be installed, and also an image viewer that can be used to display the qrcode image. 
+
+By default hashrat searches for the following image viewers:
+
+```
+imlib2_view,fim,feh,display,xv,phototonic,qimageviewer,pix,sxiv,qimgv,qview,nomacs,geeqie,ristretto,mirage,fotowall,links -g
+```
+
+The default list of image viewers can be overridden using the `-viewcmd` option.
+
+
 
 EXTENDED FILESYSTEM ATTRIBUTES (XATTR)
 ======================================

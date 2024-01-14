@@ -8,6 +8,8 @@
 #include "command-line-args.h"
 #include "filesigning.h"
 #include "cgi.h"
+#include "otp.h"
+#include "output.h"
 #include "xdialog.h"
 
 int HashFromListFile(HashratCtx *Ctx)
@@ -37,7 +39,7 @@ int HashFromListFile(HashratCtx *Ctx)
             HashStartTime=GetTime(TIME_MILLISECS);
             if (HashItem(Ctx, Ctx->HashType, Tempstr, &Stat, &HashStr))
             {
-                HashratOutputInfo(Ctx, Ctx->Out, Tempstr, &Stat, HashStr);
+                HashratOutputFileInfo(Ctx, Ctx->Out, Tempstr, &Stat, HashStr);
                 HashratStoreHash(Ctx, Tempstr, &Stat, HashStr);
             }
             else
@@ -63,32 +65,6 @@ int HashFromListFile(HashratCtx *Ctx)
 }
 
 
-void HashStdInOutput(HashratCtx *Ctx, const char *Hash)
-{
-    char *Tempstr=NULL, *Base64=NULL, *Reformatted=NULL;
-    const char *p_Hash;
-
-    p_Hash=Hash;
-    if (Ctx->Flags & CTX_REFORMAT)
-    {
-        Reformatted=ReformatHash(Reformatted, Hash, Ctx);
-        p_Hash=Reformatted;
-    }
-
-    Tempstr=MCopyStr(Tempstr,p_Hash,"\n",NULL);
-    STREAMWriteString(Tempstr,Ctx->Out);
-
-
-    if (Flags & FLAG_XSELECT)
-    {
-        Base64=EncodeBytes(Base64, p_Hash, StrLen(p_Hash), ENCODE_BASE64);
-        Tempstr=FormatStr(Tempstr,"\x1b]52;cps;%s\x07",Base64);
-        STREAMWriteString(Tempstr,Ctx->Out);
-    }
-
-    Destroy(Tempstr);
-    Destroy(Base64);
-}
 
 
 
@@ -110,7 +86,7 @@ void HashStdIn(HashratCtx *Ctx)
             if (! (Flags & FLAG_RAW)) StripTrailingWhitespace(Tempstr);
             Hash=CopyStr(Hash,"");
             ProcessData(&Hash, Ctx, Tempstr, StrLen(Tempstr));
-            HashStdInOutput(Ctx, Hash);
+            OutputHash(Ctx, Hash, "");
 
             if (Flags & FLAG_HIDE_INPUT) Tempstr=TerminalReadText(Tempstr, TERM_HIDETEXT, In);
             else if (Flags & FLAG_STAR_INPUT) Tempstr=TerminalReadText(Tempstr, TERM_SHOWSTARS, In);
@@ -120,7 +96,7 @@ void HashStdIn(HashratCtx *Ctx)
     else
     {
         HashratHashSingleFile(Ctx, Ctx->HashType, 0, "-", NULL, &Hash);
-        HashStdInOutput(Ctx, Hash);
+        OutputHash(Ctx, Hash, "");
     }
     STREAMDestroy(In);
 
@@ -209,6 +185,10 @@ int main(int argc, char *argv[])
             }
             result=ProcessTargetItems(Ctx);
             if (Ctx->Action==ACT_CHECK) OutputUnmatched(Ctx);
+            break;
+
+        case ACT_OTP:
+            OTPProcess(Ctx);
             break;
 
         //Load matches to an mcached server

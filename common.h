@@ -2,9 +2,10 @@
 #ifndef HASHRAT_COMMON_H
 #define HASHRAT_COMMON_H
 
-#include "libUseful-4/libUseful.h"
+#include "libUseful-5/libUseful.h"
 #include "glob.h"
 
+#define VERSION "1.16"
 
 #define ACT_NONE 0
 #define ACT_HASH 1
@@ -25,7 +26,7 @@
 #define ACT_FINDDUPLICATES 23
 #define ACT_BACKUP 24
 #define ACT_CHECKBACKUP 25
-
+#define ACT_OTP 26
 
 #define FLAG_NEXTARG 1
 //Two flags with the same values, but used in different contexts
@@ -33,14 +34,16 @@
 #define FLAG_VERBOSE 2
 //---------------------------
 #define FLAG_DEVMODE         8
+#define FLAG_OUTPUT_FAILS   16 
 #define FLAG_DIR_INFO       32
 #define FLAG_TRAD_OUTPUT    64
 #define FLAG_BSD_OUTPUT    128 
-#define FLAG_XSELECT       256 
 #define FLAG_XATTR         512
 #define FLAG_TXATTR       1024
 #define FLAG_MEMCACHED    2048
-#define FLAG_OUTPUT_FAILS 8192 
+#define FLAG_XSELECT      4096 
+#define FLAG_CLIPBOARD    8192 
+#define FLAG_QRCODE      16384 
 #define FLAG_FULLCHECK   32768
 #define FLAG_HMAC        65536
 #define FLAG_HIDE_INPUT 131072
@@ -96,7 +99,6 @@
 
 #define IGNORE -1
 
-#define VERSION "1.15"
 
 
 typedef struct
@@ -144,7 +146,7 @@ extern uint64_t HashStartTime;
 TFingerprint *TFingerprintCreate(const char *Hash, const char *HashType, const char *Data, const char *Path);
 void HashratCtxDestroy(void *p_Ctx);
 void HashratStoreHash(HashratCtx *Ctx, const char *Path, struct stat *Stat, const char *Hash);
-int HashratOutputInfo(HashratCtx *Ctx, STREAM *S, const char *Path, struct stat *Stat, const char *Hash);
+int HashratOutputFileInfo(HashratCtx *Ctx, STREAM *S, const char *Path, struct stat *Stat, const char *Hash);
 void RunHookScript(const char *Hook, const char *Path, const char *Other);
 char *ReformatHash(char *RetStr, const char *Str, HashratCtx *Ctx);
 

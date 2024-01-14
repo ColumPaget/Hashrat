@@ -1,4 +1,5 @@
 #include "include-exclude.h"
+#include <fnmatch.h>
 
 void IncludeExcludeAdd(HashratCtx *Ctx, int Type, const char *Item)
 {

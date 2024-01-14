@@ -1,6 +1,7 @@
 #include "xdialog.h"
 #include "frontend.h"
-
+#include "encodings.h"
+#include "files.h"
 
 char *XDialogFindXDialogCommand(char *Cmd, const char *XDialogCommandList)
 {
