@@ -63,8 +63,8 @@ OPTIONS
   -hmac           HMAC using specified hash algorithm
   -totp <secret>  TOTP code from supplied secret (defaults to google authenticator compatible code).
   -totp <url>     TOTP code from supplied otpauth url.
-	-digits <n>     Produce TOTP code with <n> digits.
-	-period <n>     Produce TOTP code with period/lifetime of <n> seconds.
+  -digits <n>     Produce TOTP code with <n> digits.
+  -period <n>     Produce TOTP code with period/lifetime of <n> seconds.
   -8              Encode with octal instead of hex
   -10             Encode with decimal instead of hex
   -H              Encode with UPPERCASE hexadecimal
@@ -343,7 +343,7 @@ If run with the '-net' option, hashrat will treat paths starting with 'http://' 
 
 Hashrat can be used as a TOTP authenticator, and defaults to google-authenticator compatible codes.
  ```
-		hashrat -otp 3EK4LIB2553CUPA7DBXJMMKDCYTEA2IZA
+		hashrat -totp 3EK4LIB2553CUPA7DBXJMMKDCYTEA2IZA
  ```
 
 

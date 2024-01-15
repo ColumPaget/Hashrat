@@ -1,6 +1,6 @@
 CC = @CC@
 CFLAGS = @CFLAGS@
-LIBS = @LIBS@ @STATIC_LIBS@
+LIBS = @STATIC_LIBS@ @LIBS@ 
 INSTALL=@INSTALL@
 prefix=@prefix@
 bindir=$(prefix)@bindir@
