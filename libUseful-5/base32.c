@@ -60,7 +60,6 @@ for (ptr=Tempstr; ptr < Tempstr+StrLen(Tempstr); ptr+=8)
 }
 
 val=p_Out - Out;
-if (val > 0) val=val-1;
 
 Destroy(Tempstr);
 

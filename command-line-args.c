@@ -149,8 +149,8 @@ HashratCtx *CommandLineParseArg0()
     SetVar(Ctx->Vars, "OTP:Digits", "6");
     SetVar(Ctx->Vars, "OTP:Period", "30");
     SetVar(Ctx->Vars,"DialogTypes","yad,zenity,qarma");
-		SetVar(Ctx->Vars, "clipboard_commands", "xsel -i -p -b,xclip -selection clipboard,pbcopy");
-		SetVar(Ctx->Vars, "image_viewers", "imlib2_view,fim,feh,display,xv,phototonic,qimageviewer,pix,sxiv,qimgv,qview,nomacs,geeqie,ristretto,mirage,fotowall,links -g");
+    SetVar(Ctx->Vars, "clipboard_commands", "xsel -i -p -b,xclip -selection clipboard,pbcopy");
+    SetVar(Ctx->Vars, "image_viewers", "imlib2_view,fim,feh,display,xv,phototonic,qimageviewer,pix,sxiv,qimgv,qview,nomacs,geeqie,ristretto,mirage,fotowall,links -g");
     Ctx->SegmentChar='-';
 
 

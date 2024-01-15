@@ -39,21 +39,21 @@ void OTPParse(HashratCtx *Ctx, const char *Input)
 
     Ctx->Action=ACT_OTP;
 
-		if (strncmp(Input, "otpauth:", 8)==0)
-		{
-    ParseURL(Input, &Proto, &Host, NULL, NULL, NULL, &Path, &Args);
-
-    ptr=GetNameValuePair(Args, "&", "=", &Name, &Value);
-    while (ptr)
+    if (strncmp(Input, "otpauth:", 8)==0)
     {
-        if (strcasecmp(Name, "algorithm")==0) SetVar(Ctx->Vars, "HashType", Value);
-        if (strcasecmp(Name, "secret")==0) SetVar(Ctx->Vars, "EncryptionKey", Value);
-        if (strcasecmp(Name, "digits")==0) SetVar(Ctx->Vars, "OTP:Digits", Value);
-        if (strcasecmp(Name, "period")==0) SetVar(Ctx->Vars, "OTP:Period", Value);
-        ptr=GetNameValuePair(ptr, "&", "=", &Name, &Value);
+        ParseURL(Input, &Proto, &Host, NULL, NULL, NULL, &Path, &Args);
+
+        ptr=GetNameValuePair(Args, "&", "=", &Name, &Value);
+        while (ptr)
+        {
+            if (strcasecmp(Name, "algorithm")==0) SetVar(Ctx->Vars, "HashType", Value);
+            if (strcasecmp(Name, "secret")==0) SetVar(Ctx->Vars, "EncryptionKey", Value);
+            if (strcasecmp(Name, "digits")==0) SetVar(Ctx->Vars, "OTP:Digits", Value);
+            if (strcasecmp(Name, "period")==0) SetVar(Ctx->Vars, "OTP:Period", Value);
+            ptr=GetNameValuePair(ptr, "&", "=", &Name, &Value);
+        }
     }
-		}
-		else SetVar(Ctx->Vars, "EncryptionKey", Input);
+    else SetVar(Ctx->Vars, "EncryptionKey", Input);
 
     Destroy(Proto);
     Destroy(Host);

@@ -72,7 +72,7 @@ static void OutputQRCode(HashratCtx *Ctx, const char *Text)
     STREAM *S;
 
 
-		waitpid(-1, NULL, WNOHANG);
+    waitpid(-1, NULL, WNOHANG);
     if (fork() ==0)
     {
         PNGPath=FormatStr(PNGPath, "/tmp/%d.png", getpid());
