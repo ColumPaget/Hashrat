@@ -5,7 +5,7 @@
 #include "libUseful-5/libUseful.h"
 #include "glob.h"
 
-#define VERSION "1.18"
+#define VERSION "1.19"
 
 #define ACT_NONE 0
 #define ACT_HASH 1

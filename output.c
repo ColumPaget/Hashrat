@@ -207,10 +207,10 @@ void OutputHash(HashratCtx *Ctx, const char *Hash, const char *Comment)
     Tempstr=MCopyStr(Tempstr, p_Hash, "  ", Comment, "\n", NULL);
     STREAMWriteString(Tempstr, Ctx->Out);
 
-    if (Flags & FLAG_CLIPBOARD) OutputToClipboard(Ctx, Tempstr);
-    else if (Flags & FLAG_XSELECT) OutputXtermSelect(Ctx, Tempstr);
+    if (Flags & FLAG_CLIPBOARD) OutputToClipboard(Ctx, p_Hash);
+    else if (Flags & FLAG_XSELECT) OutputXtermSelect(Ctx, p_Hash);
 
-    if (Flags & FLAG_QRCODE) OutputQRCode(Ctx, Tempstr);
+    if (Flags & FLAG_QRCODE) OutputQRCode(Ctx, p_Hash);
 
     Destroy(Reformatted);
     Destroy(Tempstr);
