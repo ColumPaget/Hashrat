@@ -105,12 +105,13 @@ static int STREAMAuthProcess(STREAM *S, const char *AuthTypes)
 
 int STREAMAuth(STREAM *S)
 {
+#ifdef HAVE_LIBSSL
     const char *ptr;
 
     ptr=STREAMGetValue(S, "Authenticator");
     if (! StrValid(ptr)) return(TRUE);
 
     return(STREAMAuthProcess(S, ptr));
-
+#endif
     return(FALSE);
 }
