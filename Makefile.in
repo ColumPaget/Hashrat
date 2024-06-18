@@ -74,7 +74,7 @@ check: hashrat
 	@./check.sh
 
 clean:
-	-rm -f *.o */*.o */*.a */*.so *.orig $(EXE)
+	-rm -f *.o */*.o */*.a */*.so *.orig *.out $(EXE)
 	-rm -f config.log config.status */config.log */config.status
 	-rm -fr autom4te.cache */autom4te.cache
 

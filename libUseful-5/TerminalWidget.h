@@ -5,7 +5,7 @@ Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 
 /*
  *
- * You probably have no interest in this module, it provides shared functionality used by TerminalMenu and TerminalChoice
+ * You probably have no interest in this module, it provides shared functionality used by TerminalMenu, TerminalChoice and TerminalProgress
  */
 
 

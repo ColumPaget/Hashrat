@@ -1,15 +1,45 @@
 
-AC_INIT([main.c])
+AC_INIT
+AC_CONFIG_SRCDIR([main.c])
 
 
 AC_PROG_CC 
-AC_LANG_C 
+AC_LANG([C]) 
 AC_PROG_MAKE_SET 
 AC_PROG_INSTALL 
-AC_HEADER_STDC 
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+ 
 AC_SYS_LARGEFILE
 
+AC_ARG_ENABLE(fortify, [  --enable-fortify            use 'FORTIFY_SOURCE=3' to harden source code], cf_use_fortify=$enableval, cf_use_fortify=no )
+AC_ARG_ENABLE(stack-protect, [  --enable-stack-protect      use '-fstack-protector-strong' to harden source code], cf_use_stackprotect=$enableval, cf_use_stackprotect=no )
+AC_ARG_ENABLE(harden, [  --enable-harden             use 'FORTIFY_SOURCE=3' and stack-protect to harden source code], cf_use_harden=$enableval, cf_use_harden=no )
+
+
+
+if test "$cf_use_harden" = "yes"
+then
+cf_use_fortify="yes"
+cf_use_stackprotect="yes"
+fi
+
+
+if test "$cf_use_fortify" = "yes"
+then
+CFLAGS="$CFLAGS -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3"
+fi
+
+if test "$cf_use_stackprotect" = "yes"
+then
+CFLAGS="$CFLAGS -fstack-protector-strong"
+fi
+
+
 AC_ARG_ENABLE(xattr, [  --enable-xattr       enable extended file attributes support], cf_enable_xattr=$enableval )
+
 
 if test "$cf_enable_xattr" = "yes"
 then
@@ -29,6 +59,16 @@ then
 		AC_DEFINE([USE_XATTR], [1])
 	fi
 fi
+
+
+AC_ARG_ENABLE(zlib, [  --enable-zlib               use ZLib Compression], cf_use_zlib=$enableval, cf_use_zlib=yes)
+
+if test "$cf_use_zlib" = "yes" -o "$cf_use_ssl" = "yes"
+then
+AC_CHECK_LIB(z,deflate,,)
+cf_have_libz=$ac_cv_lib_z_deflate
+fi
+
 
 AC_ARG_ENABLE(ssl, [  --enable-ssl       use Secure Sockets Layer], cf_use_ssl=$enableval, cf_use_ssl=yes )
 
@@ -127,5 +167,6 @@ echo
 echo
 
 dnl read Makefile.in and write Makefile 
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
 

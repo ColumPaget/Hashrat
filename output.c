@@ -204,7 +204,12 @@ void OutputHash(HashratCtx *Ctx, const char *Hash, const char *Comment)
         p_Hash=Reformatted;
     }
 
-    Tempstr=MCopyStr(Tempstr, p_Hash, "  ", Comment, "\n", NULL);
+    //only add "  " if there's a comment we need to keep seperated from the has
+    //otherwise we'll make problems for programs (like ./check.sh) that read hash from hashrat
+    Tempstr=CopyStr(Tempstr, p_Hash);
+    if (StrValid(Comment)) Tempstr=MCatStr(Tempstr, "  ", Comment, NULL);
+    Tempstr=CatStr(Tempstr, "\n");
+
     STREAMWriteString(Tempstr, Ctx->Out);
 
     if (Flags & FLAG_CLIPBOARD) OutputToClipboard(Ctx, p_Hash);

@@ -732,6 +732,7 @@ static const char *ParserCMONItems(int ParserType, const char *Doc, ListNode *Pa
         {
         case '#':
             ptr=GetToken(ptr,"\n",&Token,0);
+            Token=CopyStr(Token,"");
             break;
 
         case ':':
@@ -793,6 +794,80 @@ static const char *ParserCMONItems(int ParserType, const char *Doc, ListNode *Pa
 
 
 
+#define INI_TOKENS " |	|#|=|;|[|]|\r|\n"
+
+static const char *ParserINIItems(int ParserType, const char *Doc, ListNode *Parent, int IndentLevel)
+{
+    const char *ptr, *p_prev;
+    char *Token=NULL, *PrevToken=NULL;
+    int BreakOut=FALSE;
+
+
+    ptr=Doc;
+    while (ptr && (! BreakOut))
+    {
+        //while (isspace(*ptr)) ptr++;
+				p_prev=ptr;
+        ptr=GetToken(ptr, INI_TOKENS, &Token, GETTOKEN_MULTI_SEP|GETTOKEN_INCLUDE_SEP|GETTOKEN_HONOR_QUOTES);
+
+        switch (*Token)
+        {
+        case '#':
+        case ';':
+            ptr=GetToken(ptr,"\n",&Token,0);
+            Token=CopyStr(Token,"");
+            break;
+
+        case '[':
+						if (IndentLevel > 0)
+						{
+							Destroy(PrevToken);
+							Destroy(Token);
+							return(p_prev);
+						}
+
+            if (! StrValid(PrevToken))
+            {
+                ptr=GetToken(ptr,"]",&Token,0);
+                ptr=ParserAddNewStructure(ptr, ParserType, Parent, ITEM_ENTITY, Token, IndentLevel+1);
+                //we don't want token to be used as a 'PrevToken', because we've already consumed it
+                Token=CopyStr(Token,"");
+            }
+            else
+            {
+                PrevToken=CatStr(PrevToken, Token);
+                ptr=GetToken(ptr,"=",&Token,0);
+                PrevToken=CatStr(PrevToken, Token);
+            }
+            break;
+
+        case '=':
+            ptr=GetToken(ptr, "\n", &Token, GETTOKEN_QUOTES);
+            StripLeadingWhitespace(Token);
+            StripTrailingWhitespace(Token);
+            StripQuotes(PrevToken);
+            StripQuotes(Token);
+            ParserAddValue(Parent, PrevToken, Token);
+            break;
+
+        case ' ':
+        case '	':
+        case '\r':
+            break;
+
+        default:
+            PrevToken=CopyStr(PrevToken, Token);
+            StripTrailingWhitespace(PrevToken);
+            StripLeadingWhitespace(PrevToken);
+            break;
+        }
+    }
+
+    DestroyString(PrevToken);
+    DestroyString(Token);
+    return(ptr);
+}
+
 
 
 
@@ -823,6 +898,7 @@ static const char *ParserURLItems(int ParserType, const char *Doc, ListNode *Par
 
 const char *ParserParseItems(int Type, const char *Doc, ListNode *Parent, int IndentLevel)
 {
+
     switch (Type)
     {
     case PARSER_XML:
@@ -846,7 +922,9 @@ const char *ParserParseItems(int Type, const char *Doc, ListNode *Parent, int In
     case PARSER_CMON:
         return(ParserCMONItems(Type, Doc, Parent, IndentLevel));
         break;
-
+    case PARSER_INI:
+        return(ParserINIItems(Type, Doc, Parent, IndentLevel));
+        break;
     }
     return(NULL);
 }
@@ -875,8 +953,12 @@ ListNode *ParserParseDocument(const char *TypeStr, const char *Doc)
     Items=ListCreate();
     ptr=Doc;
     while (isspace(*ptr)) ptr++;
-    if (*ptr=='{') ptr++;
-    if (*ptr=='[') ptr++;
+
+    if (Type == PARSER_JSON)
+    {
+        if (*ptr=='{') ptr++;
+        if (*ptr=='[') ptr++;
+    }
     ParserParseItems(Type, ptr, Items, 0);
 
     fflush(NULL);

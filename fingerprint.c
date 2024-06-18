@@ -100,7 +100,7 @@ TFingerprint *TFingerprintParse(const char *Data)
         ptr=GetNameValuePair(Data," ","=",&Name,&Value);
         while (ptr)
         {
-            if (StrLen(Name))
+            if (StrValid(Name))
             {
                 if (strcmp(Name,"path")==0) FP->Path=UnQuoteStr(FP->Path,Value);
                 if (strcmp(Name,"size")==0)
@@ -149,7 +149,7 @@ TFingerprint *TFingerprintParse(const char *Data)
         else ParseTradFormat(Data, &FP->Hash, &FP->Path);
     }
 
-    if (StrLen(FP->Hash)) strlwr(FP->Hash);
+    if (StrValid(FP->Hash)) strlwr(FP->Hash);
     Destroy(Name);
     Destroy(Value);
 

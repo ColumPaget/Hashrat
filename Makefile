@@ -1,10 +1,10 @@
 CC = gcc
-CFLAGS = -g -O2
-LIBS = libUseful-5/libUseful.a -lssl -lcrypto  
+CFLAGS = -g -O2 -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong
+LIBS = libUseful-5/libUseful.a -lssl -lcrypto -lz  
 INSTALL=/usr/bin/install -c
-prefix=/usr
+prefix=/usr/local
 bindir=$(prefix)${exec_prefix}/bin
-FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DHAVE_STDIO_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_STRINGS_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_UNISTD_H=1 -DSTDC_HEADERS=1 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1
+FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DHAVE_STDIO_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_STRINGS_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_UNISTD_H=1 -DSTDC_HEADERS=1 -DHAVE_LIBZ=1 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1
 OBJ=common.o encodings.o command-line-args.o ssh.o http.o fingerprint.o include-exclude.o files.o filesigning.o xattr.o check-hash.o find.o otp.o memcached.o frontend.o cgi.o xdialog.o output.o
 EXE=hashrat
 
@@ -74,7 +74,7 @@ check: hashrat
 	@./check.sh
 
 clean:
-	-rm -f *.o */*.o */*.a */*.so *.orig $(EXE)
+	-rm -f *.o */*.o */*.a */*.so *.orig *.out $(EXE)
 	-rm -f config.log config.status */config.log */config.status
 	-rm -fr autom4te.cache */autom4te.cache
 

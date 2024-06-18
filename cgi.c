@@ -19,8 +19,8 @@ static void CGIPrintSelect(const char *Name, const char *CurrType, ListNode *Ite
     Curr=ListGetNext(Items);
     while(Curr)
     {
-        if (StrValid(CurrType) && (strcmp(Curr->Tag,CurrType)==0)) printf("<option selected value=%s> %s\r\n",Curr->Tag, Curr->Item);
-        else printf("<option value=%s> %s\r\n",Curr->Tag, Curr->Item);
+        if (StrValid(CurrType) && (strcmp(Curr->Tag,CurrType)==0)) printf("<option selected value=%s> %s\r\n",Curr->Tag, (char *) Curr->Item);
+        else printf("<option value=%s> %s\r\n",Curr->Tag, (char *) Curr->Item);
         Curr=ListGetNext(Curr);
     }
     printf("</select>\r\n");
@@ -146,7 +146,7 @@ static void CGIDrawHashResult(const char *Hash)
     printf("<tr><th bgcolor=red><font color=white>Your Hash is:</font></th></tr>\r\n");
 //	printf("<tr><td><b>%s</b></td>\r\n",Hash);
 //	printf("<tr><td>Here it is in a text box so you can 'select all'</td>\r\n");
-    printf("<tr><td align=center><textarea align=center rows=1 cols=%d readonly style=\"font-weight: bold;  font-size:16px\">%s</textarea></td>\n",StrLen(Hash)+2, Hash);
+    printf("<tr><td align=center><textarea align=center rows=1 cols=%lu readonly style=\"font-weight: bold;  font-size:16px\">%s</textarea></td>\n",StrLen(Hash)+2, Hash);
     printf("</table>\r\n");
     printf("<p /><p />\r\n");
 }
@@ -219,8 +219,7 @@ void CGIDisplayPage()
 //as root, or something like that, let's try to chroot, so no weird attacks are possible
 
 //shouldn't work, because we shouldn't be running as root
-    chdir("/var/empty");
-    chroot(".");
+    if (chdir("/var/empty")==0) chroot(".");
 
 //Send HTTP Headers
     printf("Content-type: text/html\r\n");
@@ -249,7 +248,7 @@ void CGIDisplayPage()
         i=MatchTokenFromList(Encoding, EncodingNames, 0);
         if (i > -1) Ctx->Encoding=Encodings[i];
 
-        if (StrLen(LineEnding))
+        if (StrValid(LineEnding))
         {
             if (strcmp(LineEnding, "crlf")==0) Text=CatStr(Text,"\r\n");
             if (strcmp(LineEnding, "lf")==0) Text=CatStr(Text,"\n");
@@ -273,9 +272,9 @@ void CGIDisplayPage()
         printf("<input type=hidden name=\"LineEnding\" value=\"%s\">\n",LineEnding);
         printf("<input type=hidden name=\"OutputLength\" value=\"%d\">\n",OutputLength);
         printf("<input type=hidden name=\"SegmentLength\" value=\"%d\">\n",SegmentLength);
-        if (StrLen(SegmentChar)) printf("<input type=hidden name=\"SegmentChar\" value=\"%s\">\n",SegmentChar);
+        if (StrValid(SegmentChar)) printf("<input type=hidden name=\"SegmentChar\" value=\"%s\">\n",SegmentChar);
         printf("<input type=hidden name=\"NoOptions\" value=\"Y\">\n");
-        //if (StrLen(OptionsFile)) printf("<input type=hidden name=\"OptionsFile\" value=\"%d\">\n",OptionsFile);
+        //if (StrValid(OptionsFile)) printf("<input type=hidden name=\"OptionsFile\" value=\"%d\">\n",OptionsFile);
     }
     else CGIDisplayOptions(HashType, Encoding, LineEnding, OutputLength);
 

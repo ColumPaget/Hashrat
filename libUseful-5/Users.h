@@ -42,7 +42,13 @@ int SwitchGroup(const char *Group);
 
 //returns a string pointing to a users home directory. DO NOT FREE THIS STRING. Take a copy of it, as it's
 //an internal buffer and will change on the next call to this function
-char *GetCurrUserHomeDir();
+const char *GetUserHomeDir(const char *User);
+
+
+//returns a string pointing to the CURRENT USER'S home directory.
+// DO NOT FREE THIS STRING. Take a copy of it, as it's
+//an internal buffer and will change on the next call to this function
+const char *GetCurrUserHomeDir();
 
 
 #ifdef __cplusplus

@@ -32,6 +32,7 @@ void TerminalWidgetParseConfig(TERMWIDGET *TW, const char *Config)
     ptr=GetNameValuePair(Config, "\\S", "=", &Name, &Value);
     while (ptr)
     {
+        strrep(Name, '-', '_');
         switch (*Name)
         {
         case 'x':
@@ -50,12 +51,19 @@ void TerminalWidgetParseConfig(TERMWIDGET *TW, const char *Config)
 
         case 'c':
             if (strcasecmp(Name, "cursor")==0) TW->CursorLeft=CopyStr(TW->CursorLeft, Value);
-            else if (strcasecmp(Name, "choices")==0) TerminalWidgetSetOptions(TW, Value);
+            else if (strcasecmp(Name, "cursor_left")==0) TW->CursorLeft=CopyStr(TW->CursorLeft, Value);
+            else if (strcasecmp(Name, "cursor_right")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
             else if (strcasecmp(Name, "cursor_attribs")==0) TW->CursorAttribs=CopyStr(TW->CursorAttribs, Value);
+            else if (strcasecmp(Name, "choices")==0) TerminalWidgetSetOptions(TW, Value);
             break;
 
         case 'l':
-            if (strcasecmp(Name, "left-cursor")==0) TW->CursorLeft=CopyStr(TW->CursorLeft, Value);
+            if (strcasecmp(Name, "left_cursor")==0) TW->CursorLeft=CopyStr(TW->CursorLeft, Value);
+            if (strcasecmp(Name, "left_contain")==0) SetVar(TW->Options, "LeftContainer", Value);
+            break;
+
+        case 'h':
+            if (strcasecmp(Name, "height")==0) TW->high=atoi(Value);
             break;
 
         case 'o':
@@ -64,16 +72,26 @@ void TerminalWidgetParseConfig(TERMWIDGET *TW, const char *Config)
 
         case 'p':
             if (strcasecmp(Name, "prompt")==0) TW->Text=CopyStr(TW->Text, Value);
+            if (strcasecmp(Name, "progress")==0) TW->CursorLeft=CopyStr(TW->CursorLeft, Value);
+            if (strcasecmp(Name, "progress_attribs")==0) TW->SelectedAttribs=CopyStr(TW->SelectedAttribs, Value);
             break;
 
         case 'r':
-            if (strcasecmp(Name, "right-cursor")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
+            if (strcasecmp(Name, "right_cursor")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
+            if (strcasecmp(Name, "right_contain")==0) SetVar(TW->Options, "RightContainer", Value);
+            if (strcasecmp(Name, "remain")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
+            if (strcasecmp(Name, "remaining")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
+            if (strcasecmp(Name, "remainder")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
             break;
 
 
         case 's':
             if (strcasecmp(Name, "selected_attribs")==0) TW->SelectedAttribs=CopyStr(TW->SelectedAttribs, Value);
-            else if (strcasecmp(Name, "select-right")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
+            else if (strcasecmp(Name, "select_right")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
+            break;
+
+        case 'w':
+            if (strcasecmp(Name, "width")==0) TW->wid=atoi(Value);
             break;
         }
 

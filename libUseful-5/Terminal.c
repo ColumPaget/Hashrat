@@ -322,9 +322,9 @@ void TerminalInternalConfig(const char *Config, int *ForeColor, int *BackColor, 
             if (strcasecmp(Name,"mouse")==0) *Flags=TERM_MOUSE;
             break;
 
-	case 'n':
+        case 'n':
             if (strcasecmp(Name,"nocolor")==0) *Flags=TERM_NOCOLOR;
-	    break;
+            break;
 
         case 'r':
         case 'R':
@@ -524,7 +524,7 @@ const char *TerminalParseColor(const char *Str, int *Fg, int *Bg)
         *Fg=ANSI_WHITE + offset;
         break;
     case 'W':
-        *Fg=ANSI_WHITE + offset;
+        *Bg=ANSI_WHITE + offset;
         break;
     case 'y':
         *Fg=ANSI_YELLOW + offset;
@@ -656,7 +656,7 @@ const char *TerminalFormatSubStr(const char *Str, char **RetStr, STREAM *Term)
                 Fg=0;
                 Bg=0;
                 ptr=TerminalParseColor(ptr, &Fg, &Bg);
-		//if we have a Term object, then TERM_STREAM_NOCOLOR must not be set
+                //if we have a Term object, then TERM_STREAM_NOCOLOR must not be set
                 if ((! Term) || (! (Term->Flags & TERM_STREAM_NOCOLOR))) *RetStr=TerminalCommandStr(*RetStr, TERM_COLOR, Fg, Bg);
                 break;
 

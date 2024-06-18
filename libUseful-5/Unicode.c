@@ -173,7 +173,7 @@ char *UnicodeStrFromNameAtLevel(char *RetStr, int UnicodeLevel, const char *Name
 
     Tempstr=CopyStr(Tempstr, LibUsefulGetValue("Unicode:NamesFile"));
     if (StrValid(Tempstr)) Tempstr=CopyStr(Tempstr, getenv("UNICODE_NAMES_FILE"));
-    if (! StrValid(Tempstr)) Tempstr=CopyStr(Tempstr, "/etc/unicode-names.conf");
+    if (! StrValid(Tempstr)) Tempstr=MCopyStr(Tempstr, SYSCONFDIR,  "unicode-names.conf", NULL);
 
     S=STREAMOpen(Tempstr, "r");
     if (S)

@@ -117,7 +117,6 @@ static int IncludeExcludeCheckFilenames(HashratCtx *Ctx, const char *Path, struc
 
             	case INEX_EXCLUDE_DIR:
             	if (strncmp(mptr,dptr,StrLen(mptr))==0) result=FALSE;
-            	printf("FNMD: [%s] [%s] %d\n",mptr,dptr,result);
             	break;
             */
         }

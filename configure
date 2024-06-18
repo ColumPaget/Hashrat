@@ -707,7 +707,11 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_largefile
+enable_fortify
+enable_stack_protect
+enable_harden
 enable_xattr
+enable_zlib
 enable_ssl
 with_system_libuseful
 '
@@ -1336,7 +1340,11 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-largefile     omit support for large files
+  --enable-fortify            use 'FORTIFY_SOURCE=3' to harden source code
+  --enable-stack-protect      use '-fstack-protector-strong' to harden source code
+  --enable-harden             use 'FORTIFY_SOURCE=3' and stack-protect to harden source code
   --enable-xattr       enable extended file attributes support
+  --enable-zlib               use ZLib Compression
   --enable-ssl       use Secure Sockets Layer
 
 Optional Packages:
@@ -2329,6 +2337,7 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
 
 
 
@@ -3466,6 +3475,8 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
 
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
 
 ac_header= ac_cache=
 for ac_item in $ac_header_c_list
@@ -3564,9 +3575,6 @@ fi
 printf "%s\n" "$ac_cv_path_GREP" >&6; }
  GREP="$ac_cv_path_GREP"
 
-
-# Autoupdate added the next two lines to ensure that your configure
-# script's behavior did not change.  They are probably safe to remove.
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for egrep" >&5
 printf %s "checking for egrep... " >&6; }
@@ -3847,11 +3855,57 @@ rm -rf conftest*
 fi
 
 
+# Check whether --enable-fortify was given.
+if test ${enable_fortify+y}
+then :
+  enableval=$enable_fortify; cf_use_fortify=$enableval
+else $as_nop
+  cf_use_fortify=no
+fi
+
+# Check whether --enable-stack-protect was given.
+if test ${enable_stack_protect+y}
+then :
+  enableval=$enable_stack_protect; cf_use_stackprotect=$enableval
+else $as_nop
+  cf_use_stackprotect=no
+fi
+
+# Check whether --enable-harden was given.
+if test ${enable_harden+y}
+then :
+  enableval=$enable_harden; cf_use_harden=$enableval
+else $as_nop
+  cf_use_harden=no
+fi
+
+
+
+
+if test "$cf_use_harden" = "yes"
+then
+cf_use_fortify="yes"
+cf_use_stackprotect="yes"
+fi
+
+
+if test "$cf_use_fortify" = "yes"
+then
+CFLAGS="$CFLAGS -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3"
+fi
+
+if test "$cf_use_stackprotect" = "yes"
+then
+CFLAGS="$CFLAGS -fstack-protector-strong"
+fi
+
+
 # Check whether --enable-xattr was given.
 if test ${enable_xattr+y}
 then :
   enableval=$enable_xattr; cf_enable_xattr=$enableval
 fi
+
 
 
 if test "$cf_enable_xattr" = "yes"
@@ -3926,6 +3980,65 @@ fi
 
 	fi
 fi
+
+
+# Check whether --enable-zlib was given.
+if test ${enable_zlib+y}
+then :
+  enableval=$enable_zlib; cf_use_zlib=$enableval
+else $as_nop
+  cf_use_zlib=yes
+fi
+
+
+if test "$cf_use_zlib" = "yes" -o "$cf_use_ssl" = "yes"
+then
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for deflate in -lz" >&5
+printf %s "checking for deflate in -lz... " >&6; }
+if test ${ac_cv_lib_z_deflate+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lz  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char deflate ();
+int
+main (void)
+{
+return deflate ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_z_deflate=yes
+else $as_nop
+  ac_cv_lib_z_deflate=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_deflate" >&5
+printf "%s\n" "$ac_cv_lib_z_deflate" >&6; }
+if test "x$ac_cv_lib_z_deflate" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBZ 1" >>confdefs.h
+
+  LIBS="-lz $LIBS"
+
+fi
+
+cf_have_libz=$ac_cv_lib_z_deflate
+fi
+
 
 # Check whether --enable-ssl was given.
 if test ${enable_ssl+y}

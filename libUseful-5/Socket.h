@@ -204,6 +204,10 @@ int TCPConnect(const char *Host, int Port, const char *Config);
 int STREAMNetConnect(STREAM *S, const char *Proto, const char *Host, int Port, const char *Config);
 int STREAMConnect(STREAM *S, const char *URL, const char *Config);
 
+//Send a UDP dgram (or maybe unix socket dgram) 
+int STREAMSendDgram(STREAM *S, const char *Host, int Port, char *Data, int len);
+
+
 //these are internal functions that you won't usually be concerned with
 int STREAMProtocolConnect(STREAM *S, const char *URL, const char *Config);
 int STREAMDirectConnect(STREAM *S, const char *URL, int Flags);

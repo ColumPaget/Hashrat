@@ -19,6 +19,8 @@ and the following 'tilde command' formatting values
 ~B        switch background to blue
 ~n        switch color to black ('night' or 'noir')
 ~N        switch background to black ('night' or 'noir')
+~w        switch color to white
+~W        switch background to white
 ~y        switch color to yellow
 ~Y        switch background to yellow
 ~m        switch color to magenta
@@ -32,6 +34,8 @@ and the following 'tilde command' formatting values
 ~+B       switch background to bright blue
 ~+n       switch color to bright black ('night' or 'noir')
 ~+N       switch background to bright black ('night' or 'noir')
+~+w       switch color to bright white
+~+w       switch background to bright white 
 ~+y       switch color to bright yellow
 ~+Y       switch background to bright yellow
 ~+m       switch color to bright magenta

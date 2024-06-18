@@ -107,7 +107,24 @@ int SwitchGroup(const char *NewGroup)
 
 
 
-char *GetCurrUserHomeDir()
+
+const char *GetUserHomeDir(const char *User)
+{
+    struct passwd *pwent;
+
+    if (! StrValid(User)) return(NULL);
+    pwent=getpwnam(User);
+    if (! pwent)
+    {
+        RaiseError(ERRFLAG_ERRNO, "getpwuid","Failed to get info for user [%s]", User);
+        return(NULL);
+    }
+    return(pwent->pw_dir);
+}
+
+
+
+const char *GetCurrUserHomeDir()
 {
     struct passwd *pwent;
 

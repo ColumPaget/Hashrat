@@ -215,7 +215,7 @@ static int OAuthParseReply(OAUTH *Ctx, const char *ContentType, const char *Repl
             Curr=ListGetNext(P);
             while (Curr)
             {
-                if (LibUsefulDebugActive()) fprintf(stderr, "OAuthParseReply: SetVar: [%s] [%s]\n", Curr->Tag, Curr->Item);
+                if (LibUsefulDebugActive()) fprintf(stderr, "OAuthParseReply: SetVar: [%s] [%s]\n", Curr->Tag, (char *) Curr->Item);
                 SetVar(Ctx->Vars, Curr->Tag, (char *) Curr->Item);
                 Curr=ListGetNext(Curr);
             }

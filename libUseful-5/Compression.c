@@ -94,8 +94,8 @@ int zlibProcessorRead(TProcessingModule *ProcMod, const char *InData, unsigned l
 
     while ((ZData->z_in.avail_in > 0) || Flush)
     {
-	//We do not need Z_FINISH here, 
-	result=inflate(& ZData->z_in, Z_NO_FLUSH);
+        //We do not need Z_FINISH here,
+        result=inflate(& ZData->z_in, Z_NO_FLUSH);
         bytes_read=(*OutLen)-ZData->z_in.avail_out;
 
 

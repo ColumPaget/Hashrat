@@ -1,5 +1,43 @@
+v5.14 (2024-06-03)
+  * add ini file support to DataParser
+  * fix/add 'bcast' socket type
+
+v5.13 (2024-04-17)
+  * Fix soname issue. 
+
+v5.12 (2024-04-06)
+  * Added TerminalProgress progress bars
+  * Fix ~W escape sequence for setting white background
+	* Fixes to TerminalTheme
+
+v5.11 (2024-02-27)
+  * Don't follow symbolic links in FileSystemRmDir
+  * detect NULL streams passed to STREAMReadToTerminator 
+  * honor prefix/sysconfdir when open unicode-names.conf 
+  * STREAMSendDgram added to Stream.h
+  * clean out example .exe files with 'make clean'"
+
+v5.10 (2024-02-21)
+  * Added 'x' (O_EXCL) option to file streams
+  * Added ''GetUserHomeDir' function
+  * Install now creates symlinks from libUseful-<major> to libUseful-<major>-<minor> rather than making two directories as suggested by andreasstieger@github.com
+  * Added soname to library when building under gcc, again as suggested by andreasstieger@github.com
+
+v5.9 (2024-02-07)
+  * Fix more build errors when building without openssl
+  * added options for compiling with -Wall, -Werror, FORTIFY_SOURCE and -fstack-protector to ./configure 
+
+v5.8 (2024-01-15)
+  * Fix build error when building without openssl
+  * Give in to autoconf insisting upgrade to modern format
+
+v5.7 (2024-01-15)
+  * Fix base32 misunderstanding
+  * Tidyups suggested by andreasstieger@github.com, including flags not returned by ProcessApplyLateConfig.
+  * libcapabilites support now defaults to 'no' 
+
 v5.6 (2024-01-14)
-	* TOTP function added
+  * TOTP function added
   * base32 decode functions now return length
 
 v5.5 (2024-01-13)

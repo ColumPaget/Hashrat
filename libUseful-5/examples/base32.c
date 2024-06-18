@@ -7,12 +7,11 @@ main(int argc, char *argv[])
 char *Chars=NULL;
 
 
-/*
-if (argc < 2) printf("ERROR: no test string");
-else 
-DecodeBytes(&Chars, argv[1], ENCODE_BASE32);
-printf("%s\n", Chars);
-*/
+if (argc < 2) 
+{
+printf("ERROR: no test string, please supply one on the command-line\n");
+exit(1);
+}
 
 Chars=EncodeBytes(Chars, argv[1], StrLen(argv[1]), ENCODE_BASE32);
 printf("%s\n", Chars);

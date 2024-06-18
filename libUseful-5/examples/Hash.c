@@ -13,7 +13,7 @@ ptr=GetToken(Types, ",", &Type, 0);
 while (ptr)
 {
 HashBytes(&Tempstr, Type, "testing123", 10, ENCODE_HEX);
-printf("%s: %s\n", Type,  Tempstr);
+printf("%s: %s\n", Type,  Tempstr); fflush(NULL);
 ptr=GetToken(ptr, ",", &Type, 0);
 }
 

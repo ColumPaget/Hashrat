@@ -346,7 +346,7 @@ int BindSock(int Type, const char *Address, int Port, int Flags)
 int GetHostARP(const char *IP, char **Device, char **MAC)
 {
     char *Tempstr=NULL, *Token=NULL;
-    int result=FALSE;
+    int result=FALSE, len;
     const char *ptr;
     FILE *F;
 
@@ -764,13 +764,13 @@ int IPReconnect(int sock, const char *Host, int Port, int Flags)
 int NetConnectWithSettings(const char *Proto, const char *LocalHost, const char *InHost, int Port, TSockSettings *Settings)
 {
     const char *p_LocalHost=LocalHost;
-		char *Host=NULL;
+    char *Host=NULL;
     int sock, result;
 
 
-		//we have preserved 'host' with '[ addr ]' wrapper for IP6 until now
-		if (*InHost=='[') Host=CopyStrLen(Host, InHost+1, StrLen(InHost)-2);
-		else Host=CopyStr(Host, InHost);
+    //we have preserved 'host' with '[ addr ]' wrapper for IP6 until now
+    if (*InHost=='[') Host=CopyStrLen(Host, InHost+1, StrLen(InHost)-2);
+    else Host=CopyStr(Host, InHost);
 
 
     if ((! StrValid(p_LocalHost)) && IsIP6Address(Host)) p_LocalHost="::";
@@ -791,8 +791,8 @@ int NetConnectWithSettings(const char *Proto, const char *LocalHost, const char 
 
     result=IPReconnect(sock, Host, Port, Settings->Flags);
 
-		Destroy(Host);
-		
+    Destroy(Host);
+
     if (result==-1)
     {
         close(sock);

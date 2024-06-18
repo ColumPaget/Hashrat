@@ -184,25 +184,25 @@ pid_t SpawnWithIO(const char *CommandLine, const char *Config, int StdIn, int St
 //This creates an STDIO pipe, unless 'ToNull' is true
 static int PipeSpawnCreateStdOutPipe(const char *Type, int channel[2], int ToNull)
 {
-int fd=-1, result;
+    int fd=-1, result;
 
-channel[0]=-1;
-channel[1]=-1;
+    channel[0]=-1;
+    channel[1]=-1;
 
 //if we ask for this to be set to null, then we map leave fd set to -1
 //which maps to /dev/null in xforkio
-if (! ToNull) 
-{
-	result=pipe(channel);
-  if (result==0) 
-	{
-	  if (strcmp(Type, "stdin")==0) fd=channel[0];
-		else fd=channel[1];
-	}
-  else RaiseError(ERRFLAG_ERRNO, "PipeSpawnFunction", "Failed to create pipe for %s", Type);
-}
+    if (! ToNull)
+    {
+        result=pipe(channel);
+        if (result==0)
+        {
+            if (strcmp(Type, "stdin")==0) fd=channel[0];
+            else fd=channel[1];
+        }
+        else RaiseError(ERRFLAG_ERRNO, "PipeSpawnFunction", "Failed to create pipe for %s", Type);
+    }
 
-return(fd);
+    return(fd);
 }
 
 
@@ -247,13 +247,13 @@ pid_t PipeSpawnFunction(int *infd, int *outfd, int *errfd, BASIC_FUNC Func, void
         {
             close(channel1[0]);
             *infd=channel1[1];
-						if (*infd == -1) *infd=open("/dev/null", O_RDWR);
+            if (*infd == -1) *infd=open("/dev/null", O_RDWR);
         }
         if (outfd)
         {
             close(channel2[1]);
             *outfd=channel2[0];
-						if (*outfd == -1) *outfd=open("/dev/null", O_RDWR);
+            if (*outfd == -1) *outfd=open("/dev/null", O_RDWR);
         }
 
         if (errfd)

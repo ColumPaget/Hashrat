@@ -236,7 +236,7 @@ int LoadFromIOC(const char *XML, int Flags)
 
 
 
-void *MatchesLoad(int Flags)
+void *MatchesLoad(HashratCtx *Ctx, int Flags)
 {
     char *Line=NULL, *Tempstr=NULL, *Type=NULL, *ptr;
     TFingerprint *FP;
@@ -266,7 +266,12 @@ void *MatchesLoad(int Flags)
         {
             StripTrailingWhitespace(Line);
             FP=TFingerprintParse(Line);
+	    if (FP)
+	    {
             if (MatchAdd(FP, "", Flags)) count++;
+	    //native format can specify the type of hash that it is supplying
+	    if (StrValid(FP->HashType)) Ctx->HashType=CopyStr(Ctx->HashType, FP->HashType);
+            }
             Line=STREAMReadLine(Line, S);
         }
     }

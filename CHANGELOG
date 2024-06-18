@@ -1,3 +1,9 @@
+v1.20 (2024-06-18)
+  * Bring "make check" (check.sh) up to date with latest functioning of hashrat
+  * Compile if openssl not available (update to latest libUseful)
+  * Honor stdin-supplied hash type when using 'match' (-m) functionality
+  * Add -enable-harden, --enable-zlib and other options to ./configure
+
 v1.19 (2024-01-15)
   * Don't push comment to clipboard, just code/hash.
 

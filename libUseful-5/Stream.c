@@ -42,7 +42,7 @@ typedef struct
 #include <poll.h>
 #include <math.h>
 
-static void *SelectAddFD(TSelectSet *Set, int type, int fd)
+static void SelectAddFD(TSelectSet *Set, int type, int fd)
 {
     struct pollfd *items;
 
@@ -800,6 +800,7 @@ STREAM *STREAMFileOpen(const char *Path, int Flags)
 
     if (Flags & STREAM_APPEND) Mode |=O_APPEND;
     if (Flags & SF_CREATE) Mode |=O_CREAT;
+    if (Flags & SF_EXCL) Mode |=O_EXCL;
 
     if (CompareStr(Path,"-")==0)
     {
@@ -990,6 +991,12 @@ static int STREAMParseConfig(const char *Config)
             case 't':
                 Flags |= SF_TMPNAME;
                 break;
+            case 'x':
+                //for local files this is 'exclusive open' with O_EXCL.
+                //for ssh connections this is the 'execute' flag that indicates
+                //a command is to be run
+                Flags |= SF_EXCL;
+                break;
             case 'z':
                 Flags |= SF_COMPRESSED;
                 break;
@@ -1087,6 +1094,7 @@ STREAM *STREAMOpen(const char *URL, const char *Config)
     case 't':
     case 's':
     case 'u':
+    case 'b': //b for 'bcast'
         if ( (CompareStr(URL,"-")==0) || (strcasecmp(URL,"stdio:")==0) ) S=STREAMFromDualFD(dup(0), dup(1));
         else if (strcasecmp(URL,"stdin:")==0) S=STREAMFromFD(dup(0));
         else if (strcasecmp(URL,"stdout:")==0) S=STREAMFromFD(dup(1));
@@ -1955,6 +1963,12 @@ char *STREAMReadToTerminator(char *Buffer, STREAM *S, unsigned char Term)
     const unsigned char *p_Term;
     int IsClosed=FALSE;
 
+    if (! S)
+    {
+        RaiseError(0, "STREAMReadToterminator", "NULL stream object passed to function");
+        Destroy(Buffer);
+        return(NULL);
+    }
 
     RetStr=CopyStr(Buffer,"");
     while (1)
@@ -2319,20 +2333,22 @@ int STREAMFind(STREAM *S, const char *Item, const char *Delimiter, char **RetStr
 
 static int UseKernelSendFile(STREAM *In, STREAM *Out, int Flags)
 {
-if (! (Flags & SENDFILE_KERNEL)) return(FALSE);
-switch (In->Type)
-{
-case STREAM_TYPE_FILE:
-case STREAM_TYPE_PIPE:
-break;
+    if (! (Flags & SENDFILE_KERNEL)) return(FALSE);
+    switch (In->Type)
+    {
+    case STREAM_TYPE_FILE:
+    case STREAM_TYPE_PIPE:
+        break;
 
-default: return(FALSE); break;
-}
+    default:
+        return(FALSE);
+        break;
+    }
 
-if  (ListSize(In->ProcessingModules) > 0) return(FALSE);
-if  (ListSize(Out->ProcessingModules) > 0) return(FALSE);
+    if  (ListSize(In->ProcessingModules) > 0) return(FALSE);
+    if  (ListSize(Out->ProcessingModules) > 0) return(FALSE);
 
-return(TRUE);
+    return(TRUE);
 }
 
 

@@ -1,20 +1,26 @@
 CC = gcc
-VERSION = 5.6
-CFLAGS = -g -O2 
+VERSION = 5.14
+MAJOR=5
+LIBFILE=libUseful.so.$(VERSION)
+SONAME=libUseful.so.$(MAJOR)
+CFLAGS = -g -O2 -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong  -Wl,-soname,${SONAME}
 LDFLAGS=
-LIBS = -lssl -lcrypto -lc -lc -lc -lc 
-FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -fPIC -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -DHAVE_LIBC=1 -DHAVE_GET_CURR_DIR=1 -DHAVE_PTSNAME_R=1 -DHAVE_CLEARENV=1 -DHAVE_SETRESUID=1 -DHAVE_INITGROUPS=1 -DHAVE_POLL=1 -DHAVE_MLOCK=1 -DHAVE_MLOCKALL=1 -DHAVE_MUNLOCKALL=1 -DHAVE_MADVISE=1 -DHAVE_MKOSTEMP=1 -DHAVE_MOUNT=1 -DHAVE_UMOUNT=1 -DHAVE_UMOUNT2=1 -DHAVE_GETENTROPY=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_SENDFILE=1 -DUSE_INET6=1 -DHAVE_LIBC=1 -DHAVE_XATTR=1 -DHAVE_LIBC=1 -DHAVE_UNSHARE=1 -DHAVE_LIBC=1 -DHAVE_SETNS=1 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1 -DHAVE_EVP_MD_CTX_NEW=1 -DHAVE_EVP_MD_CTX_FREE=1 -DHAVE_EVP_BF_CBC=1 -DHAVE_EVP_RC2_CBC=1 -DHAVE_EVP_RC4=1 -DHAVE_EVP_DES_CBC=1 -DHAVE_EVP_DESX_CBC=1 -DHAVE_EVP_CAST5_CBC=1 -DHAVE_EVP_AES_128_CBC=1 -DHAVE_EVP_AES_256_CBC=1 -DHAVE_X509_CHECK_HOST=1 -DHAVE_DECL_OPENSSL_ADD_ALL_ALGORITHMS=1 -DHAVE_OPENSSL_ADD_ALL_ALGORITHMS=1 -DHAVE_DECL_SSL_SET_TLSEXT_HOST_NAME=1 -DHAVE_SSL_SET_TLSEXT_HOST_NAME=1 -DVERSION=\"$(VERSION)\"
-prefix=/usr
-OBJ=StrLenCache.o String.o Array.o List.o IPAddress.o Socket.o Server.o UnixSocket.o Stream.o StreamAuth.o Errors.o Unicode.o TerminalKeys.o Terminal.o TerminalWidget.o TerminalMenu.o TerminalChoice.o TerminalBar.o TerminalTheme.o FileSystem.o GeneralFunctions.o DataProcessing.o Pty.o Log.o HttpUtil.o HttpChunkedTransfer.o Http.o Gemini.o Smtp.o Inet.o Expect.o base32.o base64.o  crc32.o md5c.o sha1.o sha2.o whirlpool.o jh_ref.o HashCRC32.o HashMD5.o HashSHA.o HashJH.o HashWhirlpool.o HashOpenSSL.o Hash.o HMAC.o Ssh.o Compression.o OAuth.o LibSettings.o Vars.o Time.o Markup.o SpawnPrograms.o Tokenizer.o StringList.o PatternMatch.o URL.o DataParser.o ConnectionChain.o OpenSSL.o Process.o Encodings.o RawData.o SecureMem.o CommandLineParser.o SysInfo.o Entropy.o Users.o UnitsOfMeasure.o HttpServer.o WebSocket.o ContentType.o PasswordFile.o OTP.o
+LIBS = -lz -lssl -lcrypto -lc -lc -lc -lc 
+prefix=/usr/local
+sysconfdir=${prefix}/etc
+FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -fPIC -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DHAVE_LIBC=1 -DHAVE_GET_CURR_DIR=1 -DHAVE_PTSNAME_R=1 -DHAVE_CLEARENV=1 -DHAVE_SETRESUID=1 -DHAVE_INITGROUPS=1 -DHAVE_POLL=1 -DHAVE_MLOCK=1 -DHAVE_MLOCKALL=1 -DHAVE_MUNLOCKALL=1 -DHAVE_MADVISE=1 -DHAVE_MKOSTEMP=1 -DHAVE_MOUNT=1 -DHAVE_UMOUNT=1 -DHAVE_UMOUNT2=1 -DHAVE_GETENTROPY=1 -DHAVE_STDIO_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_STRINGS_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_UNISTD_H=1 -DSTDC_HEADERS=1 -DHAVE_SENDFILE=1 -DUSE_INET6=1 -DHAVE_LIBC=1 -DHAVE_XATTR=1 -DHAVE_LIBC=1 -DHAVE_UNSHARE=1 -DHAVE_LIBC=1 -DHAVE_SETNS=1 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1 -DHAVE_EVP_MD_CTX_NEW=1 -DHAVE_EVP_MD_CTX_FREE=1 -DHAVE_EVP_BF_CBC=1 -DHAVE_EVP_RC2_CBC=1 -DHAVE_EVP_RC4=1 -DHAVE_EVP_DES_CBC=1 -DHAVE_EVP_DESX_CBC=1 -DHAVE_EVP_CAST5_CBC=1 -DHAVE_EVP_AES_128_CBC=1 -DHAVE_EVP_AES_256_CBC=1 -DHAVE_X509_CHECK_HOST=1 -DHAVE_DECL_OPENSSL_ADD_ALL_ALGORITHMS=1 -DHAVE_OPENSSL_ADD_ALL_ALGORITHMS=1 -DHAVE_DECL_SSL_SET_TLSEXT_HOST_NAME=1 -DHAVE_SSL_SET_TLSEXT_HOST_NAME=1 -DHAVE_LIBZ=1 -DVERSION=\"$(VERSION)\" -DSYSCONFDIR=\"$(sysconfdir)\"
+OBJ=StrLenCache.o String.o Array.o List.o IPAddress.o Socket.o Server.o UnixSocket.o Stream.o StreamAuth.o Errors.o Unicode.o TerminalKeys.o Terminal.o TerminalWidget.o TerminalMenu.o TerminalChoice.o TerminalBar.o TerminalProgress.o TerminalTheme.o FileSystem.o GeneralFunctions.o DataProcessing.o Pty.o Log.o HttpUtil.o HttpChunkedTransfer.o Http.o Gemini.o Smtp.o Inet.o Expect.o base32.o base64.o  crc32.o md5c.o sha1.o sha2.o whirlpool.o jh_ref.o HashCRC32.o HashMD5.o HashSHA.o HashJH.o HashWhirlpool.o HashOpenSSL.o Hash.o HMAC.o Ssh.o Compression.o OAuth.o LibSettings.o Vars.o Time.o Markup.o SpawnPrograms.o Tokenizer.o StringList.o PatternMatch.o URL.o DataParser.o ConnectionChain.o OpenSSL.o Process.o Encodings.o RawData.o SecureMem.o CommandLineParser.o SysInfo.o Entropy.o Users.o UnitsOfMeasure.o HttpServer.o WebSocket.o ContentType.o PasswordFile.o OTP.o
 
 
 all: $(OBJ)
-	$(CC) $(FLAGS) -shared -o libUseful-$(VERSION).so $(OBJ) $(LIBS) $(LDFLAGS)
+	$(CC) $(FLAGS) -shared -o $(LIBFILE) $(OBJ) $(LIBS) $(LDFLAGS)
+	-ln -s -r -f $(LIBFILE) libUseful-$(VERSION).so
+	-ln -s -r -f $(LIBFILE) libUseful-$(MAJOR).so
+	-ln -s -r -f $(LIBFILE) $(SONAME)
+	-ln -s -r -f $(LIBFILE) libUseful.so
 	ar rcs libUseful-$(VERSION).a $(OBJ)
-	-ln -s libUseful-$(VERSION).so libUseful-5.so &>/dev/null
-	-ln -s libUseful-$(VERSION).a libUseful-5.a &>/dev/null
-	-ln -s libUseful-$(VERSION).so libUseful.so &>/dev/null
-	-ln -s libUseful-$(VERSION).a libUseful.a &>/dev/null
+	-ln -s -r -f libUseful-$(VERSION).a libUseful-$(MAJOR).a
+	-ln -s -r -f libUseful-$(VERSION).a libUseful.a
 
 
 StrLenCache.o: StrLenCache.h StrLenCache.c
@@ -85,6 +91,9 @@ TerminalChoice.o: TerminalChoice.h TerminalChoice.c
 
 TerminalBar.o: TerminalBar.h TerminalBar.c
 	$(CC) $(FLAGS) -c TerminalBar.c
+
+TerminalProgress.o: TerminalProgress.h TerminalProgress.c
+	$(CC) $(FLAGS) -c TerminalProgress.c
 
 TerminalTheme.o: TerminalTheme.h TerminalTheme.c
 	$(CC) $(FLAGS) -c TerminalTheme.c
@@ -248,17 +257,17 @@ LibSettings.o: LibSettings.h LibSettings.c
 	$(CC) $(FLAGS) -c LibSettings.c
 
 clean:
-	-rm -f *.o *.so *.a *.orig
+	-rm -f *.o *.so *.so.* *.a *.orig
 	-rm config.log config.status 
 	-rm -r autom4te.cache config.cache
+	-$(MAKE) clean -C examples
 
 install: libUseful.so
 	-mkdir -p $(DESTDIR)$(prefix)/lib 
-	cp -P *.so *.a $(DESTDIR)$(prefix)/lib  
+	cp -P *.so *.so.* *.a $(DESTDIR)$(prefix)/lib  
 	-mkdir -p $(DESTDIR)$(prefix)/include/libUseful-$(VERSION)
 	cp *.h $(DESTDIR)$(prefix)/include/libUseful-$(VERSION)
-	-mkdir -p $(DESTDIR)$(prefix)/include/libUseful-5
-	cp *.h $(DESTDIR)$(prefix)/include/libUseful-5
+	-ln -s -r -f $(DESTDIR)$(prefix)/include/libUseful-$(VERSION) $(DESTDIR)$(prefix)/include/libUseful-5
 	-mkdir -p $(DESTDIR)$(prefix)/etc
 	cp *.conf $(DESTDIR)$(prefix)/etc
 

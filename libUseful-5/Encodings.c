@@ -29,7 +29,7 @@ int EncodingParse(const char *Str)
 
         case '8':
             if (strcasecmp(Str,"8")==0) Encode=ENCODE_OCTAL;
-						break;
+            break;
 
         case 'a':
         case 'A':
@@ -106,11 +106,11 @@ int EncodingParse(const char *Str)
             else if (strcasecmp(Str,"uuenc")==0) Encode=ENCODE_UUENC;
             break;
 
-				case 'w':
-				case 'W':
+        case 'w':
+        case 'W':
             if (strcasecmp(Str,"wbase32")==0) Encode=ENCODE_WBASE32;
             else if (strcasecmp(Str,"w32")==0) Encode=ENCODE_WBASE32;
-						break;
+            break;
 
         case 'x':
         case 'X':
@@ -190,25 +190,25 @@ char *EncodeBytes(char *Buffer, const char *Bytes, int len, int Encoding)
     RetStr=CopyStr(Buffer,"");
     switch (Encoding)
     {
-		case ENCODE_BASE32:
-				RetStr=base32encode(RetStr, Bytes, len, BASE32_RFC4648_CHARS, '=');
-		break;
+    case ENCODE_BASE32:
+        RetStr=base32encode(RetStr, Bytes, len, BASE32_RFC4648_CHARS, '=');
+        break;
 
-		case ENCODE_CBASE32:
-				RetStr=base32encode(RetStr, Bytes, len, BASE32_CROCKFORD_CHARS, '\0');
-		break;
+    case ENCODE_CBASE32:
+        RetStr=base32encode(RetStr, Bytes, len, BASE32_CROCKFORD_CHARS, '\0');
+        break;
 
-		case ENCODE_HBASE32:
-				RetStr=base32encode(RetStr, Bytes, len, BASE32_HEX_CHARS, '=');
-		break;
+    case ENCODE_HBASE32:
+        RetStr=base32encode(RetStr, Bytes, len, BASE32_HEX_CHARS, '=');
+        break;
 
-		case ENCODE_ZBASE32:
-				RetStr=base32encode(RetStr, Bytes, len, BASE32_ZBASE32_CHARS, '\0');
-		break;
+    case ENCODE_ZBASE32:
+        RetStr=base32encode(RetStr, Bytes, len, BASE32_ZBASE32_CHARS, '\0');
+        break;
 
-		case ENCODE_WBASE32:
-				RetStr=base32encode(RetStr, Bytes, len, BASE32_WORDSAFE_CHARS, '=');
-		break;
+    case ENCODE_WBASE32:
+        RetStr=base32encode(RetStr, Bytes, len, BASE32_WORDSAFE_CHARS, '=');
+        break;
 
     case ENCODE_BASE64:
         RetStr=SetStrLen(RetStr,len * 4);
@@ -347,25 +347,25 @@ int DecodeBytes(char **Return, const char *Text, int Encoding)
         len=StrLen(*Return);
         break;
 
-		case ENCODE_BASE32:
-				len=base32decode(*Return, Text, BASE32_RFC4648_CHARS);	
-				break;
+    case ENCODE_BASE32:
+        len=base32decode(*Return, Text, BASE32_RFC4648_CHARS);
+        break;
 
-		case ENCODE_CBASE32:
-				len=base32decode(*Return, Text, BASE32_CROCKFORD_CHARS);	
-				break;
+    case ENCODE_CBASE32:
+        len=base32decode(*Return, Text, BASE32_CROCKFORD_CHARS);
+        break;
 
-		case ENCODE_HBASE32:
-				len=base32decode(*Return, Text, BASE32_HEX_CHARS);	
-				break;
+    case ENCODE_HBASE32:
+        len=base32decode(*Return, Text, BASE32_HEX_CHARS);
+        break;
 
-		case ENCODE_WBASE32:
-				len=base32decode(*Return, Text, BASE32_WORDSAFE_CHARS);	
-				break;
+    case ENCODE_WBASE32:
+        len=base32decode(*Return, Text, BASE32_WORDSAFE_CHARS);
+        break;
 
-		case ENCODE_ZBASE32:
-				len=base32decode(*Return, Text, BASE32_ZBASE32_CHARS);	
-				break;
+    case ENCODE_ZBASE32:
+        len=base32decode(*Return, Text, BASE32_ZBASE32_CHARS);
+        break;
 
     case ENCODE_BASE64:
         len=Radix64tobits(*Return,Text,BASE64_CHARS,'=');

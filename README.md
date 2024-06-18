@@ -67,8 +67,8 @@ OPTIONS
   -period <n>     Produce TOTP code with period/lifetime of <n> seconds.
   -8              Encode with octal instead of hex
   -10             Encode with decimal instead of hex
-  -H              Encode with UPPERCASE hexadecimal
-  -HEX            Encode with UPPERCASE hexadecimal
+  -H              Encode with UPPERCASE hexadecimal instead of lowercase
+  -HEX            Encode with UPPERCASE hexadecimal instead of lowercase
   -32             Encode with base32 instead of hex
   -base32         Encode with base32 instead of hex
   -c32            Encode with Crockford base32 instead of hex
@@ -348,7 +348,6 @@ Hashrat can be used as a TOTP authenticator, and defaults to google-authenticato
 
 
 
-
 HOOKSCRIPTS
 ===========
 
@@ -357,6 +356,22 @@ Hookscripts, defined using the `-h` or `-hook` command-line options, are scripts
 * 'Check Hashes' mode:  The hookscript is called if a file doesn't match it's expected hash, or is not listed in the expected hashes. It is passed the path of the file.
 * 'Locate files' mode:  The hookscript is called if a file matches the hash to locate. It is passed the path of the file.
 * 'Find duplicates' mode: The hookscript is called if a file is a duplicate of another file. It is passed the paths of both files.
+
+
+
+MATCH Mode
+==========
+
+The '-m' function allows matching a list of file hashes input on stdin. It differs from check mode in that, instead of checking a specific file against a hash supplied for the file, it accepts a hash and goes looking for any files that match that hash. However, this causes problems if different hash functions are used in the file input. Hashrat's native format allows specifying the hash-type that is supplied on a hash-by-hash basis. This works fine for 'check' mode, but in 'match' mode hashrat does not know which fingerprint/hash a file will match before it hashes it. Therefore hashrat will expect all the supplied hashes to be the same hash format when in match mode. This if suppling native-format hashes like this:
+
+```
+hash='sha1:c04b4a87e789eceb7c10c2d6a785f91820bf9db4' type='file' mode='100664' uid='1000' gid='1000' size='5759' mtime='1718700145' inode='8436275' path='tests/help.txt'
+hash='md5:10fc712fd1298e2cb7a34303242d8ae4' type='file' mode='100664' uid='1000' gid='1000' size='621' mtime='1718700145' inode='8436276' path='tests/quotes.txt'
+```
+
+Hashrat will honor the LAST format given (in this case md5) and use it for matching all files.
+
+Basically, don't mix hash types when using 'match' mode.
 
 
 CGI Mode

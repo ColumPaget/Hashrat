@@ -117,6 +117,7 @@ int ProcessTargetItems(HashratCtx *Ctx)
     while(ptr)
     {
         type=StatFile(Ctx, Item, &Stat);
+
         if (type > -1) result=ProcessItem(Ctx, Item, &Stat, TRUE);
         else
         {
@@ -146,7 +147,8 @@ int main(int argc, char *argv[])
     gethostname(Tempstr, HOST_NAME_MAX);
     LocalHost=CopyStr(LocalHost, Tempstr);
     Tempstr=SetStrLen(Tempstr, HOST_NAME_MAX);
-    getdomainname(Tempstr, HOST_NAME_MAX);
+    result=getdomainname(Tempstr, HOST_NAME_MAX);
+    if (result > -1) Tempstr[result]='\0';
     LocalHost=MCatStr(LocalHost, ".", Tempstr, NULL);
 
     memset(&Stat,0,sizeof(struct stat)); //to keep valgrind happy
@@ -178,7 +180,7 @@ int main(int argc, char *argv[])
 
         case ACT_CHECK:
         case ACT_FINDMATCHES:
-            if (! MatchesLoad(0))
+            if (! MatchesLoad(Ctx, 0))
             {
                 printf("No hashes supplied on stdin.\n");
                 exit(1);
@@ -195,7 +197,7 @@ int main(int argc, char *argv[])
         case ACT_LOADMATCHES:
             ptr=GetVar(Ctx->Vars, "Memcached:Server");
             if (StrEnd(ptr)) printf("ERROR: No memcached server specified. Use the -memcached <server> command-line argument to specify one\n");
-            else MatchesLoad(FLAG_MEMCACHED);
+            else MatchesLoad(Ctx, FLAG_MEMCACHED);
             break;
 
         case ACT_FINDMATCHES_MEMCACHED:

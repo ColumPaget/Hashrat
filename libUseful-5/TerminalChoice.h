@@ -66,29 +66,29 @@ Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
  */
 
 
-#ifndef LIBUSEFUL_TERMINAL_MENUBAR_H
-#define LIBUSEFUL_TERMINAL_MENUBAR_H
+#ifndef LIBUSEFUL_TERMINAL_CHOICE_H
+#define LIBUSEFUL_TERMINAL_CHOICE_H
 
 #include "includes.h"
 #include "Unicode.h"
 #include "KeyCodes.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "Terminal.h"
 #include "TerminalMenu.h"
 
 #define TERMCHOICE TERMMENU
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define TerminalChoiceDestroy TerminalWidgetDestroy
 #define TerminalChoiceSetOptions TerminalWidgetSetOptions
 
 TERMCHOICE *TerminalChoiceCreate(STREAM *Term, const char *Config);
-void TerminalChoiceDraw(TERMCHOICE *MB);
-char *TerminalChoiceOnKey(char *RetStr, TERMCHOICE *MB, int key);
-char *TerminalChoiceProcess(char *RetStr, TERMCHOICE *MB);
+void TerminalChoiceDraw(TERMCHOICE *Chooser);
+char *TerminalChoiceOnKey(char *RetStr, TERMCHOICE *Chooser, int key);
+char *TerminalChoiceProcess(char *RetStr, TERMCHOICE *Chooser);
 char *TerminalChoice(char *RetStr, STREAM *Term, const char *Config);
 
 

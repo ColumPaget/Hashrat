@@ -5,7 +5,7 @@
 #include "common.h"
 
 
-void *MatchesLoad();
+void *MatchesLoad(HashratCtx *Ctx, int Flags);
 void LoadMatchesToMemcache();
 void OutputUnmatched(HashratCtx *Ctx);
 int MatchAdd(TFingerprint *FP, const char *Path, int Flags);

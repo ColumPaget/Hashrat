@@ -9,7 +9,7 @@
 static int STREAMAuthValueFile(const char *Path, const char *Value)
 {
 
-
+    return(FALSE);
 }
 
 //did the client provide an SSL certificate as authentication?
@@ -18,6 +18,7 @@ static int STREAMAuthProcessCertificate(STREAM *S, const char *CertName, const c
     char *Require=NULL;
     int AuthResult=FALSE;
 
+#ifdef HAVE_LIBSSL
 //does the certificate name/subject match out expectation?
     Require=OpenSSLCertDetailsGetCommonName(Require, STREAMGetValue(S, CommonName));
     if (CompareStr(CertName, Require)==0)
@@ -25,6 +26,7 @@ static int STREAMAuthProcessCertificate(STREAM *S, const char *CertName, const c
         //is certificate valid
         if (CompareStr(STREAMGetValue(S, "SSL:CertificateVerify"), "OK")==0) AuthResult=TRUE;
     }
+#endif
 
     Destroy(Require);
     return(AuthResult);
@@ -70,7 +72,7 @@ static int STREAMAuthProcess(STREAM *S, const char *AuthTypes)
         printf("AUTH: %s\n", Key);
         if (CompareStrNoCase(Key, "basic")==0)
         {
-	    Tempstr=EncodeBytes(Tempstr, Value, StrLen(Value), ENCODE_BASE64);
+            Tempstr=EncodeBytes(Tempstr, Value, StrLen(Value), ENCODE_BASE64);
             if (CompareStr(Tempstr, STREAMGetValue(S, "Auth:Basic"))==0) AuthResult=TRUE;
         }
         else if (

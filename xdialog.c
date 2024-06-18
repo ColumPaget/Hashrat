@@ -155,7 +155,7 @@ int XDialogProcess(const char *Cmd, HashratCtx *Config)
         if (i > -1) Ctx->Encoding=Encodings[i];
         ptr=GetToken(ptr, "|", &LineEnding, 0);
 
-        if (StrLen(LineEnding))
+        if (StrValid(LineEnding))
         {
             if (strcmp(LineEnding, "crlf")==0) Text=CatStr(Text,"\r\n");
             if (strcmp(LineEnding, "lf")==0) Text=CatStr(Text,"\n");

@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/bash 
 
 EXIT=0
 
@@ -42,6 +42,7 @@ fi
 while [ "$I" -lt "$ITER" ]
 do
 	HR_OUT=`echo -n "The sky above the port was the color of television, tuned to a dead channel. " | ./hashrat -$1`
+
 	if [ "$HR_OUT" != "$3" ]
 	then
 		RESULT=FAIL
@@ -61,7 +62,7 @@ fi
 
 TestLocate()
 {
-HR_OUT=`echo $1 | ./hashrat -m -r .`
+HR_OUT=`echo $1 | ./hashrat -m -md5 -r .`
 
 if [ "$HR_OUT" = "$2" ]
 then
@@ -75,7 +76,7 @@ fi
 TestLocateHook()
 {
 rm -f locatehook.out
-HR_OUT=`echo $1 | ./hashrat -m -r . -hook "echo found > locatehook.out"`
+HR_OUT=`echo $1 | ./hashrat -m -md5 -r . -hook "echo found > locatehook.out"`
 
 if [ -e locatehook.out ]
 then
@@ -98,16 +99,16 @@ FindDuplicates)
 ;;
 
 HashFile)
-	HR_OUT=`./hashrat $2`
+	HR_OUT=`./hashrat -md5 $2`
 	EXIT_FOUND=$?
 	HR_OUT=`./hashrat nonexistent 2>/dev/null`
 	EXIT_NOTFOUND=$?
 ;;
 
 *) 
-	HR_OUT=`echo $1 $2 | ./hashrat $3 2>/dev/null`
+	HR_OUT=`echo $1 $2 | ./hashrat -md5 $3 2>/dev/null`
 	EXIT_FOUND=$?
-	HR_OUT=`echo $1x $2 | ./hashrat $3 2>/dev/null`
+	HR_OUT=`echo $1x $2 | ./hashrat -md5 $3 2>/dev/null`
 	EXIT_NOTFOUND=$?
 ;;
 esac
@@ -149,21 +150,22 @@ TestHash whirlpool "1000 whirlpool" b690486285b18a9cbea3105a8f7e8ee439ef878530fe
 TestHash jh384 "1000 jh384" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca47141b09136daaada9fa3f10522456484db 1000
 
 Title "Testing Encoding"
-TestHash 8 "base 8 (octal) encoding" 150350216173106240373330245114211062322251161015
-TestHash 10 "base 10 (decimal) encoding" 104232142123070160251216165076137050210169113013
-TestHash HEX "UPPERCASE base 16 (HEX) encoding" 68E88E7B46A0FBD8A54C8932D2A9710D
-TestHash 64 "base 64 encoding" aOiOe0ag+9ilTIky0qlxDQ==
-TestHash u64 "uu-encode style base 64 encoding" ":.B.>T:@^]BE3(DRTJEQ#0''"
-TestHash x64 "xx-encode style base 64 encoding" "OCWCSoOUyxWZH6YmoeZl1E++"
-TestHash p64 "'website compatible' base 64 encoding" "PDXDToPVyxX_I8Zmoe_l3F"
-TestHash a85 "ASCII85 encoding" "B]tJ7\KYV+c_d]%3"
-TestHash z85 "ZEROMQ85 encoding" "wX%ElWFTQ9+Z=X4h"
+TestHash 8 "base 8 (octal) encoding" 322177026032202322203112374315246277301321013040044374156300
+TestHash 10 "base 10 (decimal) encoding" 210127022026130210131074252205166191193209011032036252110192
+TestHash 16 "lowercase base 16 (hex) encoding" d27f161a82d2834afccda6bfc1d10b2024fc6ec0
+TestHash HEX "UPPERCASE base 16 (HEX) encoding" D27F161A82D2834AFCCDA6BFC1D10B2024FC6EC0
+TestHash 32 "base 32 encoding" "2J7RMGUC2KBUV7GNU274DUILEASPY3WA========"
+TestHash 64 "base 64 encoding" "0n8WGoLSg0r8zaa/wdELICT8bsA="
+TestHash x64 "xx-encode style base 64 encoding" "obwK4c9GUofwnOOzkR2960HwPg++"
+TestHash p64 "'website compatible' base 64 encoding" "obwL6cAHVofwnPPzkS4A82IwQg0"
+TestHash a85 "ASCII85 encoding" 'dXN#K$o9r6;+_9iW,lDP'
+TestHash z85 "ZEROMQ85 encoding" "=SI2F3[n}kp9Zn?Ra>yK"
 
 
 Title "Testing Misc. Features"
 
 HR_OUT=`./hashrat -version`
-if [ "$HR_OUT" = "version: 1.15" ]
+if [ "$HR_OUT" = "version: 1.20" ]
 then
 	OkayMessage "Version (-version) works"
 else
@@ -197,7 +199,7 @@ else
 fi
 
 HR_OUT=`./hashrat -trad -f tests/test.lst | ./hashrat -trad -md5`
-if [ "$HR_OUT" = "85842879a67baa126b105130ed3f7683" ]
+if [ "$HR_OUT" = "d6ab85e877b3bef43975a168f22be006" ]
 then
 	OkayMessage "File hashing from a listfile works"
 else
@@ -206,7 +208,7 @@ fi
 
 
 HR_OUT=`cat tests/test.lst | ./hashrat -trad -f - | ./hashrat -trad -md5`
-if [ "$HR_OUT" = "85842879a67baa126b105130ed3f7683" ]
+if [ "$HR_OUT" = "d6ab85e877b3bef43975a168f22be006" ]
 then
 	OkayMessage "File hashing from a list on stdin works"
 else
@@ -248,10 +250,10 @@ TestLocateHook "hash='md5:6933ee7eb504d29312b23a47d2dac374' mode='100644' uid='0
 
 Title "Testing exit codes for different operations"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "" "HashFile"
-TestExitCodes "tests" "libUseful-4" "-r -dups" "FindDuplicates"
+TestExitCodes "tests" "libUseful-5" "-r -dups" "FindDuplicates"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-cf" "CheckHash"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-m -r ." "Locate"
-TestExitCodes "tests" "libUseful-4" "-r -dups" "FindDuplicates"
+TestExitCodes "tests" "libUseful-5" "-r -dups" "FindDuplicates"
 
 echo
 echo

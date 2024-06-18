@@ -137,7 +137,7 @@ int CheckHashesFromList(HashratCtx *Ctx)
     FP=FingerprintRead(ListStream);
     while (FP)
     {
-        if (StrLen(FP->HashType)) Ctx->HashType=CopyStr(Ctx->HashType, FP->HashType);
+        if (StrValid(FP->HashType)) Ctx->HashType=CopyStr(Ctx->HashType, FP->HashType);
         if (StatFile(Ctx,FP->Path,&Stat) != -1) HashItem(Ctx, Ctx->HashType, FP->Path, &Stat, &HashStr);
 
         if (! HashratCheckFile(Ctx, FP->Path, &Stat, HashStr, FP)) Errors++;

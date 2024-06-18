@@ -491,7 +491,7 @@ int FileSystemUnMountFlagsDepth(const char *MountPoint, int UnmountFlags, int Ex
             glob(Path, 0, 0, &Glob);
             for (i=0; i < Glob.gl_pathc; i++)
             {
-                if (stat(Glob.gl_pathv[i],&FStat)==0)
+                if (lstat(Glob.gl_pathv[i],&FStat)==0)
                 {
                     if (S_ISDIR(FStat.st_mode))
                     {
