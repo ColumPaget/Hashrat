@@ -167,6 +167,7 @@ HashratCtx *CommandLineParseArg0()
     )
         CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "sha1",Ctx->Vars);
     if (strcmp(ptr,"sha256sum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "sha256",Ctx->Vars);
+    if (strcmp(ptr,"sha384sum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "sha384",Ctx->Vars);
     if (strcmp(ptr,"sha512sum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "sha512",Ctx->Vars);
     if (strcmp(ptr,"whirlpoolsum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "whirlpool",Ctx->Vars);
     if (strcmp(ptr,"jh224sum")==0) CommandLineHandleArg(Ctx,FLAG_TRAD_OUTPUT, "HashType", "jh-224",Ctx->Vars);
@@ -241,10 +242,12 @@ HashratCtx *CommandLineParseArgs(int argc, char *argv[])
         else if (strcmp(arg,"-cB")==0) Ctx->Action = ACT_CHECKBACKUP;
         else if (strcmp(arg,"-cgi")==0) Ctx->Action = ACT_CGI;
         else if (strcmp(arg,"-xdialog")==0) Ctx->Action = ACT_XDIALOG;
+        else if (strcmp(arg,"-list-hashes")==0) Ctx->Action = ACT_LIST_TYPES;
         else if (strcmp(arg,"-md5")==0) CommandLineHandleArg(Ctx,0, "HashType", "md5",Ctx->Vars);
         else if (strcmp(arg,"-sha")==0) CommandLineHandleArg(Ctx,0, "HashType", "sha1",Ctx->Vars);
         else if (strcmp(arg,"-sha1")==0) CommandLineHandleArg(Ctx,0, "HashType", "sha1",Ctx->Vars);
         else if (strcmp(arg,"-sha256")==0) CommandLineHandleArg(Ctx,0, "HashType", "sha256",Ctx->Vars);
+        else if (strcmp(arg,"-sha384")==0) CommandLineHandleArg(Ctx,0, "HashType", "sha384",Ctx->Vars);
         else if (strcmp(arg,"-sha512")==0) CommandLineHandleArg(Ctx,0, "HashType", "sha512",Ctx->Vars);
         else if (strcmp(arg,"-whirl")==0) CommandLineHandleArg(Ctx,0, "HashType", "whirlpool",Ctx->Vars);
         else if (strcmp(arg,"-whirlpool")==0) CommandLineHandleArg(Ctx,0, "HashType", "whirlpool",Ctx->Vars);
@@ -444,9 +447,12 @@ void CommandLinePrintUsage()
     printf("  %-15s %s\n","-?", "Print this help");
     printf("  %-15s %s\n","--version", "Print program version");
     printf("  %-15s %s\n","-version", "Print program version");
+    printf("  %-15s %s\n","-list-hashes", "Print a list of hashes that can be used with the '-type' option");
+    printf("  %-15s %s\n","-type <hash>", "specify a hash type to use. This supports hashes coming from other subsystems, such as openssl. It also supports 'chaining' hash types like so: -type sha256,whirl");
     printf("  %-15s %s\n","-md5", "Use md5 hash algorithmn");
     printf("  %-15s %s\n","-sha1", "Use sha1 hash algorithmn");
     printf("  %-15s %s\n","-sha256", "Use sha256 hash algorithmn");
+    printf("  %-15s %s\n","-sha384", "Use sha384 hash algorithmn");
     printf("  %-15s %s\n","-sha512", "Use sha512 hash algorithmn");
     printf("  %-15s %s\n","-whirl", "Use whirlpool hash algorithmn");
     printf("  %-15s %s\n","-whirlpool", "Use whirlpool hash algorithmn");
@@ -547,6 +553,7 @@ void CommandLinePrintUsage()
     printf("  %-15s %s\n","shasum","run with '-trad -sha1'");
     printf("  %-15s %s\n","sha1sum","run with '-trad -sha1'");
     printf("  %-15s %s\n","sha256sum","run with '-trad -sha256'");
+    printf("  %-15s %s\n","sha384sum","run with '-trad -sha384'");
     printf("  %-15s %s\n","sha512sum","run with '-trad -sha512'");
     printf("  %-15s %s\n","jh224sum","run with '-trad -jh224'");
     printf("  %-15s %s\n","jh256sum","run with '-trad -jh256'");

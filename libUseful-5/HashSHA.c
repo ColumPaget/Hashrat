@@ -80,6 +80,43 @@ void HashUpdateSHA256(HASH *Hash, const char *Data, int Len)
     SHA2_SHA256_Update((SHA2_SHA256_CTX *) Hash->Ctx, (unsigned char *) Data, Len);
 }
 
+int HashFinishSHA384(HASH *Hash, char **HashStr)
+{
+    int len;
+    char *DigestBuff=NULL;
+
+    DigestBuff=(char *) calloc(1,SHA2_SHA384_DIGEST_LENGTH+1);
+    SHA2_SHA384_Final((unsigned char *) DigestBuff, (SHA2_SHA384_CTX *) Hash->Ctx);
+
+    len=SHA2_SHA384_DIGEST_LENGTH;
+    *HashStr=SetStrLen(*HashStr,len);
+    memcpy(*HashStr,DigestBuff,len);
+
+    DestroyString(DigestBuff);
+
+    return(len);
+}
+
+
+void HashUpdateSHA384(HASH *Hash, const char *Data, int Len)
+{
+    SHA2_SHA384_Update((SHA2_SHA384_CTX *) Hash->Ctx, (unsigned char *) Data, Len);
+}
+
+
+HASH *HashCloneSHA384(HASH *Hash)
+{
+    HASH *NewHash;
+
+    NewHash=(HASH *) calloc(1,sizeof(HASH));
+    NewHash->Type=CopyStr(NewHash->Type,Hash->Type);
+    NewHash->Ctx=(void *) calloc(1,sizeof(SHA2_SHA384_CTX));
+    memcpy(NewHash->Ctx, Hash->Ctx, sizeof(SHA2_SHA384_CTX));
+
+    return(NewHash);
+}
+
+
 
 int HashFinishSHA512(HASH *Hash, char **HashStr)
 {
@@ -133,6 +170,15 @@ int HashInitSHA(HASH *Hash, const char *Name, int Len)
         Hash->Clone=HashCloneSHA512;
         break;
 
+    case 384:
+        Hash->Ctx=(void *) calloc(1,sizeof(SHA2_SHA384_CTX));
+        SHA2_SHA384_Init((SHA2_SHA384_CTX *) Hash->Ctx);
+        Hash->Update=HashUpdateSHA384;
+        Hash->Finish=HashFinishSHA384;
+        Hash->Clone=HashCloneSHA384;
+        break;
+
+
     case 256:
         Hash->Ctx=(void *) calloc(1,sizeof(SHA2_SHA256_CTX));
         SHA2_SHA256_Init((SHA2_SHA256_CTX *) Hash->Ctx);
@@ -159,7 +205,9 @@ void HashRegisterSHA()
     HashRegister("sha", 1, HashInitSHA);
     HashRegister("sha1", 1, HashInitSHA);
     HashRegister("sha256", 256, HashInitSHA);
+    HashRegister("sha384", 384, HashInitSHA);
     HashRegister("sha512", 512, HashInitSHA);
     HashRegister("sha-256", 256, HashInitSHA);
+    HashRegister("sha-384", 384, HashInitSHA);
     HashRegister("sha-512", 512, HashInitSHA);
 }

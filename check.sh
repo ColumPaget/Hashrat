@@ -46,6 +46,7 @@ do
 	if [ "$HR_OUT" != "$3" ]
 	then
 		RESULT=FAIL
+		break
 	fi
 	I=`expr $I + 1`
 done
@@ -58,6 +59,37 @@ else
 	OkayMessage "$MSG works"
 fi
 }
+
+
+TestHMAC()
+{
+RESULT=PASS
+
+if [ "$2" = "" ]
+then
+MSG="$1 HMAC"
+else
+MSG="$2"
+fi
+
+#this test is compatible with those on https://en.wikipedia.org/wiki/HMAC
+HR_OUT=`echo -n "The quick brown fox jumps over the lazy dog" | ./hashrat -$1 -hmac key`
+
+if [ "$HR_OUT" != "$3" ]
+then
+	RESULT=FAIL
+fi
+
+
+if [ "$RESULT" = "FAIL" ]
+then
+	FailMessage "$MSG BROKEN"
+else
+	OkayMessage "$MSG works"
+fi
+}
+
+
 
 
 TestLocate()
@@ -136,6 +168,7 @@ Title "Testing Hash Types"
 TestHash md5 "" 68e88e7b46a0fbd8a54c8932d2a9710d
 TestHash sha1 "" d27f161a82d2834afccda6bfc1d10b2024fc6ec0
 TestHash sha256 "" c7fadad016311a935a56dcdfb585cf5a4781073f7da13afa22177796e566434f
+TestHash sha384 "" 74bad027d593889aecd64042cdad05d01792e8f36f2c65f19cbfce2e4a61ef72bccc1eea4188e59ed03d711daa1410f6
 TestHash sha512 "" 0b8ac7af4b8e2dc449781888287aa50e9501b68766254b0c1bc6e17e7e86288c0a83b03d34f9c4c32836ca00a026323d8bbafc39f0c50f0c6b19200a28095595
 TestHash whirlpool "" b690486285b18a9cbea3105a8f7e8ee439ef878530fe2e389e0b5ab17658df79ad6c83c1f836f81f51ce5c73a6899f0355fdad9f257526fc718ea04f7aa1b792
 TestHash jh224 "" af0d674cdaaa7ec27b9c80acc763c6d51301c4273cd929fe043f67ca
@@ -146,8 +179,17 @@ TestHash jh512 "" 05feebb3148d9b0d12025759e4e054fe851dc6ad5bf58d3f79afb7d61caf8c
 Title "Testing Repeated Iterations (may take some time)"
 TestHash md5 "1000 md5" 68e88e7b46a0fbd8a54c8932d2a9710d 1000
 TestHash sha1 "1000 sha1" d27f161a82d2834afccda6bfc1d10b2024fc6ec0 1000
+TestHash sha256 "1000 sha256" c7fadad016311a935a56dcdfb585cf5a4781073f7da13afa22177796e566434f 1000
+TestHash sha384 "1000 sha384" 74bad027d593889aecd64042cdad05d01792e8f36f2c65f19cbfce2e4a61ef72bccc1eea4188e59ed03d711daa1410f6 1000
 TestHash whirlpool "1000 whirlpool" b690486285b18a9cbea3105a8f7e8ee439ef878530fe2e389e0b5ab17658df79ad6c83c1f836f81f51ce5c73a6899f0355fdad9f257526fc718ea04f7aa1b792 1000
 TestHash jh384 "1000 jh384" 55c63e4c22303227495c076ba0b11cda09a77856b98ee7d285283509415ca47141b09136daaada9fa3f10522456484db 1000
+
+Title "Testing HMAC digests"
+TestHMAC md5 "" 80070713463e7749b90c2dc24911e275
+TestHMAC sha1 "" de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
+TestHMAC sha256 "" f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8
+TestHMAC sha384 "" d7f4727e2c0b39ae0f1e40cc96f60242d5b7801841cea6fc592c5d3e1ae50700582a96cf35e1e554995fe4e03381c237
+TestHMAC sha512 "" b42af09057bac1e2d41708e48a902e09b5ff7f12ab428a4fe86653c73dd248fb82f948a549f7b791a5b41915ee4d1ec3935357e4e2317250d0372afa2ebeeb3a
 
 Title "Testing Encoding"
 TestHash 8 "base 8 (octal) encoding" 322177026032202322203112374315246277301321013040044374156300

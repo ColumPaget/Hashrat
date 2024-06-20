@@ -3,7 +3,7 @@ VERSION = 5.14
 MAJOR=5
 LIBFILE=libUseful.so.$(VERSION)
 SONAME=libUseful.so.$(MAJOR)
-CFLAGS = -g -O2 -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong  -Wl,-soname,${SONAME}
+CFLAGS = -g -O2  -Wl,-soname,${SONAME}
 LDFLAGS=
 LIBS = -lz -lssl -lcrypto -lc -lc -lc -lc 
 prefix=/usr/local

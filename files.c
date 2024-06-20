@@ -283,7 +283,7 @@ void ProcessData(char **RetStr, HashratCtx *Ctx, const char *Data, int DataLen)
 
             ptr=GetVar(Ctx->Vars, "InputPrefix");
             if (StrValid(ptr)) Hash->Update(Hash,ptr, StrLen(ptr));
-            Hash->Update(Hash,Data, DataLen);
+            Hash->Update(Hash, Data, DataLen);
             HashratFinishHash(RetStr, Ctx, Hash);
         }
     }

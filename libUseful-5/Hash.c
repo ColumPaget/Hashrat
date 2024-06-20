@@ -8,7 +8,7 @@
 #include "HashJH.h"
 #include "HashWhirlpool.h"
 #include "HashOpenSSL.h"
-
+#include "HMAC.h"
 
 static ListNode *HashTypes=NULL;
 
@@ -83,7 +83,10 @@ HASH *HashInit(const char *Type)
 
     if (! HashTypes) HashRegisterAll();
 
-    GetToken(Type, ",", &InitialType, 0);
+    GetToken(Type, ",", &InitialType, 0); 
+    if (strncmp(InitialType, "hmac-", 5) == 0) Hash=HMACInit(InitialType+5);
+    else
+    {
     Node=ListFindNamedItem(HashTypes, InitialType);
     if (Node)
     {
@@ -98,6 +101,7 @@ HASH *HashInit(const char *Type)
         }
     }
     else RaiseError(0, "HashInit", "Unsupported Hash Type: '%s'", InitialType);
+    }
 
     Destroy(InitialType);
 

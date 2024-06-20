@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -O2 -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong
+CFLAGS = -g -O2
 LIBS = libUseful-5/libUseful.a -lssl -lcrypto -lz  
 INSTALL=/usr/bin/install -c
 prefix=/usr/local

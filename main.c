@@ -160,6 +160,12 @@ int main(int argc, char *argv[])
 
         switch (Ctx->Action)
         {
+	case ACT_LIST_TYPES:
+	    Tempstr=HashAvailableTypes(Tempstr);
+	    strrep(Tempstr, ',', '\n');
+	    printf("%s\n", Tempstr);
+	    break;
+
         case ACT_HASH:
             result=ProcessTargetItems(Ctx);
             //if we didn't find anything on the command-line then read from stdin

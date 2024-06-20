@@ -1,3 +1,9 @@
+v1.21 (2024-06-20)
+  * fix -hmac option that's been broken by changes in libUseful
+  * add '-list-hashes' option to list available has types
+  * add -sha384 option
+  * openssl-provided hashes now supported
+
 v1.20 (2024-06-18)
   * Bring "make check" (check.sh) up to date with latest functioning of hashrat
   * Compile if openssl not available (update to latest libUseful)

@@ -99,10 +99,13 @@ void HMACPrepare(HASH *HMAC, const char *Data, int Len)
 HASH *HMACInit(const char *Type)
 {
     HASH *Hash;
+    const char *ptr;
 
     Hash=(HASH *) calloc(1, sizeof(HASH));
-    Hash->Ctx=(void *) HashInit(Type);
-    Hash->Type=MCopyStr(Hash->Type, "hmac-", Type, NULL);
+    if (strncasecmp(Type, "hmac-", 5)==0) ptr=Type+5;
+    else ptr=Type;
+    Hash->Ctx=(void *) HashInit(ptr);
+    Hash->Type=MCopyStr(Hash->Type, "hmac-", ptr, NULL);
     Hash->Update=HMACPrepare;
     Hash->Finish=HMACFinish;
 

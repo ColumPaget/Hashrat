@@ -50,9 +50,12 @@ OPTIONS
   -?              Print this help
   --version       Print program version
   -version        Print program version
+  -list-hashes    List available hash functions, including those supported by openssl
+  -type <hash>    Hash using supplied type. This supports chaining hashes like so: '-type sha512,md5'
   -md5            Use md5 hash algorithmn
   -sha1           Use sha1 hash algorithmn
   -sha256         Use sha256 hash algorithmn
+  -sha384         Use sha256 hash algorithmn
   -sha512         Use sha512 hash algorithmn
   -whirl          Use whirlpool hash algorithmn
   -whirlpool      Use whirlpool hash algorithmn
@@ -159,6 +162,7 @@ Hashrat can also detect if it's being run under any of the following names (e.g.
   shasum          run with '-trad -sha1'
   sha1sum         run with '-trad -sha1'
   sha256sum       run with '-trad -sha256'
+  sha384sum       run with '-trad -sha256'
   sha512sum       run with '-trad -sha512'
   jh224sum        run with '-trad -jh224'
   jh256sum        run with '-trad -jh256'
@@ -249,6 +253,31 @@ USE EXAMPLES
 
 		Search for duplicate files under /home. Update hashes stored in filesystem attributes as you go
 ```
+
+
+OPENSSL HASHES
+==============
+
+From v1.21 hashrat supports using hash functions supplied by openssl (provided it's been compiled with --enable-openssl). A list of available hashes can be viewed with `hashrat -list-hashes` and then any listed hash function can be used via the type option.
+
+e.g.
+
+`hashrat -type openssl:shake128`
+
+
+
+CHAINING HASHES
+===============
+
+Hashes can be 'chained' (fed into each other) using the '-type' option and a comma-separated list of hash names. 
+
+e.g.
+
+`hashrat -type sha512,sha512,whirl,md5`
+
+this would pipe any input into sha512, then the output of that goes into another sha512 round, then into whirlpool, and finally md5
+
+
 
 USES FOR HASHRAT
 ================

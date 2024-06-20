@@ -266,11 +266,11 @@ void *MatchesLoad(HashratCtx *Ctx, int Flags)
         {
             StripTrailingWhitespace(Line);
             FP=TFingerprintParse(Line);
-	    if (FP)
-	    {
-            if (MatchAdd(FP, "", Flags)) count++;
-	    //native format can specify the type of hash that it is supplying
-	    if (StrValid(FP->HashType)) Ctx->HashType=CopyStr(Ctx->HashType, FP->HashType);
+            if (FP)
+            {
+                if (MatchAdd(FP, "", Flags)) count++;
+                //native format can specify the type of hash that it is supplying
+                if (StrValid(FP->HashType)) Ctx->HashType=CopyStr(Ctx->HashType, FP->HashType);
             }
             Line=STREAMReadLine(Line, S);
         }
