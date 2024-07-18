@@ -1,3 +1,6 @@
+v1.22 (2024-07-18)
+  * if '-cache' option is used with '-xattr', then do not update files where xattr hash matches the file (feature request from https://github.com/eatnumber1).
+
 v1.21 (2024-06-20)
   * fix -hmac option that's been broken by changes in libUseful
   * add '-list-hashes' option to list available has types

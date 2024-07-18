@@ -538,7 +538,7 @@ void CommandLinePrintUsage()
     printf("  %-15s %s\n","-xattr", "Use eXtended file ATTRibutes. In hash mode, store hashes in the file attributes, in check mode compare against hashes stored in file attributes.");
     printf("  %-15s %s\n","-txattr", "Use TRUSTED eXtended file ATTRibutes. In hash mode, store hashes in 'trusted' file attributes. 'trusted' attributes can only be read and written by root. Under freebsd this menas SYSTEM attributes.");
     printf("  %-15s %s\n","-attrs", "comma-separated list of filesystem attribute names to be set to the value of the hash.");
-    printf("  %-15s %s\n","-cache", "Use hashes stored in 'user' xattr if they're younger than the mtime of the file. This speeds up outputting hashes.");
+    printf("  %-15s %s\n","-cache", "Use hashes stored in 'user' xattr if they're younger than the mtime of the file. This speeds up outputting hashes. Also do not update xattr of a file if it already matches.");
     printf("  %-15s %s\n","-u <types>", "Update. In checking mode, update hashes for the files as you go. <types> is a comma-separated list of things to update, which can be 'xattr' 'memcached' or a file name. This will update these targets with the hash that was found at the time of checking.");
     printf("  %-15s %s\n","-hide-input", "When reading data from stdin in linemode, set the terminal to not echo characters, thus hiding typed input.");
     printf("  %-15s %s\n","-star-input", "When reading data from stdin in linemode replace characters with stars.");

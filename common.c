@@ -69,7 +69,16 @@ void HashratStoreHash(HashratCtx *Ctx, const char *Path, struct stat *Stat, cons
 //	else
 
 
-    if (Ctx->Flags & CTX_STORE_XATTR) HashRatSetXAttr(Ctx, Path, Stat, Ctx->HashType, Hash);
+    if (Ctx->Flags & CTX_STORE_XATTR)
+    {
+        if (Ctx->Flags & CTX_XATTR_CACHE)
+        {
+            if ((Ctx->Flags & CTX_XATTR_ROOT) && (getuid()==0)) XAttrGetHash(Ctx, "trusted", Ctx->HashType, Path, NULL, &Tempstr);
+            else XAttrGetHash(Ctx, "user", Ctx->HashType, Path, NULL, &Tempstr);
+            if (strcmp(Tempstr, Hash) !=0) HashRatSetXAttr(Ctx, Path, Stat, Ctx->HashType, Hash);
+        }
+        else HashRatSetXAttr(Ctx, Path, Stat, Ctx->HashType, Hash);
+    }
 
     if (Ctx->Flags & CTX_STORE_MEMCACHED)
     {

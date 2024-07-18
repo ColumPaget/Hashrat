@@ -100,7 +100,7 @@ int XAttrGetHash(HashratCtx *Ctx, const char *XattrType, const char *HashType, c
 {
     int result=FALSE;
     char *Tempstr=NULL;
-    char *ptr;
+    const char *ptr;
     int len;
 
     *Hash=SetStrLen(*Hash,255);
@@ -115,14 +115,16 @@ int XAttrGetHash(HashratCtx *Ctx, const char *XattrType, const char *HashType, c
     fprintf(stderr,"XATTR Support not compiled in.\n");
 #endif
 
+
     if (len > 0)
     {
         (*Hash)[len]='\0';
+
         ptr=*Hash;
-        FStat->st_mtime=(time_t) strtoll(ptr,&ptr,10);
-        if (*ptr==':') ptr++;
-        FStat->st_size=(off_t) strtoll(ptr,&ptr,10);
-        if (*ptr==':') ptr++;
+        ptr=GetToken(ptr, ":", &Tempstr, 0);
+        if (FStat) FStat->st_mtime=(time_t) strtoll(Tempstr,NULL,10);
+        ptr=GetToken(ptr, ":", &Tempstr, 0);
+        if (FStat) FStat->st_size=(off_t) strtoll(Tempstr,NULL,10);
         len=StrLen(ptr);
         memmove(*Hash,ptr,len+1);
         result=TRUE;

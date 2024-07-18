@@ -321,7 +321,7 @@ Use TRUSTED eXtended \fIfile\fP ATTRibutes. In \fIhash\fP mode, store \fIhashes\
 .TP
 .B
 \fB-cache\fP
-Use \fIhashes\fP stored in user xattr if they're younger than the mtime of the \fIfile\fP. This speeds up outputting \fIhashes\fP.
+Use \fIhashes\fP stored in user xattr if they're younger than the mtime of the \fIfile\fP. This speeds up outputting \fIhashes\fP. When storing xattr hashes, do not update files that already have the correct hash.
 .TP
 .B
 \fB-u\fP <types>

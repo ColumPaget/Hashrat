@@ -232,6 +232,7 @@ int HashratHashSingleFile(HashratCtx *Ctx, const char *HashType, int FileType, c
     HASH *Hash;
     struct stat XattrStat;
     const char *ptr;
+    typedef long long unsigned int llui;
 
     *RetStr=CopyStr(*RetStr,"");
 
@@ -240,7 +241,7 @@ int HashratHashSingleFile(HashratCtx *Ctx, const char *HashType, int FileType, c
     {
         XAttrGetHash(Ctx, "user", Ctx->HashType, Path, &XattrStat, RetStr);
         //only use the hash cached in the xattr address if it's younger than the mtime
-        printf("cache %llu %llu %llu\n",XattrStat.st_mtime, FStat->st_mtime, XattrStat.st_mtime - FStat->st_mtime);
+        printf("cache %llu %llu %llu\n",(llui) XattrStat.st_mtime, (llui) FStat->st_mtime, (llui) (XattrStat.st_mtime - FStat->st_mtime));
         if ( ((XattrStat.st_mtime - FStat->st_mtime) < 10) ) *RetStr=CopyStr(*RetStr,"");
     }
 
