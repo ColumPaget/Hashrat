@@ -1,4 +1,5 @@
 CC = @CC@
+AR = @AR@
 VERSION = 5.14
 MAJOR=5
 LIBFILE=libUseful.so.$(VERSION)
@@ -18,7 +19,7 @@ all: $(OBJ)
 	-ln -s -r -f $(LIBFILE) libUseful-$(MAJOR).so
 	-ln -s -r -f $(LIBFILE) $(SONAME)
 	-ln -s -r -f $(LIBFILE) libUseful.so
-	ar rcs libUseful-$(VERSION).a $(OBJ)
+	$(AR) rcs libUseful-$(VERSION).a $(OBJ)
 	-ln -s -r -f libUseful-$(VERSION).a libUseful-$(MAJOR).a
 	-ln -s -r -f libUseful-$(VERSION).a libUseful.a
 
