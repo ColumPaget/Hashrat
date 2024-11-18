@@ -516,13 +516,13 @@ void CommandLinePrintUsage()
     printf("  %-15s %s\n","-h <script>", "Script to run when a file fails CHECK mode, or is found in MATCH mode.");
     printf("  %-15s %s\n","-hook <script>", "Script to run when a file fails CHECK mode, or is found in FIND mode");
     printf("  %-15s %s\n","-color", "Use ANSI color codes on output when checking hashes.");
-    printf("  %-15s %s\n","-strict", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
-    printf("  %-15s %s\n","-S", "Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash");
+    printf("  %-15s %s\n","-strict", "Strict mode: when checking, check file mtime, owner, group, and inode as well as its hash");
+    printf("  %-15s %s\n","-S", "Strict mode: when checking, check file mtime, owner, group, and inode as well as its hash");
     printf("  %-15s %s\n","-d","dereference (follow) symlinks");
     printf("  %-15s %s\n","-fs", "Stay on one file system");
     printf("  %-15s %s\n","-dir", "DirMode: Read all files in directory and create one hash for them!");
     printf("  %-15s %s\n","-dirmode", "DirMode: Read all files in directory and create one hash for them!");
-    printf("  %-15s %s\n","-devmode", "DevMode: read from a file EVEN OF IT'S A DEVNODE");
+    printf("  %-15s %s\n","-devmode", "DevMode: read from a file EVEN IF IT'S A DEVNODE");
     printf("  %-15s %s\n","-lines", "Read lines from stdin and hash each line independantly.");
     printf("  %-15s %s\n","-rawlines", "Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')");
     printf("  %-15s %s\n","-rl", "Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')");
