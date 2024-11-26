@@ -1,6 +1,6 @@
 AUTHOR
 ======
-Hashrat and libUseful are (C) 2014 Colum Paget. They are released under the Gnu Public License so you may do anything with them that the GPL allows.
+Hashrat and libUseful are (C) 2014 Colum Paget. They are released under the GNU Public License, so you may do anything with them that the GPL allows.
 
 Email: colums.projects@gmail.com
 
@@ -11,7 +11,7 @@ This is free software. It comes with no guarentees and I take no responsiblity i
 
 SYNOPSIS
 ========
-Hashrat is a hash-generation utility that supports the md5, sha1, sha256, sha512, whirlpool, jh-244, jh256, jh-384 and jh-512 hash functions, and also the HMAC versions of those functions. It can output in 'traditional' format (same as md5sum and shasum and the like), or it's own format. Hashes can be output in octal, decimal, hexadecimal, uppercase hexadecimal or base64. It supports directory recursion, hashing entire devices, and generating a hash for an entire directory. It has a 'CGI' mode that can be used as a web-page to lookup hashes. 
+Hashrat is a hash-generation utility that supports the md5, sha1, sha256, sha512, whirlpool, jh-244, jh256, jh-384 and jh-512 hash functions, and also the HMAC versions of those functions. It can output in 'traditional' format (same as md5sum and shasum and the like), or its own format. Hashes can be output in octal, decimal, hexadecimal, uppercase hexadecimal or base64. It supports directory recursion, hashing entire devices, and generating a hash for an entire directory. It has a 'CGI' mode that can be used as a web-page to lookup hashes. 
 
 
 CREDITS 
@@ -119,13 +119,13 @@ OPTIONS
   -h <script>     Script to run when a file fails CHECK mode, or is found in MATCH mode.
   -hook <script>  Script to run when a file fails CHECK mode, or is found in FIND mode
   -color          Use ANSI color codes on output when checking hashes.
-  -strict         Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
-  -S              Strict mode: when checking, check file mtime, owner, group, and inode as well as it's hash
+  -strict         Strict mode: when checking, check file mtime, owner, group, and inode as well as its hash
+  -S              Strict mode: when checking, check file mtime, owner, group, and inode as well as its hash
   -d              dereference (follow) symlinks
   -fs             Stay on one file system
   -dir            DirMode: Read all files in directory and create one hash for them!
   -dirmode        DirMode: Read all files in directory and create one hash for them!
-  -devmode        DevMode: read from a file EVEN OF IT'S A DEVNODE
+  -devmode        DevMode: read from a file EVEN IF IT'S A DEVNODE
   -lines          Read lines from stdin and hash each line independantly.
   -rawlines       Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
   -rl             Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
@@ -382,7 +382,7 @@ HOOKSCRIPTS
 
 Hookscripts, defined using the `-h` or `-hook` command-line options, are scripts that are run for each hashed item. `-h` and `-hook` options take an argument that is the path to the script. Hookscripts behave differently in different modes:
 
-* 'Check Hashes' mode:  The hookscript is called if a file doesn't match it's expected hash, or is not listed in the expected hashes. It is passed the path of the file.
+* 'Check Hashes' mode:  The hookscript is called if a file doesn't match its expected hash, or is not listed in the expected hashes. It is passed the path of the file.
 * 'Locate files' mode:  The hookscript is called if a file matches the hash to locate. It is passed the path of the file.
 * 'Find duplicates' mode: The hookscript is called if a file is a duplicate of another file. It is passed the paths of both files.
 

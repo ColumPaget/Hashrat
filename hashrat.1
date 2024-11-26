@@ -14,7 +14,7 @@
 .fi
 .SH DESCRIPTION
 Hashrat is a \fIhash\fP-generation utility that supports the md5, sha1, sha256, sha512, whirlpool, jh-224, jh256, jh-384 and jh-512 \fIhash\fP functions, and
-also the HMAC versions of those functions. It can output in traditional format (same as md5sum and shasum and the like) or it's own format.
+also the HMAC versions of those functions. It can output in traditional format (same as md5sum and shasum and the like) or its own format.
 .PP
 Hashes can be output in octal, decimal, hexadecimal, uppercase hexadecimal and various types of base32 and base64.
 .PP
@@ -255,7 +255,7 @@ Use ANSI color codes on output when checking \fIhashes\fP.
 .TP
 .B
 \fB-S\fP, \fB-strict\fP
-Strict mode: when checking, check \fIfile\fP mtime, owner, group, and inode as well as it's \fIhash\fP.
+Strict mode: when checking, check \fIfile\fP mtime, owner, group, and inode as well as its \fIhash\fP.
 .TP
 .B
 \fB-d\fP
@@ -272,7 +272,7 @@ DirMode: read all files in directory and create one \fIhash\fP for them (implies
 .TP
 .B
 \fB-devmode\fP
-DevMode: read from a \fIfile\fP EVEN OF IT'S A DEVNODE.
+DevMode: read from a \fIfile\fP EVEN IF IT'S A DEVNODE.
 .TP
 .B
 \fB-lines\fP
@@ -630,7 +630,7 @@ Hashrat can be used as a TOTP authenticator, and defaults to google-authenticato
 
 .TP
 \fBCheck Hashes\fP mode.
-The hookscript is called if a file doesn't match it's expected hash, or is not listed in the expected hashes. It is passed the path of the file.
+The hookscript is called if a file doesn't match its expected hash, or is not listed in the expected hashes. It is passed the path of the file.
 .TP
 \fBLocate files\fP mode  
 The hookscript is called if a file matches the hash to locate. It is passed the path of the file.
