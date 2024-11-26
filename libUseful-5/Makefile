@@ -1,4 +1,5 @@
 CC = gcc
+AR = ar
 VERSION = 5.14
 MAJOR=5
 LIBFILE=libUseful.so.$(VERSION)
