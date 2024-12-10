@@ -41,12 +41,12 @@ static int STREAMBasicAuthPasswordFile(const char *Path, STREAM *S)
     const char *ptr;
     int AuthResult=FALSE;
 
-    ptr=STREAMGetValue(S, "Auth:Basic");
-    printf("AB: [%s]\n", ptr);
-    if (! StrValid(ptr)) return(FALSE);
-
-    HTTPDecodeBasicAuth(ptr, &User, &Password);
-    AuthResult=PasswordFileCheck(Path, User, Password);
+		if (StrValid(Path))
+		{
+    User=CopyStr(User, STREAMGetValue(S, "AUTH:User"));
+    Password=CopyStr(Password, STREAMGetValue(S, "AUTH:Password"));
+    AuthResult=PasswordFileCheck(Path, User, Password, NULL);
+		}
 
     Destroy(User);
     Destroy(Password);
@@ -69,7 +69,6 @@ static int STREAMAuthProcess(STREAM *S, const char *AuthTypes)
     ptr=GetNameValuePair(AuthTypes, ";", ":",&Key, &Value);
     while (ptr)
     {
-        printf("AUTH: %s\n", Key);
         if (CompareStrNoCase(Key, "basic")==0)
         {
             Tempstr=EncodeBytes(Tempstr, Value, StrLen(Value), ENCODE_BASE64);
@@ -90,7 +89,7 @@ static int STREAMAuthProcess(STREAM *S, const char *AuthTypes)
         }
         else if (CompareStrNoCase(Key, "password-file")==0) AuthResult=STREAMBasicAuthPasswordFile(Value, S);
 
-        ptr=GetNameValuePair(ptr, ";", "=",&Key, &Value);
+        ptr=GetNameValuePair(ptr, ";", ":",&Key, &Value);
     }
 
     if (AuthResult==TRUE) STREAMSetValue(S, "STREAM:Authenticated", "Y");
@@ -109,10 +108,14 @@ int STREAMAuth(STREAM *S)
 {
     const char *ptr;
 
-    ptr=STREAMGetValue(S, "Authenticator");
+    ptr=STREAMGetValue(S, "AUTH:Types");
     if (! StrValid(ptr)) return(TRUE);
 
-    return(STREAMAuthProcess(S, ptr));
+    if (STREAMAuthProcess(S, ptr))
+		{
+      S->Flags |= LU_SS_AUTH;
+			return(TRUE);
+		}
 
     return(FALSE);
 }

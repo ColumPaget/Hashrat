@@ -24,7 +24,7 @@ lockstdin=<path> create a lockfile and hook it to stdin. This is used with progr
 
 trust           'trust' command. without this option certain characters are stripped from any commands that are run with the
                 'SpawnCommand' functions, notably ';' and '|'. You cannot therefore concatanate commands without using this
-								option.
+		option.
 
 pty             instead of using pipes to talk to the child process use a pseudo tty device. This creates a link where text sent
                 to the command undergoes input processing as though it was from a keyboard

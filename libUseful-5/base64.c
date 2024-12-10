@@ -1,7 +1,9 @@
 /*
  * base64.c -- base-64 conversion routines.
  *
- * For license terms, see the file COPYING in this directory.
+ * This base64 code is adapted from code from the fetchmail program.
+ * It is GPL v2 or later as covered in fetchmail's 'COPYING' file.
+ * It is believed to be written written by Eric S Raymond.
  *
  * This base 64 encoding is defined in RFC2045 section 6.8,
  * "Base64 Content-Transfer-Encoding", but lines must not be broken in the
@@ -47,7 +49,7 @@ void Radix64frombits(unsigned char *out, const unsigned char *in, int inlen, con
 
 void to64frombits(char *out, const char *in, int inlen)
 {
-    Radix64frombits(out, in, inlen, BASE64_CHARS,'=');
+    Radix64frombits((unsigned char *) out, (const unsigned char *) in, inlen, BASE64_CHARS,'=');
 }
 
 

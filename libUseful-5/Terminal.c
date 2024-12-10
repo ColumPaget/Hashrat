@@ -133,6 +133,23 @@ int TerminalStrLen(const char *Str)
 }
 
 
+char *TerminalPadStr(char *Str, int PadChar, int PadTo)
+{
+    int term_len, len, diff, max;
+
+    term_len=TerminalStrLen(Str);
+    len=StrLen(Str);
+    diff=PadTo-term_len;
+    max=len+diff;
+    while (len < max)
+    {
+        Str=AddCharToBuffer(Str, len, PadChar);
+        len++;
+    }
+
+    return(Str);
+}
+
 
 char *TerminalStrTrunc(char *Str, int MaxLen)
 {
@@ -246,6 +263,7 @@ int ANSIParseColor(const char *Str)
 void TerminalGeometry(STREAM *S, int *wid, int *len)
 {
     struct winsize w;
+    char *Tempstr=NULL;
     const char *ptr;
     int val=0;
 
@@ -268,6 +286,14 @@ void TerminalGeometry(STREAM *S, int *wid, int *len)
 
     *wid=w.ws_col;
     *len=w.ws_row;
+
+
+    Tempstr=FormatStr(Tempstr,"%d", *wid);
+    STREAMSetValue(S, "Terminal:cols", Tempstr);
+    Tempstr=FormatStr(Tempstr,"%d", *len);
+    STREAMSetValue(S, "Terminal:rows", Tempstr);
+
+    Destroy(Tempstr);
 }
 
 
@@ -369,6 +395,12 @@ const char *TerminalAlignText(const char *Text, char **RetStr, int Flags, STREAM
     int pos=0, cols, rows, len, i;
     const char *ptr;
 
+    if (! Term)
+    {
+        *RetStr=CopyStr(*RetStr, Text);
+        return(Text+StrLen(Text));
+    }
+
     TerminalGeometry(Term, &cols, &rows);
     len=TerminalStrLen(Text);
 
@@ -399,7 +431,6 @@ const char *TerminalAlignText(const char *Text, char **RetStr, int Flags, STREAM
 
 char *TerminalCommandStr(char *RetStr, int Cmd, int Arg1, int Arg2)
 {
-    int i;
     char *Tempstr=NULL;
 
     switch (Cmd)
@@ -575,7 +606,7 @@ char *TerminalFillToEndOfLine(char *RetStr, int fill_char, STREAM *Term)
 
 const char *TerminalFormatSubStr(const char *Str, char **RetStr, STREAM *Term)
 {
-    const char *ptr, *end;
+    const char *ptr;
     char *Tempstr=NULL;
     long val;
     int Fg, Bg;
@@ -770,6 +801,7 @@ void TerminalPutChar(int Char, STREAM *S)
         else result=write(1,Tempstr,StrLen(Tempstr));
     }
 
+
     Destroy(Tempstr);
 }
 
@@ -786,6 +818,21 @@ void TerminalPutStr(const char *Str, STREAM *S)
     len=StrLenFromCache(Tempstr);
     if (S) STREAMWriteBytes(S, Tempstr, len);
     else result=write(1,Tempstr,len);
+
+    Destroy(Tempstr);
+}
+
+
+
+void TerminalPrint(STREAM *S, const char *FmtStr, ...)
+{
+    char *Tempstr=NULL;
+    va_list args;
+
+    va_start(args,FmtStr);
+    Tempstr=VFormatStr(Tempstr, FmtStr, args);
+    va_end(args);
+    TerminalPutStr(Tempstr, S);
 
     Destroy(Tempstr);
 }
@@ -964,13 +1011,14 @@ char *TerminalReadText(char *RetStr, int Flags, STREAM *S)
 
         switch (inchar)
         {
+        //seems like control-c sends this
+        case STREAM_NODATA:
         case ESCAPE:
             Destroy(RetStr);
             return(NULL);
             break;
 
         case STREAM_TIMEOUT:
-        case STREAM_NODATA:
         case '\n':
         case '\r':
             break;
@@ -1057,10 +1105,6 @@ int TerminalInit(STREAM *S, int Flags)
     int ttyflags=0;
 
     TerminalGeometry(S, &cols, &rows);
-    Tempstr=FormatStr(Tempstr,"%d",cols);
-    STREAMSetValue(S, "Terminal:cols", Tempstr);
-    Tempstr=FormatStr(Tempstr,"%d",rows);
-    STREAMSetValue(S, "Terminal:rows", Tempstr);
     STREAMSetValue(S, "Terminal:top", "0");
 
 
@@ -1074,7 +1118,7 @@ int TerminalInit(STREAM *S, int Flags)
         if (ttyflags) TTYConfig(S->in_fd, 0, ttyflags);
     }
 
-    XtermSetDefaultColors(S, TerminalThemeGet("Terminal:Attribs"));
+    XtermSetDefaultColors(S, TerminalThemeGet("Terminal", "Attribs"));
     TerminalBarsInit(S);
     if (Flags & TERM_WHEELMOUSE) STREAMWriteLine("\x1b[?1000h", S);
     else if (Flags & TERM_MOUSE) STREAMWriteLine("\x1b[?9h", S);

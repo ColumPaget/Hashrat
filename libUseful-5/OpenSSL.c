@@ -61,15 +61,12 @@ static void STREAM_INTERNAL_SSL_ADD_SECURE_KEYS_LIST(STREAM *S, SSL_CTX *ctx, Li
 
 static void STREAM_INTERNAL_SSL_ADD_SECURE_KEYS(STREAM *S, SSL_CTX *ctx)
 {
-    ListNode *Curr;
     char *VerifyFile=NULL, *VerifyPath=NULL;
 
     SSL_CTX_set_default_verify_paths(ctx);
 
 //Default Verify path
 //VerifyFile=CopyStr(VerifyFile,"/etc/ssl/certs/cacert.pem");
-
-    Curr=ListGetNext(LibUsefulValuesGetHead());
 
     STREAM_INTERNAL_SSL_ADD_SECURE_KEYS_LIST(S, ctx, LibUsefulValuesGetHead(), &VerifyPath, &VerifyFile);
     STREAM_INTERNAL_SSL_ADD_SECURE_KEYS_LIST(S, ctx, S->Values, &VerifyPath, &VerifyFile);
@@ -609,7 +606,7 @@ void OpenSSLGenerateDHParams()
 
 int DoSSLClientNegotiation(STREAM *S, int Flags)
 {
-    int result=FALSE, i, val;
+    int result=FALSE, i;
     char *Token=NULL;
 #ifdef HAVE_LIBSSL
     const SSL_METHOD *Method;
@@ -669,7 +666,7 @@ int DoSSLClientNegotiation(STREAM *S, int Flags)
 
             result=SSL_do_handshake(ssl);
 
-            S->State |= SS_SSL;
+            S->State |= LU_SS_SSL;
 
             OpenSSLQueryCipher(S);
             OpenSSLVerifyCertificate(S, LU_SSL_VERIFY_HOSTNAME);
@@ -696,8 +693,6 @@ int DoSSLServerNegotiation(STREAM *S, int Flags)
     const SSL_METHOD *Method;
     SSL_CTX *ctx;
     SSL *ssl;
-    const char *ptr;
-
 
     if (S)
     {
@@ -745,7 +740,7 @@ int DoSSLServerNegotiation(STREAM *S, int Flags)
                         break;
 
                     case TRUE:
-                        S->State |= SS_SSL;
+                        S->State |= LU_SS_SSL;
                         if (Flags & LU_SSL_VERIFY_PEER) OpenSSLVerifyCertificate(S, 0);
                         OpenSSLQueryCipher(S);
                         break;
@@ -798,7 +793,7 @@ int OpenSSLSTREAMCheckForBytes(STREAM *S)
 
 //if there are bytes available in the internal OpenSSL buffers, when we don't have to
 //wait on a select, we can just go straight through to SSL_read
-    if (S->State & SS_SSL)
+    if (S->State & LU_SS_SSL)
     {
         //ssl pending checks if there's bytes in the SSL buffer, it's not a select
         byte_count=SSL_pending(SSL_OBJ);
@@ -811,13 +806,13 @@ int OpenSSLSTREAMCheckForBytes(STREAM *S)
 
 int OpenSSLSTREAMReadBytes(STREAM *S, char *Data, int len)
 {
-    int bytes_read=0, val;
+    int bytes_read=0;
 #ifdef HAVE_LIBSSL
     SSL *SSL_OBJ;
 
 
     SSL_OBJ=(SSL *) STREAMGetItem(S,"LIBUSEFUL-SSL:OBJ");
-    if (S->State & SS_SSL)
+    if (S->State & LU_SS_SSL)
     {
         bytes_read=SSL_read(SSL_OBJ, Data, len);
         //  saved_errno is used in all cases to capture errno before another function changes it
@@ -895,7 +890,7 @@ void OpenSSLClose(STREAM *S)
     }
 #endif
 
-    S->State &= ~SS_SSL;
+    S->State &= ~LU_SS_SSL;
 }
 
 

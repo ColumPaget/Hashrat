@@ -1,11 +1,21 @@
 AC_INIT
 
 AC_PROG_CC
-AC_PROG_AR
 AC_LANG([C])
 AC_PROG_MAKE_SET
 AC_PROG_EGREP
 AC_SYS_LARGEFILE
+
+m4_ifdef([AC_PROG_AR], [AC_PROG_AR])
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
+if test "$AR" = ""
+then
+AR=ar
+fi
+AC_SUBST(AR)
+
+echo "CC=$CC AR=$AR"
+
 
 cf_have_libssl=no
 cf_have_libcrypto=no
@@ -16,6 +26,9 @@ cf_use_sendfile=no
 cf_use_xattr=no
 
 cf_use_hashopenssl=auto
+
+
+
 
 AC_ARG_ENABLE(wall, [  --enable-wall               use -Wall to get maximum compile warnings], cf_use_wall=$enableval, cf_use_wall=no )
 if test "$cf_use_wall" = "yes"
@@ -69,7 +82,6 @@ CFLAGS="$CFLAGS -fstack-protector-strong"
 fi
 
 
-
 AC_CHECK_LIB(c,get_current_dir_name,,)
 cf_have_get_current_dir_name=$ac_cv_lib_c_get_current_dir_name
 if test "$cf_have_get_current_dir_name" = "yes"
@@ -78,7 +90,7 @@ AC_DEFINE([HAVE_GET_CURR_DIR])
 fi
 
 
-AC_CHECK_FUNCS(ptsname_r clearenv setresuid initgroups poll mlock mlockall munlockall madvise htonll ntohll mkostemp mount umount umount2 getentropy)
+AC_CHECK_FUNCS(ptsname_r clearenv setresuid initgroups poll mlock mlockall munlockall madvise htonll ntohll mkostemp mount umount umount2 getentropy prctl)
 
 
 AC_ARG_ENABLE(sendfile, [  --enable-sendfile           enable 'fastcopy' sendfile support], cf_use_sendfile=$enableval, cf_use_sendfile=auto )
@@ -111,6 +123,19 @@ then
 AC_DEFINE([HAVE_XATTR])
 fi
 fi
+
+AC_ARG_ENABLE(fsflags, [  --enable-fsflags              enable support for immutable and append-only files (and use of these in logs) ], cf_use_fsflags=$enableval, cf_use_fsflags=no )
+
+if test "$cf_use_fsflags" = "yes"
+then
+AC_CHECK_HEADER(linux/fs.h,cf_have_fsflags=yes,,)
+fi
+
+if test "$cf_have_fsflags" = "yes"
+then
+AC_DEFINE([USE_FSFLAGS])
+fi
+
 
 
 AC_ARG_ENABLE(namespaces, [  --enable-namespaces         enable linux namespace support], cf_use_namespaces=$enableval, cf_use_namespaces=yes )
@@ -176,7 +201,7 @@ if test "$cf_have_libssl" = "yes"
 then
 cf_use_zlib=yes
 
-AC_CHECK_FUNCS(OpenSSL_add_all_algorithms EVP_MD_CTX_create EVP_MD_CTX_new EVP_MD_CTX_destroy EVP_MD_CTX_free EVP_bf_cbc EVP_rc2_cbc EVP_rc4 EVP_rc5_32_12_16_cbc EVP_des_cbc EVP_desx_cbc EVP_cast5_cbc EVP_idea_cbc EVP_aes_128_cbc EVP_aes_256_cbc X509_check_host SSL_set_tlsext_host_name SSL_set_min_proto_version)
+AC_CHECK_FUNCS(OpenSSL_add_all_algorithms EVP_MD_CTX_create EVP_MD_CTX_new EVP_MD_CTX_destroy EVP_MD_CTX_free X509_check_host SSL_set_tlsext_host_name SSL_set_min_proto_version EVP_CIPHER_fetch )
 
 
 AC_CHECK_DECLS(OpenSSL_add_all_algorithms,AC_DEFINE([HAVE_OPENSSL_ADD_ALL_ALGORITHMS]),[],[[#include <openssl/ssl.h>]])
@@ -239,6 +264,25 @@ AC_DEFINE([USE_CAPABILITIES])
 fi
 
 
+
+AC_ARG_ENABLE(seccomp, [  --enable-seccomp           enable seccomp to limit process syscalls], cf_use_seccomp=$enableval, cf_use_seccomp=no)
+
+if test "$cf_use_seccomp" = "yes"
+then
+AC_CHECK_HEADER([linux/seccomp.h],,cf_use_seccomp=no,)
+AC_CHECK_HEADER([linux/filter.h],,cf_use_seccomp=no,)
+AC_CHECK_HEADER([linux/bpf.h],,cf_use_seccomp=no,)
+AC_CHECK_LIB(c,prctl,,cf_use_seccomp=no)
+if test "$cf_use_seccomp" = "yes"
+then
+AC_DEFINE([USE_SECCOMP])
+fi
+
+fi
+
+
+
+
 dnl read Makefile.in and write Makefile 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
@@ -296,6 +340,13 @@ else
 echo "zlib NOT enabled"
 fi
 
+if test "$cf_have_fsflags" = "yes"
+then
+echo "support for FS_APPEND_FL and FS_IMMUTABLE_FL flags and hardened logs enabled"
+else
+echo "support for FS_APPEND_FL and FS_IMMUTABLE_FL flags and hardened logs NOT enabled"
+fi
+
 if test "$cf_have_unshare" = "yes" -o "$cf_have_setns" = "yes"
 then
 echo "linux namespace support enabled"
@@ -308,5 +359,12 @@ then
 echo "linux capabilities support enabled"
 else
 echo "linux capabilities support NOT enabled"
+fi
+
+if test "$cf_use_seccomp" = "yes"
+then
+echo "linux seccomp support enabled"
+else
+echo "linux seccomp support NOT enabled"
 fi
 

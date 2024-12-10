@@ -194,7 +194,6 @@ char *VCatStr(char *Dest, const char *Str1,  va_list args)
     size_t len=0, ilen;
     char *ptr=NULL;
     const char *sptr=NULL;
-    char *eptr;
 
 
     if (Dest !=NULL)
@@ -298,7 +297,7 @@ int StrRTruncChar(char *Str, char Term)
 char *PadStr(char*Dest, char Pad, int PadLen)
 {
     char *NewStr=NULL;
-    int i, len, abslen;
+    int i, abslen;
 
     if (PadLen==0) return(Dest);
     if (PadLen < 0) abslen=0-PadLen;
@@ -326,7 +325,6 @@ char *PadStr(char*Dest, char Pad, int PadLen)
 
 char *PadStrTo(char*Dest, char Pad, int PadLen)
 {
-    char *NewStr=NULL;
     int val, len;
 
     if (PadLen==0) return(Dest);
@@ -589,7 +587,7 @@ char *StripQuotes(char *Str)
 char *QuoteCharsInStr(char *Buffer, const char *String, const char *QuoteChars)
 {
     char *RetStr=NULL;
-    const char *sptr, *cptr;
+    const char *sptr;
     size_t olen=0;
 
     RetStr=CopyStr(Buffer,"");

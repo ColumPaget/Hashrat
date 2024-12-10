@@ -159,7 +159,7 @@ static int pmatch_quot(const char **P_PtrPtr, const char **S_PtrPtr, int *Flags)
 {
     int result=MATCH_FAIL, OldFlags;
     char P_Char, S_Char;
-    const char *OldPos, *ptr;
+    const char *OldPos;
 
     P_Char=**P_PtrPtr;
     S_Char=**S_PtrPtr;
@@ -692,7 +692,7 @@ int pmatch(const char *Pattern, const char *String, int Len, ListNode *Matches, 
     const char **Compiled=NULL;
     const char *s_ptr, *s_end;
     const char *Start=NULL,  *End=NULL;
-    int result=0, mcount=0, i;
+    int result=0, mcount=0;
 
     pmatch_compile(Pattern,&Compiled);
 

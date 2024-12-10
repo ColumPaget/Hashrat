@@ -15,7 +15,7 @@ typedef struct
 
 
 
-static int HTTPChunkedInit(TProcessingModule *Mod, const char *Args)
+static int HTTPChunkedInit(TProcessingModule *Mod, const char *Args, unsigned char **Header, int *HeadLen)
 {
     Mod->Data=(THTTPChunk *) calloc(1, sizeof(THTTPChunk));
 
@@ -134,7 +134,7 @@ void HTTPAddChunkedProcessor(STREAM *S)
     Mod->Read=HTTPChunkedRead;
     Mod->Close=HTTPChunkedClose;
 
-    Mod->Init(Mod, "");
-    STREAMAddDataProcessor(S,Mod,"");
+    Mod->Init(Mod, "", NULL, NULL);
+    STREAMAddDataProcessor(S, Mod);
 }
 

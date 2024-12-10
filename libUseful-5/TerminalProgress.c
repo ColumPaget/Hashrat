@@ -1,12 +1,10 @@
 #include "TerminalProgress.h"
-#include "TerminalTheme.h"
 
 TERMPROGRESS *TerminalProgressCreate(STREAM *Term, const char *Config)
 {
     TERMPROGRESS *TP;
 
-    TP=TerminalWidgetCreate(Term, "progress=* remain=' ' left-contain=' [' right-contain='] '");
-    TerminalThemeApply(TP, "Progress");
+    TP=TerminalWidgetCreate(Term, "type=progress");
     TerminalWidgetParseConfig(TP, Config);
     return(TP);
 }
@@ -15,28 +13,38 @@ TERMPROGRESS *TerminalProgressCreate(STREAM *Term, const char *Config)
 void TerminalProgressDraw(TERMPROGRESS *TP, float Fract, const char *Info)
 {
     char *Tempstr=NULL, *Bar=NULL, *Remain=NULL;
-    int i, len;
+    const char *ptr;
+    int len, wide;
+
+    wide=TP->wid;
+    if (TP->Term)
+    {
+        if (wide < 0) wide=atoi(STREAMGetValue(TP->Term, "Terminal:cols")) + TP->wid - TP->x - TerminalStrLen(TP->Text) - TerminalStrLen(Info);
+    }
 
     if (TP->Flags & TERMMENU_POSITIONED) TerminalCommand(TERM_CURSOR_MOVE, TP->x, TP->y, TP->Term);
     else Tempstr=CopyStr(Tempstr, "\r");
 
     if (StrValid(TP->Text)) Tempstr=CatStr(Tempstr, TP->Text);
 
-    Tempstr=MCatStr(Tempstr, GetVar(TP->Options, "LeftContainer"), TP->SelectedAttribs, NULL);
+    Tempstr=MCatStr(Tempstr, TP->CursorLeft, TP->SelectedAttribs, NULL);
 
-    len=(int) (TP->wid * Fract + 0.5);
-    Bar=PadStr(Bar, *TP->CursorLeft, len);
-
+    len=(int) (wide * Fract + 0.5);
+    ptr=GetVar(TP->Options, "progress");
+    if (! StrValid(ptr)) ptr=" ";
+    Bar=PadStr(Bar, *ptr, len);
     Tempstr=CatStr(Tempstr, Bar);
 
     if (StrValid(TP->Attribs)) Tempstr=CatStr(Tempstr, TP->Attribs);
     else if (StrValid(TP->SelectedAttribs)) Tempstr=CatStr(Tempstr, "~0");
 
-    Remain=PadStr(Remain, *TP->CursorRight, TP->wid - len);
+    ptr=GetVar(TP->Options, "remain");
+    if (! StrValid(ptr)) ptr=" ";
+    Remain=PadStr(Remain, *ptr, wide - len);
     Tempstr=CatStr(Tempstr, Remain);
 
     if (StrValid(TP->Attribs)) Tempstr=CatStr(Tempstr, "~0");
-    Tempstr=CatStr(Tempstr, GetVar(TP->Options, "RightContainer"));
+    Tempstr=CatStr(Tempstr, TP->CursorRight);
     if (StrValid(Info)) Tempstr=MCatStr(Tempstr, Info, "~>", NULL);
 
     TerminalPutStr(Tempstr, TP->Term);

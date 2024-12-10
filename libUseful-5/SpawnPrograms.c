@@ -7,6 +7,7 @@
 #include "String.h"
 #include "Errors.h"
 #include "FileSystem.h"
+#include "Container.h"
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 
@@ -43,7 +44,7 @@ int SpawnParseConfig(const char *Config)
 //This is the function we call in the child process for 'SpawnCommand'
 int BASIC_FUNC_EXEC_COMMAND(void *Command, int Flags)
 {
-    int result;
+    int result=-1;
     char *Token=NULL, *FinalCommand=NULL, *ExecPath=NULL;
     char **argv;
     const char *ptr;
@@ -76,7 +77,7 @@ int BASIC_FUNC_EXEC_COMMAND(void *Command, int Flags)
             argv[i]=CopyStr(argv[i],Token);
         }
 
-        execv(ExecPath, argv);
+        result=execv(ExecPath, argv);
     }
     else result=execl("/bin/sh","/bin/sh","-c",(char *) Command,NULL);
 
@@ -116,7 +117,6 @@ pid_t xfork(const char *Config)
 pid_t xforkio(int StdIn, int StdOut, int StdErr)
 {
     pid_t pid;
-    int fd;
 
     pid=xfork("");
     if (pid==0)
@@ -213,7 +213,6 @@ pid_t PipeSpawnFunction(int *infd, int *outfd, int *errfd, BASIC_FUNC Func, void
     //default these to stdin, stdout and stderr and then override those later
     int c1=0, c2=1, c3=2;
     int channel1[2], channel2[2], channel3[2];
-    int result;
     int Flags=0;
 
     Flags=SpawnParseConfig(Config);
@@ -233,6 +232,7 @@ pid_t PipeSpawnFunction(int *infd, int *outfd, int *errfd, BASIC_FUNC Func, void
 
         //if Func is NULL we effectively do a fork, rather than calling a function we just
         //continue exectution from where we were
+
         Flags=ProcessApplyConfig(Config);
         if (Func)
         {
@@ -281,23 +281,25 @@ pid_t PipeSpawn(int *infd,int  *outfd,int  *errfd, const char *Command, const ch
 pid_t PseudoTTYSpawnFunction(int *ret_pty, BASIC_FUNC Func, void *Data, int Flags, const char *Config)
 {
     pid_t pid=-1, ConfigFlags=0;
-    int tty, pty, i;
+    int tty, pty;
 
     if (PseudoTTYGrab(&pty, &tty, Flags))
     {
+        //ContainerApplyConfig(Config);
         pid=xforkio(tty, tty, tty);
         if (pid==0)
         {
             close(pty);
 
-            ProcessSetControlTTY(tty);
+            ConfigFlags=ProcessApplyConfig(Config);
+
             setsid();
+            ProcessSetControlTTY(tty);
 
             ///now that we've dupped it, we don't need to keep it open
             //as it will be open on stdin/stdout
             close(tty);
 
-            ConfigFlags=ProcessApplyConfig(Config);
 
             //if Func is NULL we effectively do a fork, rather than calling a function we just
             //continue exectution from where we were
@@ -348,18 +350,15 @@ STREAM *STREAMSpawnFunction(BASIC_FUNC Func, void *Data, const char *Config)
     if (pid > 0)
     {
         S=STREAMFromDualFD(from_fd, to_fd);
-        /*
-        if (waitpid(pid, NULL, WNOHANG) < 1)
-        //sleep to allow spawned function time to exit due to startup problems
-        usleep(250);
-        //use waitpid to check process has not exited, if so then spawn stream
-        else fprintf(stderr, "ERROR: Subprocess exited: %s %s\n", strerror(errno), Data);
-        */
     }
 
     if (S)
     {
-        STREAMSetFlushType(S,FLUSH_LINE,0,0);
+        //if we are doing to be sending raw data to the process, then flush always
+        //otherwise we expect lines of text and flush on a line terminator
+        if (Flags & TTYFLAG_DATA) STREAMSetFlushType(S,FLUSH_ALWAYS,0,0);
+        else STREAMSetFlushType(S,FLUSH_LINE,0,0);
+
         Tempstr=FormatStr(Tempstr,"%d",pid);
         STREAMSetValue(S,"PeerPID",Tempstr);
         S->Type=STREAM_TYPE_PIPE;
@@ -413,6 +412,7 @@ int STREAMSpawnCommandAndPty(const char *Command, const char *Config, STREAM **C
 
     if (PseudoTTYGrab(&pty, &tty, TTYFLAG_PTY))
     {
+        //ContainerApplyConfig(Config);
         //handle situation where Config might be null
         if (StrValid(Config)) Tempstr=CopyStr(Tempstr, Config);
         else Tempstr=CopyStr(Tempstr, "rw");

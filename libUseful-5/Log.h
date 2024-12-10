@@ -13,10 +13,18 @@ Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 
 /*
 This module provides log file functions. It keeps an internal list of log files so that you can just write to them without
-worrying about opening or closeing them. These are separate log files from the syslog system, though these functions can
+worrying about opening or closing them. These are separate log files from the syslog system, though these functions can
 write to syslog. These logfiles can auto-rotate when they reach a certain size. 
 
 For most people only the function LogToFile will be relevant and perhaps LogFileSetDefaults and LogFileFindSetValues.
+
+Setting MaxSize when calling LogFileSetDefaults or LogFileFindSetValues will cause a logfile to be rotated when it goes over this size.
+This means it will be moved to a new filename with a numeric suffix. When this numeric suffix becomes greater than 'MaxRotate', the file
+will be deleted. This means you get to keep the current logfile and 'MaxRotate' logfiles that existed before it.
+
+if you set the 'LOGFILE_HARDEN' flag, logfiles will be created with the 'append only' flag on linux and log file rotation will be
+disabled. This is because 'append only' and rotation are fundamentally incompatible, as you cannot rename an 'append only' file.
+However, 'append only' requires the file to be opened as root, or by a user with the appropriate capabilities inherited
 */
 
 
@@ -29,7 +37,7 @@ For most people only the function LogToFile will be relevant and perhaps LogFile
 #define LOGFILE_LOCK 16        // lock the file on every write
 #define LOGFILE_TIMESTAMP 32   // include a timestamp in the log message
 #define LOGFILE_MILLISECS 64   // include milliseconds in the timestamp
-#define LOGFILE_HARDEN 512     // harden logfile against tampering (uses appendonly and immutable flags on filesystems that support it)
+#define LOGFILE_HARDEN 512     // harden logfile against tampering (uses appendonly flags on filesystems that support it. Disables log rotation.)
 #define LOGFILE_REPEATS   4096  // don't write repeat lines, instead count them and write 'last message repeated %d times'
 #define LOGFILE_CACHETIME 8192  // use cached time in logfiles. This means user must called 'GetTime(0)' themselves to update time
 #define LOGFILE_PLAIN 536870912

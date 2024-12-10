@@ -26,9 +26,10 @@ const char *ToSIUnit(double Value, int Base, int Precision);
 #define ToMetric(Value, Precision) (ToSIUnit((Value), 1000, Precision))
 
 //Convert to and from metric
-double FromSIUnit(const char *Data, int BAse);
+double FromSIUnit(const char *Data, int Base);
 #define FromIEC(Value, Precision) (FromSIUnit((Value), 1024))
 #define FromMetric(Value, Precision) (FromSIUnit((Value), 1000))
+
 
 
 #ifdef __cplusplus

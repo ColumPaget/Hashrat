@@ -40,9 +40,9 @@ int zlibProcessorWrite(TProcessingModule *ProcMod, const char *InData, unsigned 
 
 
     ZData->z_out.avail_in=InLen;
-    ZData->z_out.next_in=(char *) InData;
+    ZData->z_out.next_in=(Bytef *) InData;
     ZData->z_out.avail_out=*OutLen;
-    ZData->z_out.next_out=*OutData;
+    ZData->z_out.next_out=(Bytef *) *OutData;
 
     while ((ZData->z_out.avail_in > 0) || Flush)
     {
@@ -88,9 +88,9 @@ int zlibProcessorRead(TProcessingModule *ProcMod, const char *InData, unsigned l
 
 
     ZData->z_in.avail_in=InLen;
-    ZData->z_in.next_in=(char *) InData;
+    ZData->z_in.next_in=(Bytef *) InData;
     ZData->z_in.avail_out=*OutLen;
-    ZData->z_in.next_out=*OutData;
+    ZData->z_in.next_out=(Bytef *) *OutData;
 
     while ((ZData->z_in.avail_in > 0) || Flush)
     {
@@ -119,7 +119,7 @@ int zlibProcessorRead(TProcessingModule *ProcMod, const char *InData, unsigned l
         {
             (*OutLen)+=BUFSIZ;
             *OutData=(char *) realloc(*OutData,*OutLen);
-            ZData->z_in.next_out=(*OutData) + bytes_read;
+            ZData->z_in.next_out=(Bytef *) (*OutData) + bytes_read;
             ZData->z_in.avail_out=(*OutLen) - bytes_read;
         }
 
@@ -155,7 +155,7 @@ int zlibProcessorClose(TProcessingModule *ProcMod)
 #define COMP_ZLIB 0
 #define COMP_GZIP 1
 
-int zlibProcessorInit(TProcessingModule *ProcMod, const char *Args)
+int zlibProcessorInit(TProcessingModule *ProcMod, const char *Args, unsigned char **Header, int *HeadLen)
 {
     int result=FALSE;
 
@@ -219,7 +219,7 @@ int CompressBytes(char **Out, const char *Alg, const char *In, unsigned long Len
     int result;
 
     Tempstr=FormatStr(Tempstr,"CompressionLevel=%d",Level);
-    Mod=StandardDataProcessorCreate("compress",Alg,Tempstr);
+    Mod=StandardDataProcessorCreate("compress",Alg,Tempstr, NULL, NULL);
     if (! Mod) return(-1);
 
     val=Len *2;
@@ -239,7 +239,7 @@ int DeCompressBytes(char **Out, const char *Alg, const char *In, unsigned long L
     int result;
     unsigned long val;
 
-    Mod=StandardDataProcessorCreate("decompress",Alg,"");
+    Mod=StandardDataProcessorCreate("decompress",Alg,"",NULL, NULL);
     if (! Mod) return(-1);
 
     val=Len *2;

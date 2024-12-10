@@ -1,8 +1,9 @@
 #include "Process.h"
+#include "Container.h"
+
 #include "errno.h"
 #include "includes.h"
 #include <pwd.h>
-#include <sched.h>
 #include <sys/mount.h>
 #include <sys/resource.h>
 #include <sys/mman.h>
@@ -16,10 +17,15 @@
 #include "FileSystem.h"
 #include "UnitsOfMeasure.h"
 #include "Users.h"
+#include "Seccomp.h"
 
 //needed for 'flock' used by CreatePidFile and CreateLockFile
 #include <sys/file.h>
 
+#ifdef HAVE_PRCTL
+#include <linux/prctl.h>  /* Definition of PR_* constants */
+#include <sys/prctl.h>
+#endif
 
 /*This is code to change the command-line of a program as visible in ps */
 
@@ -53,6 +59,7 @@ int ProcessSetCapabilities(const char *CapNames)
     char *Token=NULL;
     const char *ptr;
     cap_t caps;
+    uid_t uid;
 
     caps=cap_get_proc();
     cap_clear(caps);
@@ -96,11 +103,16 @@ int ProcessSetCapabilities(const char *CapNames)
 
     cap_set_proc(caps);
 
+    uid=getuid();
 #ifdef HAVE_SETRESUID
-    setresuid(99,99,99);
+    setresuid( uid, uid, uid);
 #else
-    setreuid(99,99);
+    setreuid( uid, uid);
 #endif
+
+    // once our capabilites are set, we can't be adding any
+    // further privilidges
+    ProcessNoNewPrivs();
 
     Destroy(Token);
 
@@ -118,7 +130,7 @@ void ProcessSetControlTTY(int fd)
 {
 // TIOCSCTTY doesn't seem to exist under macosx!
 #ifdef TIOCSCTTY
-    ioctl(fd,TIOCSCTTY,0);
+    ioctl(fd,TIOCSCTTY,1);
 #endif
 }
 
@@ -270,417 +282,7 @@ void LU_DefaultSignalHandler(int sig)
 
 
 
-void InitSigHandler(int sig)
-{
-}
 
-
-
-
-void ProcessContainerInit(int tunfd, int linkfd, pid_t Child, int RemoveRootDir)
-{
-    ListNode *Connections=NULL;
-    STREAM *TunS=NULL, *LinkS=NULL, *S;
-    struct sigaction sa;
-
-    /* //this feature not working yet
-    if ((linkfd > -1) && (tunfd > -1))
-    {
-    Connections=ListCreate();
-    LinkS=STREAMFromFD(linkfd);
-    STREAMSetFlushType(LinkS, FLUSH_ALWAYS, 0, 0);
-    if (LinkS) ListAddItem(Connections, LinkS);
-
-    TunS=STREAMFromFD(tunfd);
-    STREAMSetFlushType(TunS, FLUSH_ALWAYS, 0, 0);
-    if (TunS) ListAddItem(Connections, TunS);
-    }
-    */
-
-
-    //this process is init, the child will carry on executation
-    if (chroot(".") == -1) RaiseError(ERRFLAG_ERRNO, "chroot", "failed to chroot to curr directory");
-    ProcessSetTitle("init");
-
-    memset(&sa,0,sizeof(sa));
-    sa.sa_handler=InitSigHandler;
-    sa.sa_flags=SA_NOCLDSTOP;
-    sigaction(SIGCHLD, &sa,NULL);
-    while (Connections)
-    {
-        S=STREAMSelect(Connections, NULL);
-        if (S==TunS) STREAMSendFile(S, LinkS, BUFSIZ, SENDFILE_KERNEL);
-        else if (S==LinkS) STREAMSendFile(S, TunS, BUFSIZ, SENDFILE_KERNEL);
-        if (waitpid(-1, NULL,WNOHANG) == -1) break;
-    }
-
-    while (waitpid(-1,NULL,0) != -1);
-
-    FileSystemUnMount("/proc","rmdir");
-    if (RemoveRootDir) FileSystemUnMount("/","recurse,rmdir");
-    else
-    {
-        FileSystemUnMount("/","subdirs,rmdir");
-        FileSystemUnMount("/","recurse");
-    }
-
-    STREAMClose(TunS);
-    STREAMClose(LinkS);
-
-    _exit(0);
-}
-
-
-int JoinNamespace(const char *Namespace, int type)
-{
-    char *Tempstr=NULL;
-    struct stat Stat;
-    glob_t Glob;
-    int i, fd, result=FALSE;
-
-#ifdef HAVE_SETNS
-    stat(Namespace,&Stat);
-    if (S_ISDIR(Stat.st_mode))
-    {
-        Tempstr=MCopyStr(Tempstr,Namespace,"/*",NULL);
-        glob(Tempstr,0,0,&Glob);
-        if (Glob.gl_pathc ==0) RaiseError(ERRFLAG_ERRNO, "namespaces", "namespace dir %s empty", Tempstr);
-        for (i=0; i < Glob.gl_pathc; i++)
-        {
-            fd=open(Glob.gl_pathv[i],O_RDONLY);
-            if (fd > -1)
-            {
-                result=TRUE;
-                setns(fd, type);
-                close(fd);
-            }
-            else RaiseError(ERRFLAG_ERRNO, "namespaces", "couldn't open namespace %s", Glob.gl_pathv[i]);
-        }
-    }
-    else
-    {
-        fd=open(Namespace,O_RDONLY);
-        if (fd > -1)
-        {
-            result=TRUE;
-            setns(fd, type);
-            close(fd);
-        }
-        else RaiseError(ERRFLAG_ERRNO, "namespaces", "couldn't open namespace %s", Namespace);
-    }
-#else
-    RaiseError(0, "namespaces", "setns unavailable");
-#endif
-
-    Destroy(Tempstr);
-    return(result);
-}
-
-
-
-void ProcessContainerFilesys(const char *Config, const char *Dir, int Flags)
-{
-    pid_t pid;
-    char *Tempstr=NULL, *Name=NULL, *Value=NULL;
-    char *ROMounts=NULL, *RWMounts=NULL;
-    char *Links=NULL, *PLinks=NULL, *FileClones=NULL;
-    const char *ptr, *tptr;
-    struct stat Stat;
-
-
-    ptr=GetNameValuePair(Config,"\\S","=",&Name,&Value);
-    while (ptr)
-    {
-        if (strcasecmp(Name,"+mnt")==0) ROMounts=MCatStr(ROMounts,",",Value,NULL);
-        else if (strcasecmp(Name,"+mnt")==0) ROMounts=MCatStr(ROMounts,",",Value,NULL);
-        else if (strcasecmp(Name,"mnt")==0) ROMounts=CopyStr(ROMounts,Value);
-        else if (strcasecmp(Name,"+wmnt")==0) RWMounts=MCatStr(RWMounts,",",Value,NULL);
-        else if (strcasecmp(Name,"wmnt")==0) RWMounts=CopyStr(RWMounts,Value);
-        else if (strcasecmp(Name,"+link")==0) Links=MCatStr(Links,",",Value,NULL);
-        else if (strcasecmp(Name,"link")==0) Links=CopyStr(Links,Value);
-        else if (strcasecmp(Name,"+plink")==0) PLinks=MCatStr(PLinks,",",Value,NULL);
-        else if (strcasecmp(Name,"plink")==0) PLinks=CopyStr(PLinks,Value);
-        else if (strcasecmp(Name,"pclone")==0) FileClones=CopyStr(FileClones,Value);
-        ptr=GetNameValuePair(ptr,"\\S","=",&Name,&Value);
-    }
-
-    pid=getpid();
-
-    if (StrValid(Dir)) Tempstr=FormatStr(Tempstr,Dir,pid);
-    else Tempstr=FormatStr(Tempstr,"%d.container",pid);
-
-    mkdir(Tempstr,0755);
-    if (Flags & PROC_ISOCUBE)	FileSystemMount("",Tempstr,"tmpfs","");
-    if (chdir(Tempstr) !=0) RaiseError(ERRFLAG_ERRNO, "ProcessContainerFilesys", "failed to chdir to %s", Tempstr);
-
-    //always make a tmp directory
-    mkdir("tmp",0777);
-
-    ptr=GetToken(ROMounts,",",&Value,GETTOKEN_QUOTES);
-    while (ptr)
-    {
-        FileSystemMount(Value,"","bind","ro perms=755");
-        ptr=GetToken(ptr,",",&Value,GETTOKEN_QUOTES);
-    }
-
-    ptr=GetToken(RWMounts,",",&Value,GETTOKEN_QUOTES);
-    while (ptr)
-    {
-        FileSystemMount(Value,"","bind","perms=777");
-        ptr=GetToken(ptr,",",&Value,GETTOKEN_QUOTES);
-    }
-
-    ptr=GetToken(Links,",",&Value,GETTOKEN_QUOTES);
-    while (ptr)
-    {
-        if (link(Value,GetBasename(Value)) !=0)
-            ptr=GetToken(ptr,",",&Value,GETTOKEN_QUOTES);
-    }
-
-    ptr=GetToken(PLinks,",",&Value,GETTOKEN_QUOTES);
-    while (ptr)
-    {
-        tptr=Value;
-        if (*tptr=='/') tptr++;
-        MakeDirPath(tptr,0755);
-        if (link(Value, tptr) != 0) RaiseError(ERRFLAG_ERRNO, "ProcessContainerFilesys", "Failed to link Value tptr.");
-        ptr=GetToken(ptr,",",&Value,GETTOKEN_QUOTES);
-    }
-
-    ptr=GetToken(FileClones,",",&Value,GETTOKEN_QUOTES);
-    while (ptr)
-    {
-        tptr=Value;
-        if (*tptr=='/') tptr++;
-        MakeDirPath(tptr,0755);
-        stat(Value, &Stat);
-        if (S_ISCHR(Stat.st_mode) || S_ISBLK(Stat.st_mode)) mknod(tptr, Stat.st_mode, Stat.st_rdev);
-        else
-        {
-            FileCopy(Value, tptr);
-            chmod(tptr, Stat.st_mode);
-        }
-        ptr=GetToken(ptr,",",&Value,GETTOKEN_QUOTES);
-    }
-
-
-    Destroy(Name);
-    Destroy(Value);
-    Destroy(Tempstr);
-    Destroy(ROMounts);
-    Destroy(RWMounts);
-    Destroy(Links);
-    Destroy(PLinks);
-    Destroy(FileClones);
-}
-
-
-void ProcessContainerNamespace(const char *Namespace, const char *HostName, int Flags)
-{
-    int val, result;
-
-#ifdef CLONE_NEWNET
-    if (StrValid(Namespace)) JoinNamespace(Namespace, CLONE_NEWNET);
-    else if (! (Flags & PROC_CONTAINER_NET)) unshare(CLONE_NEWNET);
-#endif
-
-    if (Flags & PROC_CONTAINER)
-    {
-        //do these all individually because any one of them might be rejected
-#ifdef CLONE_NEWIPC
-//        if (StrValid(Namespace)) JoinNamespace(Namespace, CLONE_NEWIPC);
-//        else unshare(CLONE_NEWIPC);
-#endif
-
-#ifdef CLONE_NEWUTS
-        if (StrValid(Namespace)) JoinNamespace(Namespace, CLONE_NEWUTS);
-        else
-        {
-            unshare(CLONE_NEWUTS);
-            val=StrLen(HostName);
-            if (val != 0) result=sethostname(HostName, val);
-            else result=sethostname("container", 9);
-            if (result != 0) RaiseError(ERRFLAG_ERRNO, "ProcessContainerNamespace", "Failed to sethostname for container.");
-        }
-#endif
-
-#ifdef CLONE_FS
-        if (StrValid(Namespace)) JoinNamespace(Namespace, CLONE_FS);
-        else unshare(CLONE_FS);
-#endif
-
-#ifdef CLONE_NEWNS
-        if (StrValid(Namespace)) JoinNamespace(Namespace, CLONE_NEWNS);
-        else unshare(CLONE_NEWNS);
-#endif
-    }
-}
-
-
-
-void ProcessContainerSetEnvs(const char *Envs)
-{
-    char *Name=NULL, *Value=NULL;
-    const char *ptr;
-
-#ifdef HAVE_CLEARENV
-    clearenv();
-#endif
-
-    setenv("LD_LIBRARY_PATH","/lib:/usr/lib",TRUE);
-
-    ptr=GetNameValuePair(Envs, ",","=", &Name, &Value);
-    while (ptr)
-    {
-        setenv(Name, Value, TRUE);
-        ptr=GetNameValuePair(ptr, ",","=", &Name, &Value);
-    }
-    Destroy(Name);
-    Destroy(Value);
-}
-
-
-
-int ProcessContainer(const char *Config)
-{
-    char *HostName=NULL, *SetupScript=NULL, *Namespace=NULL, *Envs=NULL;
-    char *Dir=NULL, *ChRoot=NULL;
-    char *Name=NULL, *Value=NULL;
-    char *Tempstr=NULL;
-    const char *ptr;
-    int Flags=0;
-    int result=TRUE;
-    pid_t child;
-
-    ptr=GetNameValuePair(Config,"\\S","=",&Name,&Value);
-    while (ptr)
-    {
-        if (strcasecmp(Name,"hostname")==0) HostName=CopyStr(HostName, Value);
-        else if (strcasecmp(Name,"dir")==0) Dir=CopyStr(Dir, Value);
-        else if (strcasecmp(Name,"+net")==0) Flags |= PROC_CONTAINER_NET;
-        else if (strcasecmp(Name,"-net")==0) Flags &= ~PROC_CONTAINER_NET;
-        else if (strcasecmp(Name,"jailsetup")==0) SetupScript=CopyStr(SetupScript, Value);
-        else if (
-            (strcasecmp(Name,"ns")==0) ||
-            (strcasecmp(Name,"namespace")==0)
-        )
-        {
-            Namespace=CopyStr(Namespace, Value);
-            Flags |= PROC_CONTAINER;
-        }
-        else if (strcasecmp(Name,"container")==0)
-        {
-            if (StrValid(Value)) ChRoot=CopyStr(ChRoot, Value);
-            Flags |= PROC_CONTAINER;
-        }
-        else if (strcasecmp(Name,"container+net")==0)
-        {
-            if (StrValid(Value)) ChRoot=CopyStr(ChRoot, Value);
-            Flags |= PROC_CONTAINER | PROC_CONTAINER_NET;
-        }
-        else if (strcasecmp(Name,"isocube")==0)
-        {
-            if (StrValid(Value)) ChRoot=CopyStr(ChRoot, Value);
-            Flags |= PROC_ISOCUBE | PROC_CONTAINER;
-        }
-        else if (strcasecmp(Name,"setenv")==0)
-        {
-            Tempstr=QuoteCharsInStr(Tempstr, Value, ",");
-            Envs=MCatStr(Envs, Tempstr, ",",NULL);
-        }
-
-
-        ptr=GetNameValuePair(ptr,"\\S","=",&Name,&Value);
-    }
-
-
-    if (Flags & PROC_CONTAINER)
-    {
-#ifdef HAVE_UNSHARE
-#ifdef CLONE_NEWPID
-        if (StrValid(Namespace)) JoinNamespace(Namespace, CLONE_NEWPID);
-        else unshare(CLONE_NEWPID);
-#endif
-#endif
-
-        if (! StrValid(ChRoot))
-        {
-            ChRoot=CopyStr(ChRoot, Dir);
-            Dir=CopyStr(Dir,"");
-        }
-        ProcessContainerFilesys(Config, ChRoot, Flags);
-
-        //fork again because CLONE_NEWPID only takes effect after another fork, and creates an 'init' process
-        child=fork();
-        if (child==0)
-        {
-            //we do not call CredsStoreOnFork here becausee it's assumed that we want to take the creds store with us, as
-            //these forks are in order to change aspects of our program, rather than spawn a new process
-
-            //must do proc after the fork so that CLONE_NEWPID takes effect
-            mkdir("proc",0755);
-            FileSystemMount("","proc","proc","");
-
-            if (StrValid(SetupScript))
-            {
-                if (system(SetupScript) < 1) RaiseError(ERRFLAG_ERRNO, "ProcessContainer", "failed to exec %s", SetupScript);
-            }
-
-
-#ifdef HAVE_UNSHARE
-            ProcessContainerNamespace(Namespace, HostName, Flags);
-#endif
-
-            ProcessContainerSetEnvs(Envs);
-            //if we are given a namespace we assume there is already an init for it
-            if (! StrValid(Namespace))
-            {
-                //as we are going to create an init for a namespace it needs to be session leader
-                setsid();
-
-                //fork again! Honestly.
-                child=fork();
-                if (child !=0)
-                {
-                    //ProcessContainerInit will never return, it will exit when finished
-                    if ((! (Flags & PROC_ISOCUBE)) &&StrValid(Dir)) ProcessContainerInit(-1, -1, child, FALSE);
-                    else ProcessContainerInit(-1, -1, child, TRUE);
-                }
-            }
-
-            if (chroot(".") == -1)
-            {
-                RaiseError(ERRFLAG_ERRNO, "ProcessContainer", "failed to chroot to curr directory");
-                result=FALSE;
-            }
-
-
-            if (result)
-            {
-                LibUsefulSetupAtExit();
-                LibUsefulFlags |= LU_CONTAINER;
-
-                if (StrValid(Dir))
-                {
-                    if (chdir(Dir) !=0) RaiseError(ERRFLAG_ERRNO, "ProcessContainer", "failed to chdir to %s", Dir);
-                }
-            }
-        }
-        //we no longer need the parent thread, as the child thread, now completely in the CLONE_NEWPID jail, is our new thread
-        else _exit(0);
-    }
-
-    Destroy(Tempstr);
-    Destroy(SetupScript);
-    Destroy(HostName);
-    Destroy(Namespace);
-    Destroy(Name);
-    Destroy(Value);
-    Destroy(ChRoot);
-    Destroy(Dir);
-
-    return(result);
-}
 
 void ProcessSetRLimit(int Type, const char *Value)
 {
@@ -695,12 +297,48 @@ void ProcessSetRLimit(int Type, const char *Value)
 }
 
 
-static int ProcessResistPtrace()
+int ProcessResistPtrace()
 {
+
+#ifdef HAVE_PRCTL
+//Turn OFF Dumpable flag. This prevents producing coredumps, but has the side-effect of preventing ptrace attach.
+//We normally control coredumps via resources (RLIMIT_CORE) rather than this
 #ifdef PR_SET_DUMPABLE
 #include <sys/prctl.h>
+
+//set, then check we have the set. This covers situations where the sat failed, but we've already
+//set the value previously somehow
     prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);
     if (prctl(PR_GET_DUMPABLE, 0, 0, 0, 0) == 0) return(TRUE);
+
+    RaiseError(ERRFLAG_ERRNO, "ProcessResistPtrace", "Failed to setup ptrace resistance");
+#else
+    RaiseError(0, "ProcessResistPtrace", "This platform doesn't seem to support the 'resist ptrace' (PR_SET_DUMPABLE) option");
+#endif
+    RaiseError(0, "ProcessResistPtrace", "This platform doesn't seem to support the 'resist ptrace' (PR_SET_DUMPABLE) option (no prctl)");
+#endif
+
+    return(FALSE);
+}
+
+
+int ProcessNoNewPrivs()
+{
+#ifdef HAVE_PRCTL
+#ifdef PR_SET_NO_NEW_PRIVS
+#include <sys/prctl.h>
+
+//set, then check that the set worked. This correctly handles situations where we ask to set more than once
+//as the second attempt may 'fail', but we already have the desired result
+    prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
+    if (prctl(PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0) == 1) return(TRUE);
+
+    RaiseError(ERRFLAG_ERRNO, "ProcessNoNewPrivs", "Failed to set 'no new privs'");
+#else
+    RaiseError(0, "ProcessNoNewPrivs", "This platform doesn't seem to support the 'no new privs' option");
+#endif
+#else
+    RaiseError(0, "ProcessNoNewPrivs", "This platform doesn't seem to support the 'no new privs' option (no prctl)");
 #endif
 
     return(FALSE);
@@ -708,8 +346,96 @@ static int ProcessResistPtrace()
 
 
 
+static int ProcessMemLockAdd()
+{
+    int result=FALSE;
+    LibUsefulFlags |= LU_MLOCKALL;
+#ifdef HAVE_MLOCKALL
+    if (mlockall(MCL_CURRENT | MCL_FUTURE)) result=TRUE;
+    else RaiseError(ERRFLAG_ERRNO, "ProcessMemLockAdd", "Failed to set 'mlockall'");
+#else
+    RaiseError(0, "ProcessMemLockAdd", "This platform doesn't seem to support 'mlockall'");
+#endif
+    LibUsefulSetupAtExit();
 
-int ProcessApplyEarlyConfig(const char *Config)
+    return(result);
+}
+
+
+static int ProcessParseSecurity(const char *Config, char **SeccompSetup)
+{
+    char *Token=NULL;
+    const char *ptr;
+    int Flags=0, val;
+    const char *Levels[]= {"minimal", "basic", "user", "guest", "client", "untrusted", "local", "constrained", "high", NULL};
+    typedef enum {LU_SEC_MINIMAL, LU_SEC_BASIC, LU_SEC_USER, LU_SEC_GUEST, LU_SEC_CLIENT, LU_SEC_UNTRUSTED, LU_SEC_LOCAL, LU_SEC_CONSTRAINED, LU_SEC_HIGH} TSecLevel;
+
+    ptr=GetToken(Config, " ", &Token, 0);
+    while (ptr)
+    {
+        val=MatchTokenFromList(Token, Levels, 0);
+
+        switch (val)
+        {
+        case LU_SEC_HIGH:
+            *SeccompSetup=CatStr(*SeccompSetup, "syscall_kill=group:net ");
+        //break; //fall through to LU_SEC_CONSTRAINED
+
+        case LU_SEC_CONSTRAINED:
+            *SeccompSetup=CatStr(*SeccompSetup, "syscall_allow=ioctl(termget);ioctl(termset) syscall_deny=group:net syscall_kill=group:exec;mprotect(exec);mmap(exec);ioctl;group:ptrace ");
+        //break; //fall through to LU_SEC_LOCAL
+
+        case LU_SEC_LOCAL:
+            *SeccompSetup=CatStr(*SeccompSetup, "syscall_allow=socket(unix) syscall_deny=socket ");
+        //break; //fall through to LU_SEC_UNTRUSTED
+
+        case LU_SEC_UNTRUSTED:
+            *SeccompSetup=CatStr(*SeccompSetup, "syscall_kill=group:chroot;group:keyring;group:ns;setsid;acct ");
+        //break; //fall through to LU_SEC_CLENT
+
+        case LU_SEC_CLIENT:
+            *SeccompSetup=CatStr(*SeccompSetup, "syscall_deny=listen;accept ");
+        //break; //fall through to LU_SEC_GUEST
+
+        case LU_SEC_GUEST:
+            *SeccompSetup=CatStr(*SeccompSetup, "syscall_deny=group:keyring ");
+        //break; //fall through to LU_SEC_USER
+
+        case LU_SEC_USER:
+            *SeccompSetup=CatStr(*SeccompSetup, "syscall_deny=chown;chmod(exec) syscall_kill=group:sysadmin;bpf ");
+        //break; //fall through to LU_SEC_BASIC
+
+        case LU_SEC_BASIC:
+            *SeccompSetup=CatStr(*SeccompSetup, "syscall_deny=acct ");
+        //break; //fall through to LU_SEC_MINIMAL
+
+        case LU_SEC_MINIMAL:
+            //sadly, things like wine use ptrace, so we'd rather deny it than kill them.
+            *SeccompSetup=CatStr(*SeccompSetup, "syscall_deny=ptrace syscall_kill=group:kexec;uselib;userfaultfd;personality;perf_event_open;group:kern_mods;kexec_load;get_kernel_syms;lookup_dcookie;vm86;vm86old;mbind;move_pages ");
+
+            Flags |= PROC_NO_NEW_PRIVS;
+            break;
+
+        default:
+            if (strncmp(Token, "syscall_allow=", 14)==0) *SeccompSetup=MCatStr(*SeccompSetup, Token, " ", NULL);
+            else if (strncmp(Token, "syscall_kill=", 13)==0) *SeccompSetup=MCatStr(*SeccompSetup, Token, " ", NULL);
+            else if (strncmp(Token, "syscall_deny=", 13)==0) *SeccompSetup=MCatStr(*SeccompSetup, Token, " ", NULL);
+            Flags |= PROC_NO_NEW_PRIVS;
+            break;
+        }
+        ptr=GetToken(ptr, " ", &Token, 0);
+    }
+
+    Destroy(Token);
+
+    return(Flags);
+}
+
+
+
+
+//do all things that we can do 'early' (i.e. before chroot and demonize)
+static int ProcessApplyEarlyConfig(const char *Config)
 {
     char *Name=NULL, *Value=NULL;
     const char *ptr;
@@ -724,15 +450,6 @@ int ProcessApplyEarlyConfig(const char *Config)
         else if (strcasecmp(Name,"prio")==0) setpriority(PRIO_PROCESS, 0, atoi(Value));
         else if (strcasecmp(Name,"priority")==0) setpriority(PRIO_PROCESS, 0, atoi(Value));
         else if (strcasecmp(Name,"openlog")==0) openlog(Value, LOG_PID, LOG_USER);
-        else if (strcasecmp(Name,"chroot")==0)
-        {
-            Flags |= PROC_CHROOT;
-            if ( StrValid(Value) && (chdir(Value) !=0 ) )
-            {
-                Flags |= PROC_SETUP_FAIL;;
-                RaiseError(ERRFLAG_ERRNO, "ProcessApplyEarlyConfig", "failed to chroot to directory %s", Value);
-            }
-        }
         else if (strcasecmp(Name,"sigdef")==0) Flags |= PROC_SIGDEF;
         else if (strcasecmp(Name,"sigdefault")==0) Flags |= PROC_SIGDEF;
         else if (strcasecmp(Name,"setsid")==0) Flags |= PROC_SETSID;
@@ -740,6 +457,8 @@ int ProcessApplyEarlyConfig(const char *Config)
         else if (strcasecmp(Name,"daemon")==0) Flags |= PROC_DAEMON;
         else if (strcasecmp(Name,"demon")==0) Flags |= PROC_DAEMON;
         else if (strcasecmp(Name,"ctrltty")==0) Flags |= PROC_CTRL_TTY;
+        else if (strcasecmp(Name,"ctrl_tty")==0) Flags |= PROC_CTRL_TTY;
+        else if (strcasecmp(Name,"strict")==0) Flags |= PROC_SETUP_STRICT;
         else if (strcasecmp(Name,"innull")==0)  fd_remap_path(0, "/dev/null", O_WRONLY);
         else if (strcasecmp(Name,"errnull")==0) fd_remap_path(2, "/dev/null", O_WRONLY);
         else if (strcasecmp(Name,"outnull")==0)
@@ -754,29 +473,17 @@ int ProcessApplyEarlyConfig(const char *Config)
         else if (strcasecmp(Name,"trust")==0) Flags |= SPAWN_TRUST_COMMAND;
         else if (strcasecmp(Name,"noshell")==0) Flags |= SPAWN_NOSHELL;
         else if (strcasecmp(Name,"arg0")==0) Flags |= SPAWN_ARG0;
-//container flags will be parsed again in ContainerInit, so we just se them all to 'PROC_CONTAINER' here
-        else if (strcasecmp(Name,"container")==0) Flags |= PROC_CONTAINER;
-        else if (strcasecmp(Name,"container+net")==0) Flags |= PROC_CONTAINER;
-        else if (strcasecmp(Name,"isocube")==0) Flags |= PROC_CONTAINER;
-        else if (strcasecmp(Name,"-net")==0) Flags |= PROC_CONTAINER;
-        else if (strcasecmp(Name,"ns")==0) Flags |= PROC_CONTAINER;
-        else if (strcasecmp(Name,"namespace")==0) Flags |= PROC_CONTAINER;
-        else if (strcasecmp(Name,"mlock")==0)
-        {
-            LibUsefulFlags |= LU_MLOCKALL;
-#ifdef HAVE_MLOCKALL
-            mlockall(MCL_CURRENT | MCL_FUTURE);
-#endif
-            LibUsefulSetupAtExit();
-        }
-        else if (strcasecmp(Name,"memlock")==0)
-        {
-            LibUsefulFlags |= LU_MLOCKALL;
-#ifdef HAVE_MLOCKALL
-            mlockall(MCL_CURRENT | MCL_FUTURE);
-#endif
-            LibUsefulSetupAtExit();
-        }
+        else if (strcasecmp(Name,"container")==0) Flags |= PROC_CONTAINER_FS;
+        else if (strcasecmp(Name,"container+net")==0) Flags |= PROC_CONTAINER_FS | PROC_CONTAINER_NET;
+        else if (strcasecmp(Name,"isocube")==0) Flags |= PROC_CONTAINER_FS;
+        else if (strcasecmp(Name,"-net")==0) Flags |= PROC_CONTAINER_NET;
+        else if (strcasecmp(Name,"nonet")==0) Flags |= PROC_CONTAINER_NET;
+        else if (strcasecmp(Name,"nopid")==0) Flags |= PROC_CONTAINER_PID;
+        else if (strcasecmp(Name,"-pid")==0) Flags |= PROC_CONTAINER_PID;
+        else if (strcasecmp(Name,"ns")==0) Flags |= PROC_CONTAINER_FS;
+        else if (strcasecmp(Name,"namespace")==0) Flags |= PROC_CONTAINER_FS;
+        else if (strcasecmp(Name,"mlock")==0) ProcessMemLockAdd();
+        else if (strcasecmp(Name,"memlock")==0) ProcessMemLockAdd();
         else if (strcasecmp(Name,"mem")==0) ProcessSetRLimit(RLIMIT_DATA, Value);
         else if (strcasecmp(Name,"mlockmax")==0) ProcessSetRLimit(RLIMIT_MEMLOCK, Value);
         else if (strcasecmp(Name,"fsize")==0) ProcessSetRLimit(RLIMIT_FSIZE, Value);
@@ -784,8 +491,22 @@ int ProcessApplyEarlyConfig(const char *Config)
         else if (strcasecmp(Name,"coredumps")==0) ProcessSetRLimit(RLIMIT_CORE, Value);
         else if ( (strcasecmp(Name,"procs")==0) || (strcasecmp(Name,"nproc")==0) ) ProcessSetRLimit(RLIMIT_NPROC, Value);
         else if (strcasecmp(Name, "resist_ptrace")==0) LibUsefulFlags |= LU_RESIST_PTRACE;
+        else if (strcasecmp(Name,"chroot")==0)
+        {
+            if ( StrValid(Value) && (chdir(Value) !=0 ) )
+            {
+                RaiseError(ERRFLAG_ERRNO, "ProcessApplyEarlyConfig", "failed to chdir to directory %s for chrooting", Value);
+                Flags |= PROC_SETUP_FAIL;
+            }
+            else Flags |= PROC_CHROOT;
+        }
 
         ptr=GetNameValuePair(ptr,"\\S","=",&Name,&Value);
+    }
+
+    if (LibUsefulFlags & LU_RESIST_PTRACE)
+    {
+        if (! ProcessResistPtrace()) Flags |= PROC_SETUP_FAIL;
     }
 
     Destroy(Name);
@@ -796,9 +517,9 @@ int ProcessApplyEarlyConfig(const char *Config)
 
 
 //Apply config changes that are relevant AFTER chroot/daemonize
-int ProcessApplyLateConfig(int Flags, const char *Config)
+static int ProcessApplyLateConfig(int Flags, const char *Config)
 {
-    char *Name=NULL, *Value=NULL, *Capabilities=NULL;
+    char *Name=NULL, *Value=NULL, *Capabilities=NULL, *SeccompDeny=NULL;
     const char *ptr;
     long uid=0, gid=0;
     int lockfd, ctty_fd=0;
@@ -816,10 +537,12 @@ int ProcessApplyLateConfig(int Flags, const char *Config)
             if (chdir(Value) !=0)
             {
                 RaiseError(ERRFLAG_ERRNO, "ProcessApplyConfig", "failed to chdir to %s", Value);
+                RaiseError(ERRFLAG_ERRNO, "ProcessApplyConfig", "too dangerous to continue, (possibly in wrong directory) exiting...", Value);
+                exit(1);
+
                 Flags |= PROC_SETUP_FAIL;
             }
         }
-
         else if (strcasecmp(Name,"PidFile")==0) WritePidFile(Value);
         else if (strcasecmp(Name,"LockFile")==0)
         {
@@ -832,12 +555,15 @@ int ProcessApplyLateConfig(int Flags, const char *Config)
             lockfd=CreateLockFile(Value, 0);
             if (lockfd==-1) _exit(1);
         }
+        else if (strcasecmp(Name,"nosu")==0) Flags |= PROC_NO_NEW_PRIVS;
+        else if (strcasecmp(Name,"nopriv")==0) Flags |= PROC_NO_NEW_PRIVS;
+        else if (strcasecmp(Name,"noprivs")==0) Flags |= PROC_NO_NEW_PRIVS;
         else if (strcasecmp(Name,"capabilities")==0) Capabilities=CopyStr(Capabilities, Value);
+        else if (strcasecmp(Name,"security")==0) Flags |= ProcessParseSecurity(Value, &SeccompDeny);
         else if (strcasecmp(Name,"ctty")==0)
         {
             ctty_fd=atoi(Value);
             Flags |= PROC_CTRL_TTY;
-            ProcessSetControlTTY(ctty_fd);
         }
 
         ptr=GetNameValuePair(ptr,"\\S","=",&Name,&Value);
@@ -845,8 +571,10 @@ int ProcessApplyLateConfig(int Flags, const char *Config)
 
     if (Flags & PROC_CONTAINER)
     {
-        if (! ProcessContainer(Config)) Flags |= PROC_SETUP_FAIL;
+        if (! ContainerApplyConfig(Config)) Flags |= PROC_SETUP_FAIL;
     }
+
+    if (Flags & PROC_CTRL_TTY) ProcessSetControlTTY(ctty_fd);
 
 
 //Always do group first, otherwise we'll lose ability to switch user/group
@@ -855,12 +583,8 @@ int ProcessApplyLateConfig(int Flags, const char *Config)
 
     if (LibUsefulFlags & LU_RESIST_PTRACE)
     {
-        // do this again, and switching uid or gid can reset this
-        if (! ProcessResistPtrace())
-        {
-            RaiseError(0, "ProcessApplyConfig", "failed to activate ptrace resistance");
-            exit(1);
-        }
+        // do this again, as switching uid or gid can reset this
+        if (! ProcessResistPtrace()) Flags |= PROC_SETUP_FAIL;
     }
 
 //Must do this last! After parsing Config, and also after functions like
@@ -874,21 +598,27 @@ int ProcessApplyLateConfig(int Flags, const char *Config)
         }
     }
 
-    if (StrValid(Capabilities))
+
+    if (StrValid(Capabilities)) ProcessSetCapabilities(Capabilities);
+    //if we set any capabilites, we will already have set 'NO_NEW_PRIVS'
+    //so only consider the PROC_NO_NEW_PRIVS flag if we didn't use
+    //capabilities
+    else if (Flags & PROC_NO_NEW_PRIVS)
     {
-        ProcessSetCapabilities(Capabilities);
+        if (! ProcessNoNewPrivs()) Flags |= PROC_SETUP_FAIL;
+        else if (LibUsefulDebugActive()) fprintf(stderr, "DEBUG: set 'PROC_NO_NEW_PRIVS', su/suid should not be possible now\n");
 
-//does this belong inside ProcessSetCapabilties?
-#ifdef PR_SET_NO_NEW_PRIVS
-#include <sys/prctl.h>
-        prctl(PR_SET_NO_NEW_PRIVS, 0, 0, 0, 0);
+
+        //seccomp must come after PROC_NO_NEW_PRIVS
+#ifdef USE_SECCOMP
+        if (StrValid(SeccompDeny)) SeccompAddRules(SeccompDeny);
 #endif
-
     }
 
     Destroy(Name);
     Destroy(Value);
     Destroy(Capabilities);
+    Destroy(SeccompDeny);
 
     return(Flags);
 }
@@ -903,9 +633,12 @@ int ProcessApplyConfig(const char *Config)
 //do all things that we can do 'early' (i.e. before chroot and demonize)
     Flags=ProcessApplyEarlyConfig(Config);
 
-    if (Flags & PROC_SETUP_FAIL) return(Flags);
+    if (Flags & PROC_SETUP_FAIL)
+    {
+        if (Flags & PROC_SETUP_STRICT) RaiseError(ERRFLAG_ABORT, "ProcessApplyConfig", "Early setup failed. Strict mode requested. Aborting.");
+        return(Flags);
+    }
 
-    if (LibUsefulFlags & LU_RESIST_PTRACE) ProcessResistPtrace();
 
 //set all signal handlers to default
     if (Flags & PROC_SIGDEF)
@@ -931,14 +664,17 @@ int ProcessApplyConfig(const char *Config)
     {
         if (chroot(".") == -1)
         {
-            RaiseError(ERRFLAG_ERRNO, "chroot", "failed to chroot");
+            RaiseError(ERRFLAG_ERRNO, "ProcessApplyConfig", "failed to chroot");
             Flags |= PROC_SETUP_FAIL;
+            if (Flags & PROC_SETUP_STRICT) RaiseError(ERRFLAG_ABORT, "ProcessApplyConfig", "chroot failed. Strict mode requested. Aborting.");
         }
     }
 
 
     //Apply config changes that are relevant AFTER chroot/daemonize
     if (! (Flags & PROC_SETUP_FAIL)) Flags=ProcessApplyLateConfig(Flags, Config);
+    if ( (Flags & PROC_SETUP_FAIL) && (Flags & PROC_SETUP_STRICT) ) RaiseError(ERRFLAG_ABORT, "ProcessApplyConfig", "Late setup failed. Strict mode requested. Aborting.");
+
 
     return(Flags);
 }

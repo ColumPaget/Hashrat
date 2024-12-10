@@ -1,5 +1,5 @@
 #include "TerminalWidget.h"
-
+#include "TerminalTheme.h"
 
 
 void TerminalWidgetSetOptions(TERMWIDGET *TW, const char *Choices)
@@ -27,7 +27,6 @@ void TerminalWidgetParseConfig(TERMWIDGET *TW, const char *Config)
 {
     char *Name=NULL, *Value=NULL;
     const char *ptr;
-
 
     ptr=GetNameValuePair(Config, "\\S", "=", &Name, &Value);
     while (ptr)
@@ -59,7 +58,7 @@ void TerminalWidgetParseConfig(TERMWIDGET *TW, const char *Config)
 
         case 'l':
             if (strcasecmp(Name, "left_cursor")==0) TW->CursorLeft=CopyStr(TW->CursorLeft, Value);
-            if (strcasecmp(Name, "left_contain")==0) SetVar(TW->Options, "LeftContainer", Value);
+            if (strcasecmp(Name, "left_contain")==0) TW->CursorLeft=CopyStr(TW->CursorLeft, Value);
             break;
 
         case 'h':
@@ -72,22 +71,26 @@ void TerminalWidgetParseConfig(TERMWIDGET *TW, const char *Config)
 
         case 'p':
             if (strcasecmp(Name, "prompt")==0) TW->Text=CopyStr(TW->Text, Value);
-            if (strcasecmp(Name, "progress")==0) TW->CursorLeft=CopyStr(TW->CursorLeft, Value);
+            if (strcasecmp(Name, "progress")==0) SetVar(TW->Options, "progress", Value);
             if (strcasecmp(Name, "progress_attribs")==0) TW->SelectedAttribs=CopyStr(TW->SelectedAttribs, Value);
             break;
 
         case 'r':
             if (strcasecmp(Name, "right_cursor")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
-            if (strcasecmp(Name, "right_contain")==0) SetVar(TW->Options, "RightContainer", Value);
-            if (strcasecmp(Name, "remain")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
-            if (strcasecmp(Name, "remaining")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
-            if (strcasecmp(Name, "remainder")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
+            if (strcasecmp(Name, "right_contain")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
+            if (strcasecmp(Name, "remain")==0) SetVar(TW->Options, "remain", Value);
+            if (strcasecmp(Name, "remaining")==0) SetVar(TW->Options, "remain", Value);
+            if (strcasecmp(Name, "remainder")==0) SetVar(TW->Options, "remain", Value);
             break;
 
 
         case 's':
             if (strcasecmp(Name, "selected_attribs")==0) TW->SelectedAttribs=CopyStr(TW->SelectedAttribs, Value);
             else if (strcasecmp(Name, "select_right")==0) TW->CursorRight=CopyStr(TW->CursorRight, Value);
+            break;
+
+        case 't':
+            if (strcasecmp(Name, "type")==0) TerminalThemeApply(TW, Value);
             break;
 
         case 'w':

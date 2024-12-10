@@ -208,14 +208,9 @@ int main(int argc, char *argv[])
 
         case ACT_FINDMATCHES_MEMCACHED:
         case ACT_FINDDUPLICATES:
-            result=ProcessTargetItems(Ctx);
-            break;
-
         case ACT_CHECK_XATTR:
-            result=ProcessTargetItems(Ctx);
-            break;
-
         case ACT_CHECK_MEMCACHED:
+        case ACT_RENAME:
             result=ProcessTargetItems(Ctx);
             break;
 

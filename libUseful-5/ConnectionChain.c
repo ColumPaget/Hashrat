@@ -65,7 +65,7 @@ int ConnectHopHTTPSProxy(STREAM *S, const char *Proxy, const char *Destination)
 
     ParseConnectDetails(Proxy, &Token, &Host, &Token, &User, &Pass, NULL);
     Port=atoi(Token);
-    if (! (S->State & SS_INITIAL_CONNECT_DONE))
+    if (! (S->State & LU_SS_INITIAL_CONNECT_DONE))
     {
         if (Port==0) Port=443;
         S->in_fd=TCPConnect(Host, Port, "");
@@ -311,13 +311,12 @@ int ConnectHopSocks(STREAM *S, int SocksLevel, const char *ProxyURL, const char 
     char *Tempstr=NULL;
     char *Token=NULL, *Host=NULL, *User=NULL, *Pass=NULL;
     uint8_t *ptr;
-    uint32_t IP;
     const char *tptr;
     int result, RetVal=FALSE, val;
     uint8_t HostType=HT_IP4;
 
     ParseConnectDetails(ProxyURL, NULL, &Host, &Token, &User, &Pass, NULL);
-    if (! (S->State & SS_INITIAL_CONNECT_DONE))
+    if (! (S->State & LU_SS_INITIAL_CONNECT_DONE))
     {
         val=atoi(Token);
         S->in_fd=TCPConnect(Host, val, "");
@@ -368,7 +367,7 @@ int ConnectHopSocks(STREAM *S, int SocksLevel, const char *ProxyURL, const char 
 //Socks 5 has a 'reserved' byte after the connection type
         *ptr=0;
         ptr++;
-        ptr=ConnectHopSocks5WriteAddress(ptr, HostType, Token);
+        ptr=(uint8_t *) ConnectHopSocks5WriteAddress( (char *) ptr, HostType, Token);
     }
 
 
@@ -490,7 +489,7 @@ static STREAM *ConnectHopSSHSpawnHelper(const char *ProxyURL, const char *Fmt, c
         LocalPort=(rand() % (0xFFFF - 9000)) +9000;
         if (strncmp(Fmt,"stdin:",6)==0) Tempstr=FormatStr(Tempstr, Fmt, RemoteHost, RemotePort);
         else Tempstr=FormatStr(Tempstr, Fmt, LocalPort, RemoteHost, RemotePort);
-        tmpS=SSHConnect(SshHost, SshPort, SshUser, SshPassword, Tempstr, 0);
+        tmpS=SSHConnect(SshHost, SshPort, SshUser, SshPassword, Tempstr, "");
         if (tmpS)
         {
             Tempstr=FormatStr(Tempstr, "%d", LocalPort);
@@ -652,7 +651,7 @@ int STREAMProcessConnectHops(STREAM *S, const char *HopList)
             break;
         }
 
-        S->State=SS_INITIAL_CONNECT_DONE;
+        S->State=LU_SS_INITIAL_CONNECT_DONE;
         count++;
         HopURL=CopyStr(HopURL, NextHop);
     }

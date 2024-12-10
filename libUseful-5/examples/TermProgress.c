@@ -15,8 +15,8 @@ TerminalClear(Term);
 
 //TP=TerminalProgressCreate(Term, "prompt='progress: ' left-contain=' -=' right-contain='=- ' progress=| width=20");
 //TP=TerminalProgressCreate(Term, "prompt='progress: ' progress=' ' progress-attribs=~i width=20");
-TP=TerminalProgressCreate(Term, "prompt='progress: ' progress=' ' attribs=~B progress-attribs=~W left-contain='' right-contain=' ' width=20");
-//TP=TerminalProgressCreate(Term, "prompt='progress: '  width=20");
+TP=TerminalProgressCreate(Term, "prompt='progress: ' width=20");
+//TP=TerminalProgressCreate(Term, "prompt='progress: ' progress=' ' attribs=~B progress-attribs=~W left-contain='' right-contain=' ' x=4 width=-4");
 for (i=0; i <= 20; i++) 
 {
 Tempstr=FormatStr(Tempstr, "NOW AT: %d", i);

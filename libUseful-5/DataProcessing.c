@@ -3,29 +3,10 @@
 #include "Compression.h"
 #include "FileSystem.h"
 #include "Hash.h"
+#include "Entropy.h"
 #include "Stream.h"
+#include "Encryption.h"
 
-#ifdef HAVE_LIBSSL
-
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-
-typedef struct
-{
-    char *Key;
-    int KeyLen;
-    char *InputVector;
-    int InputVectorLen;
-    int BlockSize;
-    const EVP_CIPHER *Cipher;
-    EVP_CIPHER_CTX *enc_ctx;
-    EVP_CIPHER_CTX *dec_ctx;
-} libCryptoProcessorData;
-#endif
 
 
 
@@ -98,7 +79,7 @@ void DataProcessorUpdateBuffer(char **Buffer, int *Used, int *Size, const char *
 }
 
 
-int PipeCommandProcessorInit(TProcessingModule *ProcMod, const char *Args)
+int PipeCommandProcessorInit(TProcessingModule *ProcMod, const char *Args, unsigned char **Header, int *HeadLen)
 {
     int result=FALSE;
     char *Tempstr=NULL;
@@ -114,30 +95,19 @@ int PipeCommandProcessorInit(TProcessingModule *ProcMod, const char *Args)
         ptr=GetNameValuePair(ptr,"\\S","=",&Name,&Value);
     }
 
-    if (! StrValid(Tempstr) )
+    if (StrValid(Tempstr) )
     {
-        DestroyString(Name);
-        DestroyString(Value);
-        DestroyString(Tempstr);
-        return(FALSE);
-    }
-
-    GetToken(Tempstr,"\\S",&Name,0);
-    Value=FindFileInPath(Value,Name,getenv("PATH"));
-
-    if (! StrValid(Value) )
-    {
-        DestroyString(Name);
-        DestroyString(Value);
-        DestroyString(Tempstr);
-        return(FALSE);
-    }
-
+        GetToken(Tempstr,"\\S",&Name,0);
+        Value=FindFileInPath(Value,Name,getenv("PATH"));
 
 //by pipe
-    S=STREAMSpawnCommand(Value, "");
-    ProcMod->Data=(void *) S;
-    result=TRUE;
+        if (StrValid(Value) )
+        {
+            S=STREAMSpawnCommand(Value, "");
+            ProcMod->Data=(void *) S;
+            result=TRUE;
+        }
+    }
 
     DestroyString(Name);
     DestroyString(Value);
@@ -178,462 +148,15 @@ int PipeCommandProcessorClose(TProcessingModule *ProcMod)
 
 
 
-void InitialiseEncryptionComponents(const char *Args, char **Cipher, char **InputVector, int *IVLen,  char **Key, int *KeyLen, int *Flags)
-{
-    char *TmpKey=NULL, *Tempstr=NULL;
-    int klen=0, slen=0;
-    char *Name=NULL, *Value=NULL, *Salt=NULL;
-    const char *ptr;
 
-    *IVLen=0;
-    ptr=GetNameValuePair(Args,"\\S","=",&Name,&Value);
-    while (ptr)
-    {
-        if (StrValid(Name))
-        {
-            if (strcasecmp(Name,"Cipher")==0)
-            {
-                *Cipher=CopyStr(*Cipher,Value);
-            }
-
-
-            if (strcasecmp(Name,"Key")==0)
-            {
-                TmpKey=CopyStr(TmpKey,Value);
-                klen=StrLen(TmpKey);
-            }
-
-            if (strcasecmp(Name,"Salt")==0)
-            {
-                Salt=CopyStr(Salt,Value);
-                slen=StrLen(Salt);
-            }
-
-
-
-            if (
-                (strcasecmp(Name,"iv")==0) ||
-                (strcasecmp(Name,"InputVector")==0)
-            )
-            {
-                *InputVector=CopyStr(*InputVector,Value);
-                *IVLen=StrLen(*InputVector);
-            }
-
-            if (strcasecmp(Name,"HexKey")==0)
-            {
-                klen=DecodeBytes(&TmpKey, Value, ENCODE_HEX);
-            }
-
-            if (
-                (strcasecmp(Name,"HexIV")==0) ||
-                (strcasecmp(Name,"HexInputVector")==0)
-            )
-
-            {
-                *IVLen=DecodeBytes(InputVector, Value, ENCODE_HEX);
-            }
-
-            if (strcasecmp(Name,"PadBlock")==0)
-            {
-                if (strcasecmp(Value,"N")==0) *Flags |= DPM_NOPAD_DATA;
-            }
-
-        }
-
-        ptr=GetNameValuePair(ptr,"\\S","=",&Name,&Value);
-    }
-
-
-    Tempstr=SetStrLen(Tempstr,klen+slen);
-    memcpy(Tempstr,Salt,slen);
-    memcpy(Tempstr+slen,TmpKey,klen);
-
-    *KeyLen=HashBytes(Key,"md5",Tempstr,slen+klen,0);
-
-
-    DestroyString(Name);
-    DestroyString(Value);
-    DestroyString(Tempstr);
-    DestroyString(TmpKey);
-    DestroyString(Salt);
-}
-
-
-
-#ifdef HAVE_LIBCRYPTO
-
-typedef enum {CI_BLOWFISH, CI_RC2, CI_RC4, CI_RC5, CI_DES, CI_DESX, CI_CAST,CI_IDEA,CI_AES, CI_AES_256} LIBUSEFUL_CRYPT_CIPHERS;
-
-int libCryptoCipherAvailable(int CipherNum)
-{
-    switch(CipherNum)
-    {
-    case CI_BLOWFISH:
-#ifdef HAVE_EVP_BF_CBC
-        return(TRUE);
-#endif
-        break;
-
-    case CI_RC2:
-#ifdef HAVE_EVP_RC2_CBC
-        return(TRUE);
-#endif
-        break;
-
-    case CI_RC4:
-#ifdef HAVE_EVP_RC4_CBC
-        return(TRUE);
-#endif
-        break;
-
-    case CI_RC5:
-#ifdef HAVE_EVP_RC5_CBC
-        return(TRUE);
-#endif
-        break;
-
-    case CI_DES:
-#ifdef HAVE_EVP_DES_CBC
-        return(TRUE);
-#endif
-        break;
-
-    case CI_DESX:
-#ifdef HAVE_EVP_DESX_CBC
-        return(TRUE);
-#endif
-        break;
-
-    case CI_CAST:
-#ifdef HAVE_EVP_CAST5_CBC
-        return(TRUE);
-#endif
-        break;
-
-    case CI_IDEA:
-#ifdef HAVE_EVP_IDEA_CBC
-        return(TRUE);
-#endif
-        break;
-
-    case CI_AES:
-#ifdef HAVE_EVP_AES_129_CBC
-        return(TRUE);
-#endif
-        break;
-
-    case CI_AES_256:
-#ifdef HAVE_EVP_AES_256_CBC
-        return(TRUE);
-#endif
-        break;
-    }
-    return(FALSE);
-}
-
-
-int libCryptoProcessorInit(TProcessingModule *ProcMod, const char *Args)
-{
-    int result=FALSE;
-
-#ifdef HAVE_LIBSSL
-    libCryptoProcessorData *Data;
-    EVP_CIPHER_CTX *ctx;
-    const char *CipherList[]= {"blowfish","rc2","rc4","rc5","des","desx","cast","idea","aes","aes-256",NULL};
-    int val;
-    char *Tempstr=NULL;
-
-    val=MatchTokenFromList(ProcMod->Name,CipherList,0);
-    if (val==-1) return(FALSE);
-    if (! libCryptoCipherAvailable(val)) return(FALSE);
-    Data=(libCryptoProcessorData *) calloc(1,sizeof(libCryptoProcessorData));
-
-//Tempstr here holds the cipher name
-    InitialiseEncryptionComponents(Args, &Tempstr, &Data->InputVector, &Data->InputVectorLen, & Data->Key, &Data->KeyLen,&ProcMod->Flags);
-
-    if (! StrValid(ProcMod->Name)) ProcMod->Name=CopyStr(ProcMod->Name,Tempstr);
-
-    switch(val)
-    {
-    /*
-    	case CI_NONE:
-    	Data->Cipher=EVP_enc_null();
-    	break;
-    */
-
-    case CI_BLOWFISH:
-#ifdef HAVE_EVP_BF_CBC
-        Data->Cipher=EVP_bf_cbc();
-#endif
-        break;
-
-    case CI_RC2:
-#ifdef HAVE_EVP_RC2_CBC
-        Data->Cipher=EVP_rc2_cbc();
-#endif
-        break;
-
-    case CI_RC4:
-#ifdef HAVE_EVP_RC4_CBC
-        Data->Cipher=EVP_rc4();
-#endif
-        break;
-
-    case CI_RC5:
-#ifdef HAVE_EVP_RC5_32_12_16_CBC
-        //Data->Cipher=EVP_rc5_32_12_16_cbc();
-#endif
-        break;
-
-    case CI_DES:
-#ifdef HAVE_EVP_DES_CBC
-        Data->Cipher=EVP_des_cbc();
-#endif
-        break;
-
-    case CI_DESX:
-#ifdef HAVE_EVP_DESX_CBC
-        Data->Cipher=EVP_desx_cbc();
-#endif
-        break;
-
-    case CI_CAST:
-#ifdef HAVE_EVP_CAST5_CBC
-        Data->Cipher=EVP_cast5_cbc();
-#endif
-        break;
-
-    case CI_IDEA:
-#ifdef HAVE_EVP_IDEA_CBC
-        Data->Cipher=EVP_idea_cbc();
-#endif
-        break;
-
-    case CI_AES:
-#ifdef HAVE_EVP_AES_128_CBC
-        Data->Cipher=EVP_aes_128_cbc();
-#endif
-        break;
-
-    case CI_AES_256:
-#ifdef HAVE_EVP_AES_256_CBC
-        Data->Cipher=EVP_aes_256_cbc();
-#endif
-        break;
-    }
-
-
-    if (Data->Cipher)
-    {
-        Data->enc_ctx=EVP_CIPHER_CTX_new();
-        Data->dec_ctx=EVP_CIPHER_CTX_new();
-        EVP_CIPHER_CTX_init(Data->enc_ctx);
-        EVP_CIPHER_CTX_init(Data->dec_ctx);
-        Data->BlockSize=EVP_CIPHER_block_size(Data->Cipher);
-
-        EVP_EncryptInit_ex(Data->enc_ctx,Data->Cipher,NULL,Data->Key,Data->InputVector);
-        EVP_DecryptInit_ex(Data->dec_ctx,Data->Cipher,NULL,Data->Key,Data->InputVector);
-
-        if (ProcMod->Flags & DPM_NOPAD_DATA) EVP_CIPHER_CTX_set_padding(Data->enc_ctx,FALSE);
-
-        ProcMod->Data=Data;
-        result=TRUE;
-
-        DataProcessorSetValue(ProcMod,"Cipher",Tempstr);
-        Tempstr=FormatStr(Tempstr,"%d",Data->BlockSize);
-        DataProcessorSetValue(ProcMod,"BlockSize",Tempstr);
-    }
-
-    DestroyString(Tempstr);
-#endif
-    return(result);
-}
-
-
-int libCryptoProcessorClose(TProcessingModule *ProcMod)
-{
-#ifdef HAVE_LIBSSL
-    libCryptoProcessorData *Data;
-    EVP_CIPHER_CTX *ctx;
-
-    Data=(libCryptoProcessorData *) ProcMod->Data;
-    if (Data)
-    {
-        EVP_CIPHER_CTX_cleanup(Data->enc_ctx);
-        EVP_CIPHER_CTX_cleanup(Data->dec_ctx);
-
-        DestroyString(Data->Key);
-        DestroyString(Data->InputVector);
-        free(Data);
-    }
-    ProcMod->Data=NULL;
-#endif
-    return(TRUE);
-}
-
-
-
-
-
-
-
-int libCryptoProcessorWrite(TProcessingModule *ProcMod, const char *InData, unsigned long InLen, char **OutData, unsigned long *OutLen, int Flush)
-{
-    int wrote=0;
-
-#ifdef HAVE_LIBSSL
-    /*
-    int len, result=0, val;
-    libCryptoProcessorData *Data;
-    EVP_CIPHER_CTX *ctx;
-    char *ptr, *Tempstr=NULL;
-
-    if (ProcMod->Flags & DPM_WRITE_FINAL) return(0);
-    ptr=OutData;
-
-    Data=(libCryptoProcessorData *) ProcMod->Data;
-    ctx=Data->enc_ctx;
-
-    ProcMod->Flags = ProcMod->Flags & ~DPM_WRITE_FINAL;
-
-    if (ProcMod->Flags & DPM_NOPAD_DATA)
-    {
-    	val=InLen % Data->BlockSize;
-    	Tempstr=CopyStrLen(Tempstr,InData,InLen);
-    	if (val !=0)
-    	{
-    		Tempstr=SetStrLen(Tempstr,InLen + (Data->BlockSize-val));
-    		memset(Tempstr+InLen,' ', (Data->BlockSize-val));
-    		val=InLen+(Data->BlockSize-val);
-    	}
-    	else val=InLen;
-
-    	result=EVP_EncryptUpdate(ctx, ptr, &len, Tempstr, val);
-    }
-    else
-    {
-    	result=EVP_EncryptUpdate(ctx, ptr, &len, InData, InLen);
-    }
-
-
-    if (! result) wrote=0;
-    else wrote=len;
-
-    DestroyString(Tempstr);
-    */
-#endif
-    return(wrote);
-}
-
-
-
-int libCryptoProcessorFlush(TProcessingModule *ProcMod, const char *InData, unsigned long InLen, char *OutData, unsigned long OutLen)
-{
-    int wrote=0;
-
-    /*
-    int result=0, len;
-    libCryptoProcessorData *Data;
-
-    if (ProcMod->Flags & DPM_WRITE_FINAL) return(0);
-    Data=(libCryptoProcessorData *) ProcMod->Data;
-
-    if (Data)
-    {
-    if (InLen > 0)
-    {
-    result=libCryptoProcessorWrite(ProcMod, InData, InLen, OutData, OutLen,TRUE);
-    if (result > 0) return(result);
-    }
-
-    len=OutLen;
-    result=EVP_EncryptFinal_ex(Data->enc_ctx, OutData, &len);
-    ProcMod->Flags |= DPM_WRITE_FINAL;
-    }
-    if (! result) wrote=0;
-    else wrote=len;
-
-    */
-
-    return(wrote);
-}
-
-
-int libCryptoProcessorRead(TProcessingModule *ProcMod, const char *InData, unsigned long InLen, char **OutData, unsigned long *OutLen, int Flush)
-{
-    int bytes_read=0;
-#ifdef HAVE_LIBSSL
-    /*
-    int len, ivlen, result, val;
-    libCryptoProcessorData *Data;
-    EVP_CIPHER_CTX *ctx;
-    char *ptr;
-
-    ptr=OutData;
-
-    Data=(libCryptoProcessorData *) ProcMod->Data;
-    if (!Data) return(0);
-
-    if (ProcMod->Flags & DPM_READ_FINAL)
-    {
-      if (InLen==0)	return(0);
-      EVP_DecryptInit_ex(Data->dec_ctx,Data->Cipher,NULL,Data->Key,Data->InputVector);
-
-    }
-
-    ctx=Data->dec_ctx;
-
-    if (InLen==0)
-    {
-      len=0;
-      result=EVP_DecryptFinal_ex(ctx, ptr, &len);
-      ProcMod->Flags |= DPM_READ_FINAL; //this so we don't try
-    				    //another read
-
-    }
-    else
-    {
-    	len=OutLen;
-    	result=EVP_DecryptUpdate(ctx, ptr, &len, InData, InLen);
-    }
-
-    if (! result) bytes_read=-1;
-    else bytes_read+=InLen; //should be 'len' but DecryptUpdate returns the
-    												//number of bytes output, not the number consumed
-    */
-
-#endif
-    return(bytes_read);
-}
-
-#endif
-
-
-
-
-
-TProcessingModule *StandardDataProcessorCreate(const char *Class, const char *Name, const char *iArgs)
+TProcessingModule *StandardDataProcessorCreate(const char *Class, const char *Name, const char *iArgs, unsigned char **Header, int *HeadLen)
 {
     char *Args=NULL;
     TProcessingModule *Mod=NULL;
 
     Args=CopyStr(Args,iArgs);
-#ifdef HAVE_LIBSSL
-#ifdef HAVE_LIBCRYPTO
-    if (strcasecmp(Class,"crypto")==0)
-    {
-        Mod=(TProcessingModule *) calloc(1,sizeof(TProcessingModule));
-        Mod->Args=CopyStr(Mod->Args,Args);
-        Mod->Name=CopyStr(Mod->Name,Name);
-        Mod->Init=libCryptoProcessorInit;
-        Mod->Write=libCryptoProcessorWrite;
-        Mod->Read=libCryptoProcessorRead;
-        Mod->Close=libCryptoProcessorClose;
-    }
-#endif
-#endif
 
+    if (strcasecmp(Class,"crypto")==0) Mod=libCryptoProcessorCreate();
 
 
     if (strcasecmp(Class,"compress")==0)
@@ -731,7 +254,7 @@ TProcessingModule *StandardDataProcessorCreate(const char *Class, const char *Na
 
 
 
-    if (Mod && Mod->Init && Mod->Init(Mod, Args)) return(Mod);
+    if (Mod && Mod->Init && Mod->Init(Mod, Args, Header, HeadLen)) return(Mod);
 
     DestroyString(Args);
 
@@ -743,7 +266,7 @@ TProcessingModule *StandardDataProcessorCreate(const char *Class, const char *Na
 
 
 
-int STREAMAddDataProcessor(STREAM *S, TProcessingModule *Mod, const char *Args)
+int STREAMAddDataProcessor(STREAM *S, TProcessingModule *Mod)
 {
     ListNode *Curr;
     char *Tempstr=NULL;
@@ -811,7 +334,7 @@ int DataProcessorAvailable(const char *Class, const char *Name)
     int result=FALSE;
     TProcessingModule *Mod;
 
-    Mod=StandardDataProcessorCreate(Class,Name,"");
+    Mod=StandardDataProcessorCreate(Class,Name,"",NULL,NULL);
     if (Mod) result=TRUE;
 
     DataProcessorDestroy(Mod);
@@ -819,19 +342,53 @@ int DataProcessorAvailable(const char *Class, const char *Name)
 }
 
 
-int STREAMAddStandardDataProcessor(STREAM *S, const char *Class, const char *Name, const char *Args)
+int STREAMAddStandardDataProcessor(STREAM *S, const char *Class, const char *Name, const char *iArgs)
 {
     TProcessingModule *Mod=NULL;
+    char *Args=NULL, *Tempstr=NULL;
+    unsigned char *Header=NULL;
+    int HeadLen=0, RetVal=FALSE, ReadOffset=0;
 
-    Mod=StandardDataProcessorCreate(Class,Name,Args);
-    if (Mod)
+    Args=CopyStr(Args, iArgs);
+    if ( (S->Flags & SF_RDONLY) && (strcasecmp(Class, "crypto")==0) )
     {
-        STREAMAddDataProcessor(S, Mod, Args);
-        if (Mod->Flags & DPM_COMPRESS) S->State |= SS_COMPRESSED;
-        return(TRUE);
+        if (S->Flags & SF_WRONLY)
+        {
+            RaiseError(0, "STREAMAddStandardDataProcessor", "attempt to use encryption on a read+write file, only read or write is supported");
+            Destroy(Args);
+            return(FALSE);
+        }
+
+        Header=SetStrLen(Header, 16);
+        STREAMReadBytes(S, Header, 16);
+        if (strncmp(Header, "Salted__", 8)==0)
+        {
+            Tempstr=EncodeBytes(Tempstr, Header+8, 8, ENCODE_HEX);
+            Args=MCatStr(Args, " encrypt_hexsalt=", Tempstr, NULL);
+            ReadOffset=16;
+        }
+
+        STREAMSeek(S, ReadOffset, SEEK_SET);
     }
 
-    return(FALSE);
+    Mod=StandardDataProcessorCreate(Class,Name,Args,&Header,&HeadLen);
+    if (Mod)
+    {
+        if ( (S->Flags & SF_WRONLY) && (HeadLen > 0) )
+        {
+            STREAMWriteBytes(S, Header, HeadLen);
+            STREAMFlush(S);
+        }
+        STREAMAddDataProcessor(S, Mod);
+        if (Mod->Flags & DPM_COMPRESS) S->State |= LU_SS_COMPRESSED;
+        RetVal=TRUE;
+    }
+
+    Destroy(Tempstr);
+    Destroy(Header);
+    Destroy(Args);
+
+    return(RetVal);
 }
 
 
@@ -853,7 +410,7 @@ int STREAMAddProgressCallback(STREAM *S, DATA_PROGRESS_CALLBACK Callback)
         Mod->Flags |= DPM_PROGRESS;
         Mod->Data=Callback;
         Mod->Read=ProgressProcessorRead;
-        STREAMAddDataProcessor(S, Mod, NULL);
+        STREAMAddDataProcessor(S, Mod);
         return(TRUE);
     }
 

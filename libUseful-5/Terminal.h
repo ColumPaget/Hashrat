@@ -306,13 +306,22 @@ const char *TerminalFormatSubStr(const char *Str, char **RetStr, STREAM *Term);
 void TerminalPutStr(const char *Str, STREAM *S);
 
 
+//'FmtStr' is a printf-style format string with '%d, %s' style substitutions and 'tilde commands' in it. 
+//Furthermore, any strings printed with '%s' can contain tilde commands too.
+//The ANSI coded result is output to stream S
+void TerminalPrint(STREAM *S, const char *FmtStr, ...);
 
 //step past a single character. Understands tilde-strings and (some) unicode, consuming them as one character
 int TerminalConsumeCharacter(const char **ptr);
 
 //calculate length of string *after ANSI formating*, so ANSI escape sequences don't count as characters added
-//to the length 
+//to the length and unicode escape sequences should only count as single chars
 int TerminalStrLen(const char *Str);
+
+// pad terminal string with a character to a length *handling ANSI formatting*, 
+// so ANSI escape sequences don't count if they just change colors, and unicode
+// escape sequences should only count as single chars
+char *TerminalPadStr(char *Str, int PadChar, int PadTo);
 
 //truncate a terminal string to a length *handling ANSI formatting*, so ANSI escape sequences don't count to 
 //the length to be truncated. This means if you ask for 5 characters, you get five text characters, plus any 

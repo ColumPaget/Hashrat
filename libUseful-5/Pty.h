@@ -10,6 +10,7 @@ Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 
 //These are passed to TTYConfig
 #define TTYFLAG_PTY 1
+#define TTYFLAG_DATA 2              //we will be sending raw data on the tty, not lines of text. Effects flushing rules.
 #define TTYFLAG_CANON 4096
 #define TTYFLAG_HARDWARE_FLOW 8192  //enable hardware flow control
 #define TTYFLAG_SOFTWARE_FLOW 16324 //enable software flow control

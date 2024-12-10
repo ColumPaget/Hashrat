@@ -12,19 +12,19 @@ static void OpenSSLFreeHashCTX(HASH *Hash)
     EVP_MD_CTX_destroy(Hash->Ctx);
 #endif
 
-Hash->Ctx=NULL;
+    Hash->Ctx=NULL;
 }
 
 
 static int OpenSSLFinishHash(HASH *Hash, char **Digest)
 {
-    int Len;
+    unsigned int Len;
 
     *Digest=SetStrLen(*Digest, EVP_MAX_MD_SIZE);
-    EVP_DigestFinal((EVP_MD_CTX *) Hash->Ctx, *Digest, &Len);
+    EVP_DigestFinal((EVP_MD_CTX *) Hash->Ctx, (unsigned char *) *Digest,  &Len);
     OpenSSLFreeHashCTX(Hash);
 
-    return(Len);
+    return((int) Len);
 }
 
 
@@ -49,11 +49,11 @@ static int OpenSSLInitHash(HASH *Hash, const char *Name, int Size)
         Hash->Ctx=(EVP_MD_CTX *) EVP_MD_CTX_create();
 #endif
 
-        if (! EVP_DigestInit(Hash->Ctx, MD)) 
-	{
-	OpenSSLFreeHashCTX(Hash);
-	return(FALSE);
-	}
+        if (! EVP_DigestInit(Hash->Ctx, MD))
+        {
+            OpenSSLFreeHashCTX(Hash);
+            return(FALSE);
+        }
 
         Hash->Update=OpenSSLUpdateHash;
         Hash->Finish=OpenSSLFinishHash;
@@ -73,9 +73,9 @@ static void OpenSSLDigestCallback(const OBJ_NAME *obj, void *arg)
     Hash=(HASH *) calloc(1, sizeof(HASH));
     if (OpenSSLInitHash(Hash, obj->name, 0))
     {
-    HashRegister(obj->name, 0, OpenSSLInitHash);
-    Tempstr=MCopyStr(Tempstr, "openssl:", obj->name, NULL);
-    HashRegister(Tempstr, 0, OpenSSLInitHash);
+        HashRegister(obj->name, 0, OpenSSLInitHash);
+        Tempstr=MCopyStr(Tempstr, "openssl:", obj->name, NULL);
+        HashRegister(Tempstr, 0, OpenSSLInitHash);
     }
     OpenSSLFreeHashCTX(Hash);
 

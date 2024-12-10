@@ -106,6 +106,7 @@ OPTIONS
   -myear <years>  Only hash items <years> old. Has the same format as the find command, e.g. -10 is younger than ten years, +10 is older than ten, and 10 is ten years old
   -exec           In CHECK or MATCH mode only examine executable files.
   -dups           Search for duplicate files.
+  -rename         Rename files to include a hash in their name. Filename format is '<name>-<hash>.<extn>'
   -n <length>     Truncate hashes to <length> bytes
   -segment <length> Break hash up into segments of <length> chars seperated by '-'
   -c              CHECK hashes against list from file (or stdin)
@@ -483,6 +484,31 @@ imlib2_view,fim,feh,display,xv,phototonic,qimageviewer,pix,sxiv,qimgv,qview,noma
 ```
 
 The default list of image viewers can be overridden using the `-viewcmd` option.
+
+
+
+RENAME FILES
+============
+
+The '-rename' option allows renaming files to include a hash in their filename. The filename format is '<name>-<hash>.<extn>'. For example:
+
+
+```
+hashrat -p64 -md5 -rename main.c
+
+```
+
+Will rename 'main.c' to 'main-gAmHI2oarRmpiXkE7MVK90.c', where 'gAmHI2oarRmpiXkE7MVK90' is it's MD5 has encoded with the 'p64' base-64 encoding scheme.
+
+The standard '-64' encoding scheme uses the '/' character, which is not allowed in a filename and results in renames failing. Thus the '-p64' or '-r64' encoding schemes should be used.
+
+
+Using the '-r' flag entire directories of files can be renamed in this manner:
+
+```
+hashrat -p64 -md5 -rename -r myfiles
+
+```
 
 
 

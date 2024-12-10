@@ -3,8 +3,8 @@ Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 * SPDX-License-Identifier: GPL-3.0
 */
 
-#ifndef LIBUSEFUL_URL
-#define LIBUSEFUL_URL
+#ifndef LIBUSEFUL_URL_H
+#define LIBUSEFUL_URL_H
 
 #include "includes.h"
 
@@ -19,7 +19,12 @@ for those to NULL
 extern "C" {
 #endif
 
-//Parse a full URL with all parts. You can just use this for everything.
+
+//Parse a full URL with all parts. DO NOT TRY TO GUESS PORT if no port in the URL itself
+void UnpackURL(const char *URL, char **Proto, char **Host, char **Port, char **User, char **Password, char **Path, char **Args);
+
+
+//Parse a full URL with all parts. Guess port for well known protocols (so https://myhost/ returns a port of 80)
 void ParseURL(const char *URL, char **Proto, char **Host, char **Port, char **User, char **Password, char **Path, char **Args);
 
 //Parse a URL type that lacks a protocol or Args part, something like "myhost.com:22"

@@ -15,7 +15,7 @@ static ListNode *LogFiles=NULL;
 static TLogFile *LogFileDefaults=NULL;
 
 
-STREAM *LogFileInternalDoRotate(TLogFile *LogFile);
+static STREAM *LogFileInternalDoRotate(TLogFile *LogFile);
 
 ListNode *LogFilesGetList()
 {
@@ -93,7 +93,6 @@ TLogFile *LogFileGetEntry(const char *FileName)
 {
     TLogFile *LogFile=NULL;
     ListNode *Node;
-    STREAM *S=NULL;
 
     if (! StrValid(FileName)) return(NULL);
     if (! LogFiles) LogFiles=ListCreate();
@@ -144,7 +143,7 @@ void LogFileCloseAll()
 }
 
 
-char *LogFileInternalGetRotateDestinationPath(char *RetStr, TLogFile *LogFile)
+static char *LogFileInternalGetRotateDestinationPath(char *RetStr, TLogFile *LogFile)
 {
     char *Tempstr=NULL;
 
@@ -163,48 +162,64 @@ char *LogFileInternalGetRotateDestinationPath(char *RetStr, TLogFile *LogFile)
 }
 
 
-STREAM *LogFileInternalDoRotate(TLogFile *LogFile)
+static STREAM *LogFileInternalDoRotate(TLogFile *LogFile)
 {
     struct stat FStat;
     char *Tempstr=NULL, *Path=NULL, *PrevPath=NULL;
     int i;
 
     if (! LogFile) return(NULL);
-    if (! LogFile->S) return(NULL);
+
+    //we can rotate even if logfile is closed
+    //if (! LogFile->S) return(NULL);
+
+    //don't attempt to rotate hardened log files
+    if (LogFile->Flags & LOGFILE_HARDEN) return(LogFile->S);
+
+    //don't attempt to rotate things that aren't files
     if (CompareStr(LogFile->Path,"SYSLOG")==0) return(LogFile->S);
     if (CompareStr(LogFile->Path,"STDOUT")==0) return(LogFile->S);
     if (CompareStr(LogFile->Path,"STDERR")==0) return(LogFile->S);
+
+    //don't attempt to rotate if we are a child process forked off,
+    //otherwise we can get into chaos with processes not knowing which
+    //version of the file they should be logging to
     if (getpid() != ParentPID) return(LogFile->S);
 
+
+    //if we have a max size specified, then consider rotating
     if (LogFile->MaxSize > 0)
     {
-        if (LogFile->S) fstat(LogFile->S->out_fd,&FStat);
-        else stat(LogFile->Path,&FStat);
+        if (LogFile->S) fstat(LogFile->S->out_fd, &FStat);
+        else stat(LogFile->Path, &FStat);
 
         if (FStat.st_size > LogFile->MaxSize)
         {
-            Tempstr=LogFileInternalGetRotateDestinationPath(Tempstr, LogFile);
-            for (i=LogFile->MaxRotate; i > 0; i--)
-            {
-                Path=FormatStr(Path,"%s.%d",Tempstr,i);
-                if (i==LogFile->MaxRotate) unlink(Path);
-                else rename(Path,PrevPath);
-                PrevPath=CopyStr(PrevPath,Path);
-            }
-
+            //close logfile and check again, someone might have rotated logs under us!
             if (LogFile->S)
             {
-                //turn off append only sw we can do reanmae
-                if (LogFile->Flags & LOGFILE_HARDEN) STREAMSetFlags(LogFile->S, 0, STREAM_APPENDONLY);
-            }
-            if (PrevPath) rename(LogFile->Path,PrevPath);
-            if (LogFile->S)
-            {
-                //turn off append only sw we can do reanmae
-                if (LogFile->Flags & LOGFILE_HARDEN) STREAMSetFlags(LogFile->S, STREAM_IMMUTABLE, 0);
+                STREAMClose(LogFile->S);
+                LogFile->S=NULL;
             }
 
-            if (LogFile->S) STREAMClose(LogFile->S);
+            stat(LogFile->Path, &FStat);
+
+            //if it's still too big, then rotate it
+            if (FStat.st_size > LogFile->MaxSize)
+            {
+                Tempstr=LogFileInternalGetRotateDestinationPath(Tempstr, LogFile);
+                for (i=LogFile->MaxRotate; i > 0; i--)
+                {
+                    Path=FormatStr(Path,"%s.%d",Tempstr,i);
+                    if (i==LogFile->MaxRotate) unlink(Path);
+                    else rename(Path,PrevPath);
+                    PrevPath=CopyStr(PrevPath,Path);
+                }
+
+                if (PrevPath) rename(LogFile->Path,PrevPath);
+            }
+
+            //close and reopen to get a fresh, empty logfile
             LogFile->S=LogFileOpen(LogFile->Path, LogFile->Flags);
         }
     }
@@ -212,6 +227,7 @@ STREAM *LogFileInternalDoRotate(TLogFile *LogFile)
     DestroyString(PrevPath);
     DestroyString(Tempstr);
     DestroyString(Path);
+
     return(LogFile->S);
 }
 
@@ -220,7 +236,9 @@ STREAM *LogFileInternalDoRotate(TLogFile *LogFile)
 void LogFileSetValues(TLogFile *LogFile, int Flags, int MaxSize, int MaxRotate, int FlushInterval)
 {
     if (! LogFileDefaults) LogFileSetDefaults(LOGFILE_TIMESTAMP | LOGFILE_FLUSH | LOGFILE_LOGPID | LOGFILE_LOGUSER, 100000000, 0, 1);
-    if (ParentPID==0) ParentPID=getpid();
+
+    //Setting Values asserts ownership of the logfile by process
+    ParentPID=getpid();
 
     if (LogFile)
     {
@@ -254,10 +272,9 @@ int LogFileFindSetValues(const char *FileName, int Flags, int MaxSize, int MaxRo
 }
 
 
-int LogFileInternalWrite(TLogFile *LF, STREAM *S, int Flags, const char *Str)
+static int LogFileInternalWrite(TLogFile *LF, STREAM *S, int Flags, const char *Str)
 {
     char *Tempstr=NULL, *LogStr=NULL;
-    struct tm *TimeStruct;
     int result=FALSE;
     time_t Now;
 
@@ -328,7 +345,7 @@ int LogFileInternalWrite(TLogFile *LF, STREAM *S, int Flags, const char *Str)
 
 
 
-int LogFileInternalPush(TLogFile *LF, STREAM *S, int Flags, const char *Str)
+static int LogFileInternalPush(TLogFile *LF, STREAM *S, int Flags, const char *Str)
 {
     char *Tempstr=NULL;
     int result=TRUE;
@@ -414,7 +431,7 @@ int LogToFile(const char *FileName, const char *fmt, ...)
 {
     char *Tempstr=NULL;
     va_list args;
-    int result=FALSE, val;
+    int result=FALSE;
     TLogFile *LogFile;
 
     LogFile=LogFileGetEntry(FileName);

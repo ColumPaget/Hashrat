@@ -190,10 +190,10 @@ int SmtpSendRecipients(const char *Recipients, STREAM *S)
 
 STREAM *SMTPConnect(const char *Sender, const char *Recipients, int Flags)
 {
-    char *MailFrom=NULL, *Recip=NULL, *Tempstr=NULL;
+    char *Recip=NULL, *Tempstr=NULL;
     char *Proto=NULL, *User=NULL, *Pass=NULL, *Host=NULL, *PortStr=NULL;
-    const char *p_MailServer, *ptr;
-    int result=FALSE, Caps=0, RecipientAccepted=FALSE;
+    const char *p_MailServer;
+    int result=FALSE, Caps=0;
     STREAM *S;
 
     p_MailServer=LibUsefulGetValue("SMTP:Server");

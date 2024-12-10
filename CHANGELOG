@@ -1,3 +1,7 @@
+v1.23 (2024-12-10)
+  * Add '-rename' option that inserts a hash into filenames.
+  * Filenames in 'duplicates' option are now contained in '[]', to allow extracting them with 'cut'.
+
 v1.22 (2024-07-18)
   * if '-cache' option is used with '-xattr', then do not update files where xattr hash matches the file (feature request from https://github.com/eatnumber1).
 

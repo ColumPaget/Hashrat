@@ -84,6 +84,7 @@ int FileChMod(const char *Path, const char *Mode);
 int FileTouch(const char *Path);
 
 
+//parse permissions in rwx format, either as rwxr-x-rx or as ugo=rwx format or even as a numeric string
 int FileSystemParsePermissions(const char *Permissions);
 
 
@@ -141,9 +142,23 @@ int FileSetXAttr(const char *Path, const char *Name, const char *Value);
 //recursive copy of a directory
 int FileSystemCopyDir(const char *Src, const char *Dest);
 
+
 int FileSystemRmDir(const char *Dir);
 
 
+//these functions allow setting filesystem-wide flags under linux
+//currently these are FS_APPEND_FL and FS_IMMUTABLE_FL, which make
+//a file append-only or immutable
+int FDSetFlags(int fd, int Set, int Unset);
+int FileSetFlags(const char *Path, int Set, int Unset);
+
+//these functions allow setting filesystem-wide flags under linux
+//they exist to be called from the STREAM module, and thus use STREAM_ flags
+//in order that linux-specific flags are only used in this filesystem module
+//currently these are STREAM_APPENDONLY and STREAM_IMMUTABLE, which make
+//a file append-only or immutable
+int FileSystemSetSTREAMFlags(int fd, int Set, int Unset);
+int FileSetSTREAMFlags(const char *Path, int Set, int Unset);
 
 #ifdef __cplusplus
 }

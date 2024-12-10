@@ -86,12 +86,16 @@ const char *OSSysInfoString(int Info)
     case OSINFO_HOSTNAME:
         buf=SetStrLen(buf, HOST_NAME_MAX);
         result=gethostname(buf, HOST_NAME_MAX);
+        //if call failed make sure we return a blank string
+        if (result != 0) buf[0]='\0';
         return(buf);
         break;
 
     case OSINFO_DOMAINNAME:
         buf=SetStrLen(buf, HOST_NAME_MAX);
         result=getdomainname(buf, HOST_NAME_MAX);
+        //if call failed make sure we return a blank string
+        if (result != 0) buf[0]='\0';
         return(buf);
         break;
 

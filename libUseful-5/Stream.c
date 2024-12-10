@@ -12,16 +12,12 @@
 #include "String.h"
 #include "Users.h"
 #include "UnitsOfMeasure.h"
+#include "FileSystem.h"
 #include "WebSocket.h"
 #include <sys/file.h>
 #include "SecureMem.h"
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-
-#ifdef linux
-#include <linux/fs.h>
-#endif
-
 
 
 
@@ -62,7 +58,7 @@ static void SelectAddFD(TSelectSet *Set, int type, int fd)
 
 static int SelectWait(TSelectSet *Set, struct timeval *tv)
 {
-    long long timeout, next;
+    long long timeout;
     uint64_t start, diff;
     int result;
 
@@ -241,27 +237,12 @@ void STREAMSetFlags(STREAM *S, int Set, int UnSet)
     fcntl(S->in_fd, F_SETFD, val);
     fcntl(S->out_fd, F_SETFD, val);
 
+#ifdef USE_FSFLAGS
     //immutable and append only flags are a special case as
     //they are not io flags, but permanent file flags so we
     //only touch those if explicitly set in Set or UnSet
-    if ((Set | UnSet) & (STREAM_IMMUTABLE | STREAM_APPENDONLY))
-    {
-#ifdef FS_IOC_SETFLAGS
-        ioctl(S->out_fd, FS_IOC_GETFLAGS, &val);
-
-#ifdef FS_IMMUTABLE_FL
-        if (Set & STREAM_IMMUTABLE) val |= FS_IMMUTABLE_FL;
-        else if (UnSet & STREAM_IMMUTABLE) val &= ~FS_IMMUTABLE_FL;
+    if ((Set | UnSet) & (STREAM_IMMUTABLE | STREAM_APPENDONLY)) FileSystemSetSTREAMFlags(S->out_fd, Set, UnSet);
 #endif
-
-#ifdef FS_APPEND_FL
-        if (Set & STREAM_APPENDONLY) val |= FS_APPEND_FL;
-        else if (UnSet & STREAM_APPENDONLY) val |= FS_APPEND_FL;
-#endif
-
-        ioctl(S->out_fd, FS_IOC_SETFLAGS, &val);
-#endif
-    }
 }
 
 
@@ -286,7 +267,7 @@ void STREAMSetFlushType(STREAM *S, int Type, int StartPoint, int BlockSize)
 /* the file pointer to that position */
 void STREAMReAllocBuffer(STREAM *S, int size, int Flags)
 {
-    char *ibuf=NULL, *obuf=NULL;
+    unsigned char *ibuf=NULL, *obuf=NULL;
     int RW;
 
     if (S->Flags & SF_MMAP) return;
@@ -314,8 +295,8 @@ void STREAMReAllocBuffer(STREAM *S, int size, int Flags)
     }
     else
     {
-        if (! (RW & SF_WRONLY)) S->InputBuff =(char *) realloc(S->InputBuff,size);
-        if (! (RW & SF_RDONLY)) S->OutputBuff=(char *) realloc(S->OutputBuff,size);
+        if (! (RW & SF_WRONLY)) S->InputBuff =(unsigned char *) realloc(S->InputBuff,size);
+        if (! (RW & SF_RDONLY)) S->OutputBuff=(unsigned char *) realloc(S->OutputBuff,size);
     }
 
     if (ibuf)
@@ -345,7 +326,7 @@ int STREAMCheckForBytes(STREAM *S)
     struct stat Stat;
 
     if (! S) return(FALSE);
-    if (S->State & SS_EMBARGOED) return(FALSE);
+    if (S->State & LU_SS_EMBARGOED) return(FALSE);
     if (S->InEnd > S->InStart) return(TRUE);
     if (S->in_fd==-1) return(FALSE);
 
@@ -368,7 +349,7 @@ int STREAMCountWaitingBytes(STREAM *S)
     int read_result=0, result;
 
     if (! S) return(0);
-    if (S->State & SS_EMBARGOED) return(0);
+    if (S->State & LU_SS_EMBARGOED) return(0);
 
     result=FDCheckForBytes(S->in_fd);
     if (result > 0) read_result=STREAMReadCharsToBuffer(S);
@@ -398,7 +379,7 @@ STREAM *STREAMSelect(ListNode *Streams, struct timeval *tv)
     while (Curr)
     {
         S=(STREAM *) Curr->Item;
-        if (S && (! (S->State & SS_EMBARGOED)))
+        if (S && (! (S->State & LU_SS_EMBARGOED)))
         {
             //server type streams don't have buffers
             if ( (S->Type != STREAM_TYPE_UNIX_SERVER) && (S->Type != STREAM_TYPE_TCP_SERVER) )
@@ -458,7 +439,7 @@ int STREAMCheckForWaitingChar(STREAM *S,unsigned char check_char)
     char *found_char;
 
     if (! S) return(0);
-    if (S->State & SS_EMBARGOED) return(0);
+    if (S->State & LU_SS_EMBARGOED) return(0);
 
     result=FDCheckForBytes(S->in_fd);
     if (result > 0) read_result=STREAMReadCharsToBuffer(S);
@@ -528,19 +509,17 @@ int STREAMBasicSendBytes(STREAM *S, const char *Data, int DataLen)
 int STREAMPushBytes(STREAM *S, const char *Data, int DataLen)
 {
 
-    if (S->State & SS_SSL) return(OpenSSLSTREAMWriteBytes(S, Data, DataLen));
+    if (S->State & LU_SS_SSL) return(OpenSSLSTREAMWriteBytes(S, Data, DataLen));
     return(STREAMBasicSendBytes(S, Data, DataLen));
 }
 
 
 static int STREAMInternalPushBytes(STREAM *S, const char *Data, int DataLen)
 {
-    int result=0, count=0, len;
-    void *vptr;
+    int result=0, count=0;
 
     if (! S) return(STREAM_CLOSED);
     if (S->out_fd==-1) return(STREAM_CLOSED);
-
 
 //if we are flushing blocks, then pad out to the blocksize
     if (S->Flags & FLUSH_BLOCK)
@@ -598,7 +577,9 @@ static int STREAMInternalPushBytes(STREAM *S, const char *Data, int DataLen)
 int STREAMFlush(STREAM *S)
 {
     int val;
+
     val=STREAMInternalPushBytes(S, S->OutputBuff, S->OutEnd);
+
     //if nothing left in stream (There shouldn't be) then wipe data because
     //there might have been passwords sent on the stream, and we don't want
     //that hanging about in memory
@@ -676,7 +657,7 @@ int STREAMReadThroughProcessors(STREAM *S, char *Bytes, int InLen)
     }
 
     if (
-        (! (S->State & SS_DATA_ERROR)) &&
+        (! (S->State & LU_SS_DATA_ERROR)) &&
         (len > 0)
     )
     {
@@ -697,7 +678,7 @@ int STREAMReadThroughProcessors(STREAM *S, char *Bytes, int InLen)
     if (len==0)
     {
         if (state==STREAM_CLOSED) return(STREAM_CLOSED);
-        if (S->State & SS_DATA_ERROR) return(STREAM_DATA_ERROR);
+        if (S->State & LU_SS_DATA_ERROR) return(STREAM_DATA_ERROR);
     }
 
     // this indicates that there's still data in the processing chain
@@ -768,12 +749,12 @@ STREAM *STREAMFromDualFD(int in_fd, int out_fd)
 
 int STREAMOpenMMap(STREAM *S, int offset, int len, int Flags)
 {
-    char *ptr;
+    unsigned char *ptr;
     int MProt=PROT_READ;
 
     if (S->InputBuff) free(S->InputBuff);
     if (Flags & (SF_WRONLY | SF_RDWR)) MProt |= PROT_WRITE;
-    ptr=(char *) mmap(0, len, MProt, MAP_SHARED, S->in_fd, offset);
+    ptr=(unsigned char *) mmap(0, len, MProt, MAP_SHARED, S->in_fd, offset);
     if (ptr==MAP_FAILED) return(FALSE);
     S->InEnd=len;
     S->InStart=0;
@@ -785,15 +766,104 @@ int STREAMOpenMMap(STREAM *S, int offset, int len, int Flags)
 }
 
 
+
+static int STREAMAutoRecoverRequired(int Flags)
+{
+    if (
+        (Flags & SF_AUTORECOVER) &&
+        (Flags & SF_WRONLY) &&
+        (! (Flags & (STREAM_APPEND | SF_RDONLY) ) )
+    ) return(TRUE);
+
+    return(FALSE);
+}
+
+
+void STREAMFileAutoRecover(const char *Path, int Flags)
+{
+    char *BackupPath=NULL;
+    struct stat FStat;
+    int result;
+
+    BackupPath=MCopyStr(BackupPath, Path, ".autorecover", NULL);
+    result=stat(BackupPath, &FStat);
+    if (result==0)
+    {
+        //never use an autorecover that is zero bytes in size
+        if (FStat.st_size == 0)
+        {
+            result=unlink(BackupPath);
+            if (result != 0) RaiseError(ERRFLAG_ERRNO|ERRFLAG_DEBUG, "STREAMFileOpen", "zero-length autorecovery found, but cannot remove it %s", BackupPath);
+        }
+        // if we are writing to the file, and we are not appending to it, then we are going to blank the file down anyways, so no need to autorecover
+        else if (! (Flags & (SF_RDONLY|STREAM_APPEND)) )
+        {
+            result=unlink(BackupPath);
+            if (result != 0) RaiseError(ERRFLAG_ERRNO|ERRFLAG_DEBUG, "STREAMFileOpen", "autorecovery found, not needed, but cannot remove it %s", BackupPath);
+        }
+        else
+        {
+            RaiseError(ERRFLAG_DEBUG, "STREAMFileOpen", "autorecovery from %s", BackupPath);
+            //first take a backup for the current 'live' file
+            BackupPath=MCopyStr(BackupPath, Path, ".", GetDateStr("%Y-%m-%dT%H%M%S", NULL), ".error", NULL);
+            result=rename(Path, BackupPath);
+            if (result != 0) RaiseError(ERRFLAG_ERRNO | ERRFLAG_DEBUG, "STREAMFileOpen", "autorecovery cannot archive current file to %s", BackupPath);
+
+            BackupPath=MCopyStr(BackupPath, Path, ".autorecover", NULL);
+            result=rename(BackupPath, Path);
+            if (result != 0) RaiseError(ERRFLAG_ERRNO | ERRFLAG_DEBUG, "STREAMFileOpen", "autorecovery cannot import %s", BackupPath);
+        }
+    }
+
+    Destroy(BackupPath);
+}
+
+
+// do a bunch of preparation before opening the file
+// firstly convert paths starting in ~/ to point to the user's home directory
+// secondly handle taking/making a backup if that is requested
+// This function always makes a copy of path, because even if no substitutions are
+// required functions like mkostemp want to be able to change the file path
+// and need a writeable copy to do that
+static char *STREAMFileOpenPrepare(char *NewPath, const char *Path, int Flags)
+{
+    char *BackupPath=NULL;
+    int result;
+
+    //if path starts with a tilde, then it's the user's home directory
+    if (strncmp(Path, "~/", 2) ==0)
+    {
+        //Path+1 so we get the / to make sure there is one after HomeDir
+        NewPath=MCopyStr(NewPath, GetCurrUserHomeDir(), Path+1, NULL);
+    }
+    else NewPath=CopyStr(NewPath, Path);
+
+    if (Flags & SF_AUTORECOVER)
+    {
+        //only take a backup if we are in write/truncate mode, not append or r/w
+        if ( STREAMAutoRecoverRequired(Flags) )
+        {
+            BackupPath=MCopyStr(BackupPath, NewPath, ".autorecover", NULL);
+            result=rename(NewPath, BackupPath);
+            if (result != 0) RaiseError(ERRFLAG_ERRNO|ERRFLAG_DEBUG, "STREAMFileOpen", "failed to take backup of %s to %s", NewPath, BackupPath);
+        }
+        //if stream opened for read or append, then autorecover
+        else STREAMFileAutoRecover(NewPath, Flags);
+    }
+
+    Destroy(BackupPath);
+
+    return(NewPath);
+}
+
+
 STREAM *STREAMFileOpen(const char *Path, int Flags)
 {
     int fd, Mode=0;
     STREAM *Stream;
     struct stat myStat;
     char *Tempstr=NULL, *NewPath=NULL;
-    const char *p_Path, *ptr;
 
-    p_Path=Path;
     if (Flags & SF_WRONLY) Mode=O_WRONLY;
     else if (Flags & SF_RDONLY) Mode=O_RDONLY;
     else Mode=O_RDWR;
@@ -802,41 +872,34 @@ STREAM *STREAMFileOpen(const char *Path, int Flags)
     if (Flags & SF_CREATE) Mode |=O_CREAT;
     if (Flags & SF_EXCL) Mode |=O_EXCL;
 
-    if (CompareStr(Path,"-")==0)
+    //we take a copy of Path, because we may need to substitute ~/ for the user's home directory
+    //or because functions like mkostemp want to modify the string they are passed
+    NewPath=STREAMFileOpenPrepare(NewPath, Path, Flags);
+
+    // '-' means stdin or stdout, depending on context
+    if (CompareStr(NewPath,"-")==0)
     {
         if (Mode==O_RDONLY) fd=0;
         else fd=1;
     }
+    // create a file with a tempoary name, the pattern 'XXXXXX' will be replaced with a unique
+    // random string to create a unique filename
     else if (Flags & SF_TMPNAME)
     {
-        //Must make a copy because mkostemp internally alters path
-        NewPath=CopyStr(NewPath, Path);
 #ifdef HAVE_MKOSTEMP
         fd=mkostemp(NewPath, Mode);
 #else
         fd=mkstemp(NewPath);
 #endif
-        p_Path=NewPath;
     }
-    //if path starts with a tilde, then it's the user's home directory
-    else if (strncmp(Path, "~/", 2) ==0)
-    {
-        //Path+1 so we get the / to make sure there is one after HomeDir
-        NewPath=MCopyStr(NewPath, GetCurrUserHomeDir(), Path+1, NULL);
-        fd=open(NewPath, Mode, 0600);
-        p_Path=NewPath;
-    }
-    else
-    {
-        fd=open(Path, Mode, 0600);
-        p_Path=Path;
-    }
+    // otherwise just open the file as normal!
+    else fd=open(NewPath, Mode, 0600);
 
 
     if (fd==-1)
     {
-        if (Flags & SF_ERROR) RaiseError(ERRFLAG_ERRNO, "STREAMFileOpen", "failed to open %s", p_Path);
-        else RaiseError(ERRFLAG_ERRNO|ERRFLAG_DEBUG, "STREAMFileOpen", "failed to open %s", p_Path);
+        if (Flags & SF_ERROR) RaiseError(ERRFLAG_ERRNO, "STREAMFileOpen", "failed to open %s", NewPath);
+        else RaiseError(ERRFLAG_ERRNO|ERRFLAG_DEBUG, "STREAMFileOpen", "failed to open %s", NewPath);
         Destroy(NewPath);
         return(NULL);
     }
@@ -845,7 +908,7 @@ STREAM *STREAMFileOpen(const char *Path, int Flags)
     {
         if (flock(fd,LOCK_EX | LOCK_NB)==-1)
         {
-            RaiseError(ERRFLAG_ERRNO, "STREAMFileOpen", "file lock requested but failed %s", p_Path);
+            RaiseError(ERRFLAG_ERRNO, "STREAMFileOpen", "file lock requested but failed %s", NewPath);
             close(fd);
             Destroy(NewPath);
             return(NULL);
@@ -856,7 +919,7 @@ STREAM *STREAMFileOpen(const char *Path, int Flags)
     {
         if (flock(fd,LOCK_SH | LOCK_NB)==-1)
         {
-            RaiseError(ERRFLAG_ERRNO, "STREAMFileOpen", "file lock requested but failed %s", p_Path);
+            RaiseError(ERRFLAG_ERRNO, "STREAMFileOpen", "file lock requested but failed %s", NewPath);
             close(fd);
             Destroy(NewPath);
             return(NULL);
@@ -871,9 +934,9 @@ STREAM *STREAMFileOpen(const char *Path, int Flags)
 
     if ((Mode != O_RDONLY) && (! (Flags & SF_FOLLOW)))
     {
-        if (lstat(p_Path, &myStat) !=0)
+        if (lstat(NewPath, &myStat) !=0)
         {
-            RaiseError(ERRFLAG_ERRNO, "STREAMFileOpen", "cannot stat %s", p_Path);
+            RaiseError(ERRFLAG_ERRNO, "STREAMFileOpen", "cannot stat %s", NewPath);
             close(fd);
             Destroy(NewPath);
             return(NULL);
@@ -881,7 +944,7 @@ STREAM *STREAMFileOpen(const char *Path, int Flags)
 
         if (S_ISLNK(myStat.st_mode))
         {
-            RaiseError(0, "STREAMFileOpen", "%s is a symlink, but not not in 'symlink okay' mode", p_Path);
+            RaiseError(0, "STREAMFileOpen", "%s is a symlink, but not not in 'symlink okay' mode", NewPath);
             close(fd);
             Destroy(NewPath);
             return(NULL);
@@ -889,7 +952,7 @@ STREAM *STREAMFileOpen(const char *Path, int Flags)
     }
     else
     {
-        stat(p_Path, &myStat);
+        stat(NewPath, &myStat);
     }
 
     //CREATE THE STREAM OBJECT !!
@@ -900,17 +963,17 @@ STREAM *STREAMFileOpen(const char *Path, int Flags)
     Tempstr=FormatStr(Tempstr,"%d",myStat.st_size);
     STREAMSetValue(Stream, "FileSize", Tempstr);
     Stream->Size=myStat.st_size;
-    Stream->Path=CopyStr(Stream->Path, p_Path);
+    Stream->Path=CopyStr(Stream->Path, NewPath);
 
     if ( (Flags & (SF_RDONLY | SF_MMAP)) == (SF_RDONLY | SF_MMAP) ) STREAMOpenMMap(Stream, 0, myStat.st_size, Flags);
     else
     {
         if (Flags & SF_TRUNC)
         {
-            if (ftruncate(fd,0) != 0) RaiseError(ERRFLAG_ERRNO, "STREAMFileOpen", "cannot ftruncate %s", p_Path);
+            if (ftruncate(fd,0) != 0) RaiseError(ERRFLAG_ERRNO, "STREAMFileOpen", "cannot ftruncate %s", NewPath);
             STREAMSetValue(Stream, "FileSize", "0");
         }
-        if (Flags & STREAM_APPEND) lseek(fd,0,SEEK_END);
+        if (Flags & STREAM_APPEND) lseek(fd, 0, SEEK_END);
     }
 
     STREAMSetFlags(Stream, Flags, 0);
@@ -955,6 +1018,9 @@ static int STREAMParseConfig(const char *Config)
             case 'a':
                 Flags |= STREAM_APPEND | SF_CREATE;
                 break;
+            case 'e':
+                Flags |= SF_ENCRYPT;
+                break;
             case 'E':
                 Flags |= SF_ERROR;
                 break;
@@ -984,6 +1050,9 @@ static int STREAMParseConfig(const char *Config)
                 break;
             case 'F':
                 Flags |= SF_FOLLOW;
+                break;
+            case 'R':
+                Flags |= SF_AUTORECOVER;
                 break;
             case 'S':
                 Flags |= SF_SORTED;
@@ -1036,6 +1105,32 @@ static const char *STREAMExtractMasterURL(const char *URL)
 
 
 #define STREAMFileOpenWithConfig(url, config) STREAMFileOpen((url), STREAMParseConfig(config))
+
+
+
+//Add Processor Modules. if any of these fail, then close the stream and return NULL
+//so that we don't for instance, write to a file without encryption when that was asked for
+static STREAM *STREAMSetupDataProcessorModules(STREAM *S, const char *Config)
+{
+//if no processors are needed, then we consider things 'good'
+    int SetupGood=TRUE;
+
+    if (S->Flags & SF_COMPRESSED)
+    {
+        if (S->Flags & SF_RDONLY) if (! STREAMAddStandardDataProcessor(S, "decompress", "gzip", "")) SetupGood=FALSE;
+            else if (S->Flags & SF_WRONLY) if (! STREAMAddStandardDataProcessor(S, "compress", "gzip", "")) SetupGood=FALSE;
+    }
+
+    if (S->Flags & SF_ENCRYPT) if (! STREAMAddStandardDataProcessor(S, "crypto", "", Config)) SetupGood=FALSE;
+
+    if (! SetupGood)
+    {
+        STREAMClose(S);
+        S=NULL;
+    }
+
+    return(S);
+}
 
 
 //URL can be a file path or a number of different network/file URL types
@@ -1098,7 +1193,7 @@ STREAM *STREAMOpen(const char *URL, const char *Config)
         if ( (CompareStr(URL,"-")==0) || (strcasecmp(URL,"stdio:")==0) ) S=STREAMFromDualFD(dup(0), dup(1));
         else if (strcasecmp(URL,"stdin:")==0) S=STREAMFromFD(dup(0));
         else if (strcasecmp(URL,"stdout:")==0) S=STREAMFromFD(dup(1));
-        else if (strcasecmp(Proto,"ssh")==0) S=SSHOpen(Host, Port, User, Pass, Path, STREAMParseConfig(Config));
+        else if (strcasecmp(Proto,"ssh")==0) S=SSHOpen(Host, Port, User, Pass, Path, Config);
         else if (strcasecmp(Proto,"tty")==0)
         {
             S=STREAMFromFD(TTYConfigOpen(URL+4, Config));
@@ -1134,14 +1229,15 @@ STREAM *STREAMOpen(const char *URL, const char *Config)
         break;
     }
 
+
+    if (S) S=STREAMSetupDataProcessorModules(S, Config);
+
+
+
     if (S)
     {
         if (S->Flags & SF_SECURE) STREAMResizeBuffer(S, S->BuffSize);
-        if (S->Flags & SF_COMPRESSED)
-        {
-            if (S->Flags & SF_RDONLY) STREAMAddStandardDataProcessor(S, "decompress", "gzip", "");
-            else if (S->Flags & SF_WRONLY) STREAMAddStandardDataProcessor(S, "compress", "gzip", "");
-        }
+
 
         switch (S->Type)
         {
@@ -1238,13 +1334,24 @@ void STREAMTruncate(STREAM *S, long size)
 //doesn't require caching (maybe becasue it's a logfile rather than data)
 void STREAMCloseFile(STREAM *S)
 {
+    char *Tempstr=NULL;
+
     if (
-        (StrEnd(S->Path)) ||
+        (StrValid(S->Path)) &&
         (CompareStr(S->Path,"-") !=0) //don't do this for stdin/stdout
     )
     {
+
         if (S->out_fd != -1)
         {
+            //as we have closed the file sucessfully, we no longer need backup
+            if (STREAMAutoRecoverRequired(S->Flags))
+            {
+                Tempstr=MCopyStr(Tempstr, S->Path, ".autorecover", NULL);
+                unlink(Tempstr);
+            }
+
+
             //if we don't need this file cached for future use, tell the os so when we close it
 #ifdef POSIX_FADV_DONTNEED
             if (S->Flags & SF_NOCACHE)
@@ -1265,6 +1372,8 @@ void STREAMCloseFile(STREAM *S)
 
         }
     }
+
+    Destroy(Tempstr);
 }
 
 
@@ -1278,6 +1387,7 @@ void STREAMShutdown(STREAM *S)
 
     //-1 means 'FLUSH'
     STREAMReadThroughProcessors(S, NULL, -1);
+    STREAMWriteBytes(S, NULL, 0); //means flush any processors
     STREAMFlush(S);
 
     switch (S->Type)
@@ -1347,7 +1457,7 @@ int STREAMWaitForBytes(STREAM *S)
     struct timeval tv;
 
     //if using SSL and already has bytes queued, don't do a wait on select
-    if ( (S->State & SS_SSL) && OpenSSLSTREAMCheckForBytes(S) ) WaitForBytes=FALSE;
+    if ( (S->State & LU_SS_SSL) && OpenSSLSTREAMCheckForBytes(S) ) WaitForBytes=FALSE;
 
     //must set this to 1 in case not doing a select, 'cos if S->Timeout is not set
     //then we won't wait at all, won't set read_result, so we must do it here
@@ -1420,21 +1530,21 @@ static int STREAMReadCharsToBuffer_Default(STREAM *S, char *Buffer, int Len)
 
 int STREAMPullBytes(STREAM *S, char *Buffer, int Len)
 {
-    if (S->State & SS_SSL) return(OpenSSLSTREAMReadBytes(S, Buffer, Len));
+    if (S->State & LU_SS_SSL) return(OpenSSLSTREAMReadBytes(S, Buffer, Len));
     return(STREAMReadCharsToBuffer_Default(S, Buffer, Len));
 }
 
 int STREAMReadCharsToBuffer(STREAM *S)
 {
     int val=0, read_result=0;
-    long bytes_read;
+    long bytes_read=0;
     char *tmpBuff=NULL;
 
     if (! S) return(0);
 
 //we don't read from and embargoed stream. Embargoed is a state that we
 //use to indicate a stream must be ignored for a while
-    if (S->State & SS_EMBARGOED) return(0);
+    if (S->State & LU_SS_EMBARGOED) return(0);
 
 //number of bytes queued in STREAM
     val=S->InEnd-S->InStart;
@@ -1776,7 +1886,7 @@ int STREAMWriteBytes(STREAM *S, const char *Data, int DataLen)
 
     if (! S) return(STREAM_CLOSED);
     if (S->out_fd==-1) return(STREAM_CLOSED);
-    if (S->State & SS_WRITE_ERROR) return(STREAM_CLOSED);
+    if (S->State & LU_SS_WRITE_ERROR) return(STREAM_CLOSED);
 
 
     i_data=Data;
@@ -1784,7 +1894,11 @@ int STREAMWriteBytes(STREAM *S, const char *Data, int DataLen)
 
     if (ListSize(S->ProcessingModules))
     {
-        STREAMInternalPushProcessingModules(S, i_data, len, &TempBuff, &len);
+        if (len < 4096) len=4096;
+
+        TempBuff=SetStrLen(TempBuff, len * 2);
+        len=0;
+        STREAMInternalPushProcessingModules(S, i_data, DataLen, &TempBuff, &len);
         i_data=TempBuff;
     }
 
@@ -1792,7 +1906,10 @@ int STREAMWriteBytes(STREAM *S, const char *Data, int DataLen)
 //thus the calling application always believes all data is written
 //Thus we only report errors if len==0;
     if (len > 0) result=STREAMInternalQueueBytes(S, i_data, len);
-    else if (S->OutEnd > S->StartPoint) result=STREAMInternalPushBytes(S, S->OutputBuff, S->OutEnd);
+    else if (S->OutEnd > S->StartPoint)
+    {
+        result=STREAMInternalPushBytes(S, S->OutputBuff, S->OutEnd);
+    }
 
     Destroy(TempBuff);
 
@@ -2137,11 +2254,18 @@ int STREAMReadToString(STREAM *S, char **RetStr, int *len, const char *Term)
 char *STREAMReadDocument(char *RetStr, STREAM *S)
 {
     char *Tempstr=NULL;
-    int result, size, bytes_read=0, max;
+    const char *ptr;
+    int result=0, size, bytes_read=0, max;
 
+
+    //for documents where we know the size, e.g. HTTP documents where we've had 'Content-Length'
+    //there will be a size booked against the stream 'S'
+    if ( (S->Size > 0) && (! (S->State & LU_SS_COMPRESSED)) ) size=S->Size;
+
+    //we can set a program-wide max document size
     max=LibUsefulGetInteger("MaxDocumentSize");
-    if ( (S->Size > 0) && (! (S->State & SS_COMPRESSED)) ) size=S->Size;
-    else size=max;
+    if (max > 0) size=max;
+
 
     while (bytes_read < size)
     {
@@ -2150,8 +2274,17 @@ char *STREAMReadDocument(char *RetStr, STREAM *S)
         if (result >= 0) bytes_read+=result;
         else break;
     }
-    StrTrunc(RetStr,bytes_read);
 
+    //don't trust StrTrunc here, as we might have read
+    //binary data that can include '\0' characters
+    //StrTrunc(RetStr,bytes_read);
+
+    //instead of StrTrunc do this.
+    RetStr[bytes_read]='\0';
+    StrLenCacheAdd(RetStr, bytes_read);
+
+
+    //if result > 0 then we didn't break out on reading a 'STREAM_CLOSED' or other close condition, we broke out because we had hit the size limit
     if ((bytes_read==size) && (result > 0))
     {
         if (bytes_read==max) RaiseError(0, "STREAMReadDocument", "Document size is greater than Max Document Size of %s bytes", ToIEC(max, 1));

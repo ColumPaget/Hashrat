@@ -12,7 +12,6 @@
 static time_t LU_CachedTime=0;
 //This is cached millisecs since 1970
 static uint64_t LU_CachedMillisecs=0;
-static struct tm LU_CachedTM;
 
 
 void TimeZoneSet(const char *TimeZone)
@@ -54,16 +53,6 @@ char *GetDateStrFromSecs(const char *DateFormat, time_t Secs, const char *TimeZo
 
     SavedTimeZone=CopyStr(SavedTimeZone, getenv("TZ"));
     TimeZoneSet(TimeZone);
-
-    /*
-    if (Secs==LU_CachedTime) TMS=&LU_CachedTM;
-    else
-    {
-    	val=Secs;
-    	TMS=localtime(&val);
-    	memcpy(&LU_CachedTM, TMS, sizeof(struct tm));
-    }
-    */
 
     val=Secs;
     TMS=localtime(&val);
@@ -157,7 +146,6 @@ time_t ParseDuration(const char *Dur)
 long TimezoneOffset(const char *TimeZone)
 {
     long Secs=0;
-    char *Tempstr=NULL;
     char *SavedTimeZone=NULL;
 
     SavedTimeZone=CopyStr(SavedTimeZone, getenv("TZ"));

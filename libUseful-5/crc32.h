@@ -1,5 +1,5 @@
 /*
-*	Copyright (c) 2003, Dominik Reichl <dominik.reichl@t-online.de>, Germany.
+* Copyright (c) 2003, Dominik Reichl <dominik.reichl@t-online.de>, Germany.
 * SPDX-License-Identifier: GPL-2.0
 */
 

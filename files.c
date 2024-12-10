@@ -407,6 +407,139 @@ int HashItem(HashratCtx *Ctx, const char *HashType, const char *Path, struct sta
 }
 
 
+static TFingerprint *HashratActionMemcached(HashratCtx *Ctx, const char *Path, struct stat *Stat)
+{
+    TFingerprint *FP=NULL;
+    char *HashStr=NULL;
+    int result;
+
+    //result == TRUE by default (TRUE==Signficant event, here meaning 'check failed')
+    result=TRUE;
+
+    HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
+    FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
+    if (Flags & FLAG_NET) FP->Path=MCopyStr(FP->Path, Path);
+    else FP->Path=MCopyStr(FP->Path,"hashrat://",LocalHost,Path,NULL);
+    FP->Hash=MemcachedGet(FP->Hash, FP->Path);
+
+    if (FP && HashratCheckFile(Ctx, Path, NULL, HashStr, FP)) result=FALSE;
+    else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
+
+    Destroy(HashStr);
+
+    return(FP);
+}
+
+
+static TFingerprint *HashratActionFindMatches(HashratCtx *Ctx, const char *Path, struct stat *Stat)
+{
+    char *HashStr=NULL;
+    TFingerprint *FP=NULL;
+
+    HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
+    FP=CheckForMatch(Ctx, Path, Stat, HashStr);
+    if (FP)
+    {
+        if (StrValid(FP->Path) || StrValid(FP->Data)) printf("LOCATED: %s '%s %s' at %s\n",FP->Hash, FP->Path, FP->Data, Path);
+        else printf("LOCATED: [%s] at [%s]\n",FP->Hash, Path);
+        MatchCount++;
+    }
+    else DiffCount++;
+
+    Destroy(HashStr);
+    return(FP);
+}
+
+
+static TFingerprint *HashratActionFindDuplicate(HashratCtx *Ctx, const char *Path, struct stat *Stat)
+{
+    char *HashStr=NULL;
+    TFingerprint *FP=NULL;
+
+    if (HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr))
+    {
+        FP=CheckForMatch(Ctx, Path, Stat, HashStr);
+        if (FP)
+        {
+            printf("DUPLICATE: [%s] of [%s] %s\n",Path,FP->Path,FP->Data);
+            MatchCount++;
+        }
+        else
+        {
+            FP=TFingerprintCreate(HashStr, Ctx->HashType, "", Path);
+            DiffCount++;
+            MatchAdd(FP, Path, 0);
+            //as we've added FP to an internal list we don't want it destroyed
+            //also we will return FP==NULL to signal no match found
+            FP=NULL;
+        }
+    }
+
+    Destroy(HashStr);
+
+    return(FP);
+}
+
+
+static TFingerprint *HashratActionRename(HashratCtx *Ctx, const char *Path, struct stat *Stat)
+{
+    char *HashStr=NULL, *Tempstr=NULL;
+		TFingerprint *FP=NULL;
+    const char *extn, *ptr;
+
+    if (HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr))
+    {
+        //remove padding characters, 'cos they look odd in a filename
+        StrTruncChar(HashStr,'=');
+
+        extn=strrchr(Path, '.');
+        if (extn) Tempstr=CopyStrLen(Tempstr, Path, extn-Path);
+        else Tempstr=CopyStr(Tempstr, Path);
+
+        ptr=Tempstr + StrLen(Tempstr) - StrLen(HashStr);
+        if (strcmp(ptr, HashStr) != 0)
+        {
+            Tempstr=MCatStr(Tempstr, "-", HashStr, extn, NULL);
+            if (Flags & FLAG_VERBOSE) printf("RENAME: %s -> %s\n", Path, Tempstr);
+            if (rename(Path, Tempstr) != 0) fprintf(stderr, "ERROR: can't rename %s to %s\n", Path, Tempstr);
+        		FP=TFingerprintCreate(HashStr, Ctx->HashType, "", Tempstr);
+        }
+        else printf("not renaming %s\n", Path);
+
+    }
+
+    Destroy(Tempstr);
+    Destroy(HashStr);
+
+    return(FP);
+}
+
+
+
+static int HashratFileMatchesAction(HashratCtx *Ctx, const char *Path, struct stat *Stat)
+{
+    //Check file type and size here, rather than having to do it in every action
+    if (S_ISREG(Stat->st_mode))
+    {
+        if (Stat->st_size > 0) return(TRUE);
+        else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: '%s'\n",Path);
+    }
+    else
+    {
+        switch (Ctx->Action)
+        {
+        //these actions can work on directories
+        case ACT_HASHDIR:
+        case ACT_HASH:
+            return(TRUE);
+            break;
+        }
+    }
+
+    return(FALSE);
+}
+
+
 
 //HashratAction returns true on a significant event, which is either an item found in search
 //or a check failing in hash-checking mode
@@ -415,6 +548,8 @@ int HashratAction(HashratCtx *Ctx, const char *Path, struct stat *Stat)
     char *HashStr=NULL;
     int Type, result=FALSE;
     TFingerprint *FP=NULL;
+
+    if (! HashratFileMatchesAction(Ctx, Path, Stat)) return(FALSE);
 
     switch (Ctx->Action)
     {
@@ -434,114 +569,52 @@ int HashratAction(HashratCtx *Ctx, const char *Path, struct stat *Stat)
         }
         break;
 
+
     case ACT_CHECK:
-        if (S_ISREG(Stat->st_mode))
+        HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
+        FP=CheckForMatch(Ctx, Path, Stat, HashStr);
+        if (FP && HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) MatchCount++;
+        else
         {
-            if (Stat->st_size > 0)
-            {
-                HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
-                FP=CheckForMatch(Ctx, Path, Stat, HashStr);
-                if (FP && HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) MatchCount++;
-                else
-                {
-                    HandleCheckFail(Path, "Changed or new");
-                    //we return TRUE on FAILURE, as we are signaling a significant event
-                    result=TRUE;
-                }
-            }
-            else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
+            HandleCheckFail(Path, "Changed or new");
+            //we return TRUE on FAILURE, as we are signaling a significant event
+            result=TRUE;
         }
         break;
 
     case ACT_CHECK_XATTR:
-        if (S_ISREG(Stat->st_mode))
+        //result == TRUE by default (TRUE==Signficant event, here meaning 'check failed')
+        //we set it here so we get the right result even if the stored hash fails to load
+        result=TRUE;
+        FP=XAttrLoadHash(Ctx, Path);
+        if (FP)
         {
-            //result == TRUE by default (TRUE==Signficant event, here meaning 'check failed')
-            //we set it here so we get the right result even if the stored hash fails to load
-            result=TRUE;
-            FP=XAttrLoadHash(Ctx, Path);
-            if (FP)
-            {
-                HashItem(Ctx, FP->HashType, Path, Stat, &HashStr);
-                if (HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) result=FALSE;
-            }
-            else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
+            HashItem(Ctx, FP->HashType, Path, Stat, &HashStr);
+            if (HashratCheckFile(Ctx, Path, Stat, HashStr, FP)) result=FALSE;
         }
-        else fprintf(stderr,"ERROR: Not regular file '%s'. Not checking in xattr mode.\n",Path);
+        else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
         break;
 
 
     case ACT_CHECK_MEMCACHED:
-        if (S_ISREG(Stat->st_mode))
-        {
-            //result == TRUE by default (TRUE==Signficant event, here meaning 'check failed')
-            result=TRUE;
-
-            if (Stat->st_size > 0)
-            {
-                HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
-                FP=(TFingerprint *) calloc(1,sizeof(TFingerprint));
-                if (Flags & FLAG_NET) FP->Path=MCopyStr(FP->Path, Path);
-                else FP->Path=MCopyStr(FP->Path,"hashrat://",LocalHost,Path,NULL);
-                FP->Hash=MemcachedGet(FP->Hash, FP->Path);
-
-                if (FP && HashratCheckFile(Ctx, Path, NULL, HashStr, FP)) result=FALSE;
-                else fprintf(stderr,"ERROR: No stored hash for '%s'\n",Path);
-            }
-            else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
-        }
-        else fprintf(stderr,"ERROR: Not regular file '%s'. Not checking in memcached mode.\n",Path);
+        FP=HashratActionMemcached(Ctx, Path, Stat);
+        if (FP) result=TRUE;
         break;
 
     case ACT_FINDMATCHES:
     case ACT_FINDMATCHES_MEMCACHED:
-        if (S_ISREG(Stat->st_mode))
-        {
-            if (Stat->st_size > 0)
-            {
-                HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr);
-                FP=CheckForMatch(Ctx, Path, Stat, HashStr);
-                if (FP)
-                {
-                    if (StrValid(FP->Path) || StrValid(FP->Data)) printf("LOCATED: %s '%s %s' at %s\n",FP->Hash, FP->Path, FP->Data, Path);
-                    else printf("LOCATED: %s at %s\n",FP->Hash, Path);
-                    MatchCount++;
-                    //here we return true if a match found
-                    result=TRUE;
-                }
-                else DiffCount++;
-            }
-            else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
-        }
+        FP=HashratActionFindMatches(Ctx, Path, Stat);
+        if (FP) result=TRUE;
         break;
 
     case ACT_FINDDUPLICATES:
-        if (S_ISREG(Stat->st_mode))
-        {
-            if (Stat->st_size > 0)
-            {
-                if (HashItem(Ctx, Ctx->HashType, Path, Stat, &HashStr))
-                {
-                    FP=CheckForMatch(Ctx, Path, Stat, HashStr);
-                    if (FP)
-                    {
-                        printf("DUPLICATE: %s of %s %s\n",Path,FP->Path,FP->Data);
-                        MatchCount++;
-                        //here we return true if a match found
-                        result=TRUE;
-                    }
-                    else
-                    {
-                        FP=TFingerprintCreate(HashStr, Ctx->HashType, "", Path);
-                        DiffCount++;
-                        MatchAdd(FP, Path, 0);
-                        //as we've added FP to an internal list we don't want it destroyed
-                        FP=NULL;
-                    }
-                }
-            }
-            else if (Flags & FLAG_VERBOSE) fprintf(stderr,"ZERO LENGTH FILE: %s\n",Path);
-        }
+        FP=HashratActionFindDuplicate(Ctx, Path, Stat);
+        if (FP) result=TRUE;
+        break;
+
+    case ACT_RENAME:
+        FP=HashratActionRename(Ctx, Path, Stat);
+        if (FP) result=TRUE;
         break;
     }
 

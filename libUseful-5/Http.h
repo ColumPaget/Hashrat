@@ -218,10 +218,6 @@ int HTTPDownload(char *URL, STREAM *S);
 void HTTPClearCookies();
 
 
-//Generate an http Disgest authentication string from components. You would almost never use this as this process is done internally
-char *HTTPDigest(char *RetStr, const char *Method, const char *Logon, const char *Password, const char *Realm, const char *Doc, const char *Nonce);
-
-
 void HTTPInfoSetAuth(HTTPInfoStruct *Auth, const char *Logon, const char *Password, int Type);
 
 int HTTPConnectOkay(STREAM *S);

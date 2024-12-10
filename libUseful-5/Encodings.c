@@ -5,6 +5,109 @@
 
 
 
+char *EncodeQuoted(char *Return, const char *Input, int len, char QuoteChar)
+{
+    const char *ptr;
+    char Hex[4];
+
+    for (ptr=Input; ptr < (Input + len); ptr++)
+    {
+        if ( (*ptr < 32) || (*ptr > 127) || (*ptr == '=') )
+        {
+            snprintf(Hex, 3, "%02x", (*ptr) & 0xFF);
+            Return=MCatStr(Return, "=", Hex, NULL);
+        }
+        else Return=AddCharToStr(Return, *ptr);
+    }
+
+    return(Return);
+}
+
+
+int DecodeQuoted(char **Return, const char *Text, char QuoteChar)
+{
+    const char *ptr;
+    char Hex[3];
+    int len=0;
+
+    for (ptr=Text; *ptr != '\0'; ptr++)
+    {
+        if (*ptr==QuoteChar)
+        {
+            ptr++;
+            if (*ptr=='\0') break;
+            else if (*ptr =='\r') ptr++;
+
+            if (*ptr=='\0') break;
+            else if (*ptr !='\n')
+            {
+                strncpy(Hex, ptr, 2);
+                *Return=AddCharToBuffer(*Return, len, strtol(Hex, NULL, 16));
+                len++;
+                ptr++;
+                if (*ptr=='\0') break;
+            }
+        }
+        else
+        {
+            *Return=AddCharToBuffer(*Return, len, *ptr);
+            len++;
+        }
+    }
+
+    return(len);
+}
+
+
+
+char *EncodeYenc(char *Return, const char *Input, int len, char QuoteChar)
+{
+    const char *ptr;
+    char echar;
+
+    for (ptr=Input; ptr < (Input + len); ptr++)
+    {
+        //shift the character up some bytes, because the null byte is a common occurance
+        //in binary files, and we don't want to escape it, increasing the size of the
+        //file. We'll escape some less common byte in it's place
+        echar = (*ptr + 42) % 256; //of course it's 42
+        if ( (echar==0) || (echar=='\r') || (echar=='\n') || (echar==QuoteChar))
+        {
+            Return=AddCharToStr(Return, QuoteChar);
+            Return=AddCharToStr(Return, (echar + 62) % 256);
+        }
+        else Return=AddCharToStr(Return, echar);
+    }
+
+    return(Return);
+}
+
+
+int DecodeYenc(char **Return, const char *Text, char QuoteChar)
+{
+    const char *ptr;
+    int len=0, echar;
+
+    for (ptr=Text; *ptr != '\0'; ptr++)
+    {
+        if (*ptr==QuoteChar)
+        {
+            ptr++;
+            if (*ptr=='\0') break;
+            echar=*ptr - 62;
+        }
+        else echar=*ptr;
+
+        *Return=AddCharToBuffer(*Return, len, echar - 42);
+        len++;
+    }
+
+    return(len);
+}
+
+
+
+
 //mostly a helper function for environments where integer constants are not convinient
 int EncodingParse(const char *Str)
 {
@@ -68,6 +171,13 @@ int EncodingParse(const char *Str)
             else if (strcasecmp(Str,"hbase32")==0) Encode=ENCODE_HBASE32;
             break;
 
+        case 'm':
+        case 'M':
+            if (strcasecmp(Str,"mime")==0) Encode=ENCODE_QUOTED_MIME;
+            else if (strcasecmp(Str,"mime")==0) Encode=ENCODE_QUOTED_MIME;
+            break;
+
+
         case 'o':
         case 'O':
             if (strcasecmp(Str,"oct")==0) Encode=ENCODE_OCTAL;
@@ -89,14 +199,16 @@ int EncodingParse(const char *Str)
         case 'q':
         case 'Q':
             if (CompareStr(Str,"quoted-printable")==0) Encode=ENCODE_QUOTED_MIME;
-            if (CompareStr(Str,"quoted-http")==0) Encode=ENCODE_QUOTED_HTTP;
+            else if (CompareStr(Str,"quoted")==0) Encode=ENCODE_QUOTED_MIME;
+            else if (CompareStr(Str,"quoted-http")==0) Encode=ENCODE_QUOTED_HTTP;
             break;
 
 
         case 'r':
         case 'R':
             if (CompareStr(Str,"r64")==0) Encode=ENCODE_RBASE64;
-            if (CompareStr(Str,"rfc4648")==0) Encode=ENCODE_RBASE64;
+            else if (CompareStr(Str,"rbase64")==0) Encode=ENCODE_RBASE64;
+            else if (CompareStr(Str,"rfc4648")==0) Encode=ENCODE_RBASE64;
             break;
 
         case 'u':
@@ -117,6 +229,12 @@ int EncodingParse(const char *Str)
             if (strcasecmp(Str,"xx")==0) Encode=ENCODE_XXENC;
             else if (strcasecmp(Str,"xxencode")==0) Encode=ENCODE_XXENC;
             else if (strcasecmp(Str,"xxenc")==0) Encode=ENCODE_XXENC;
+            break;
+
+        case 'y':
+        case 'Y':
+            if (strcasecmp(Str,"yenc")==0) Encode=ENCODE_YENCODE;
+            else if (strcasecmp(Str,"yencode")==0) Encode=ENCODE_YENCODE;
             break;
 
         case 'z':
@@ -190,6 +308,14 @@ char *EncodeBytes(char *Buffer, const char *Bytes, int len, int Encoding)
     RetStr=CopyStr(Buffer,"");
     switch (Encoding)
     {
+    case ENCODE_QUOTED_MIME:
+        RetStr=EncodeQuoted(RetStr, Bytes, len, '=');
+        break;
+
+    case ENCODE_YENCODE:
+        RetStr=EncodeYenc(RetStr, Bytes, len, '=');
+        break;
+
     case ENCODE_BASE32:
         RetStr=base32encode(RetStr, Bytes, len, BASE32_RFC4648_CHARS, '=');
         break;
@@ -242,7 +368,9 @@ char *EncodeBytes(char *Buffer, const char *Bytes, int len, int Encoding)
 
     case ENCODE_UUENC:
         RetStr=SetStrLen(RetStr,len * 4);
-        Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,UUENC_CHARS,'\'');
+        Tempstr=CopyStr(Tempstr, Bytes);
+        strrep(Tempstr, ' ', '`');
+        Radix64frombits((unsigned char *) RetStr,(unsigned char *) Bytes,len,UUENC_CHARS,'`');
         break;
 
     case ENCODE_ASCII85:
@@ -297,33 +425,7 @@ char *EncodeBytes(char *Buffer, const char *Bytes, int len, int Encoding)
     return(RetStr);
 }
 
-int DecodeQuoted(char **Return, const char *Text, char QuoteChar)
-{
-    const char *ptr;
-    char Hex[3];
 
-    for (ptr=Text; *ptr != '\0'; ptr++)
-    {
-        if (*ptr==QuoteChar)
-        {
-            ptr++;
-            if (*ptr=='\0') break;
-            else if (*ptr =='\r') ptr++;
-
-            if (*ptr=='\0') break;
-            else if (*ptr !='\n')
-            {
-                strncpy(Hex, ptr, 2);
-                ptr++;
-                if (*ptr=='\0') break;
-                *Return=AddCharToStr(*Return, strtol(Hex, NULL, 16));
-            }
-        }
-        else *Return=AddCharToStr(*Return, *ptr);
-    }
-
-    return(StrLen(*Return));
-}
 
 
 int DecodeBytes(char **Return, const char *Text, int Encoding)
@@ -342,29 +444,33 @@ int DecodeBytes(char **Return, const char *Text, int Encoding)
         len=DecodeQuoted(Return,Text,'=');
         break;
 
+    case ENCODE_YENCODE:
+        len=DecodeYenc(Return,Text,'=');
+        break;
+
     case ENCODE_QUOTED_HTTP:
         *Return=HTTPUnQuote(*Return, Text);
         len=StrLen(*Return);
         break;
 
     case ENCODE_BASE32:
-        len=base32decode(*Return, Text, BASE32_RFC4648_CHARS);
+        len=base32decode((unsigned char *) *Return, Text, BASE32_RFC4648_CHARS);
         break;
 
     case ENCODE_CBASE32:
-        len=base32decode(*Return, Text, BASE32_CROCKFORD_CHARS);
+        len=base32decode((unsigned char *) *Return, Text, BASE32_CROCKFORD_CHARS);
         break;
 
     case ENCODE_HBASE32:
-        len=base32decode(*Return, Text, BASE32_HEX_CHARS);
+        len=base32decode((unsigned char *) *Return, Text, BASE32_HEX_CHARS);
         break;
 
     case ENCODE_WBASE32:
-        len=base32decode(*Return, Text, BASE32_WORDSAFE_CHARS);
+        len=base32decode((unsigned char *) *Return, Text, BASE32_WORDSAFE_CHARS);
         break;
 
     case ENCODE_ZBASE32:
-        len=base32decode(*Return, Text, BASE32_ZBASE32_CHARS);
+        len=base32decode((unsigned char *) *Return, Text, BASE32_ZBASE32_CHARS);
         break;
 
     case ENCODE_BASE64:
@@ -379,6 +485,10 @@ int DecodeBytes(char **Return, const char *Text, int Encoding)
         len=Radix64tobits(*Return,Text,PBASE64_CHARS,'\0');
         break;
 
+    case ENCODE_RBASE64:
+        len=Radix64tobits(*Return,Text,RBASE64_CHARS,'\0');
+        break;
+
     case ENCODE_CRYPT:
         len=Radix64tobits(*Return,Text,CRYPT_CHARS,'\0');
         break;
@@ -388,7 +498,7 @@ int DecodeBytes(char **Return, const char *Text, int Encoding)
         break;
 
     case ENCODE_UUENC:
-        len=Radix64tobits(*Return,Text,UUENC_CHARS,'\'');
+        len=Radix64tobits(*Return,Text,UUENC_CHARS,'\0');
         break;
 
     case ENCODE_ASCII85:

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
+* Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 * SPDX-License-Identifier: GPL-3.0
 */
 

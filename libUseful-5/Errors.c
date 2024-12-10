@@ -81,10 +81,10 @@ void InternalRaiseError(int flags, const char *where, const char *file, int line
     }
 
     //now consider if we want to syslog an error message. Pass ERRFLAG_NOTTY as it doesn't matter if stderr is not a
-    //tty for this case
+    //tty for this case. ERRFLAG_NOTTY is a setting here, not at test that uses '&'
     if (ErrorOutputWanted(flags | ERRFLAG_NOTTY))
     {
-        if (LibUsefulGetBool("Error:Syslog")) syslog(LOG_ERR,"DEBUG: %s %s:%d %s. %s", where, file, line, Tempstr, ptr);
+        if ((flags & ERRFLAG_SYSLOG) || LibUsefulGetBool("Error:Syslog")) syslog(LOG_ERR,"DEBUG: %s %s:%d %s. %s", where, file, line, Tempstr, ptr);
     }
 
     //if this Error is just debugging, then never add it to the list of errors
@@ -112,6 +112,15 @@ void InternalRaiseError(int flags, const char *where, const char *file, int line
             }
             Curr=Next;
         }
+    }
+
+
+    if (flags & ERRFLAG_ABORT)
+    {
+        abort();
+        sleep(1);
+        syslog(LOG_CRIT,"Still running after attempted abort. possible shenanigans.");
+        _exit(1);
     }
 
 

@@ -3,6 +3,7 @@
 #include "String.h"
 #include "ContentType.h"
 #include "StreamAuth.h"
+#include "HttpUtil.h"
 
 static void HTTPServerSetValue(STREAM *S, const char *Name, const char *Value)
 {
@@ -10,6 +11,7 @@ static void HTTPServerSetValue(STREAM *S, const char *Name, const char *Value)
 
 //do not allow these to be set, as they will
 //overwrite the true HTTP method and url
+    if (strcmp(Name, "HTTP-Version")==0) return;
     if (strcmp(Name, "Method")==0) return;
     if (strcmp(Name, "URL")==0) return;
 
@@ -19,11 +21,11 @@ static void HTTPServerSetValue(STREAM *S, const char *Name, const char *Value)
     Destroy(Tempstr);
 }
 
+
 void HTTPServerParseClientCookies(ListNode *Vars, const char *Str)
 {
     const char *ptr;
     char *Name=NULL, *Value=NULL, *Tempstr=NULL;
-    ListNode *Item;
 
     ptr=GetNameValuePair(Str, ";", "=", &Name, &Value);
     while (ptr)
@@ -47,7 +49,7 @@ void HTTPServerParseClientCookies(ListNode *Vars, const char *Str)
 
 void HTTPServerParseAuthorization(ListNode *Vars, const char *Str)
 {
-    char *Token=NULL;
+    char *Token=NULL, *Tempstr=NULL, *User=NULL, *Password=NULL;
     const char *ptr;
 
     ptr=Str;
@@ -57,15 +59,20 @@ void HTTPServerParseAuthorization(ListNode *Vars, const char *Str)
     if (strcasecmp(Token, "basic")==0)
     {
         ptr=GetToken(ptr, "\\S", &Token, 0);
-        SetVar(Vars, "Auth:Basic", Token);
+        HTTPDecodeBasicAuth(Token, &User, &Password);
+        SetVar(Vars, "AUTH:User", User);
+        SetVar(Vars, "AUTH:Password", Password);
     }
     else if (strcasecmp(Token, "bearer")==0)
     {
         ptr=GetToken(ptr, "\\S", &Token, 0);
-        SetVar(Vars, "Auth:Bearer", Token);
+        SetVar(Vars, "AUTH:Bearer", Token);
     }
 
+    Destroy(Tempstr);
     Destroy(Token);
+    Destroy(User);
+    Destroy(Password);
 }
 
 
@@ -78,7 +85,9 @@ void HTTPServerParseClientHeaders(STREAM *S)
     StripTrailingWhitespace(Tempstr);
     ptr=GetToken(Tempstr, "\\S", &Token, 0);
     STREAMSetValue(S, "HTTP:Method", Token);
-    STREAMSetValue(S, "HTTP:URL", ptr);
+    ptr=GetToken(ptr, "\\S", &Token, 0);
+    STREAMSetValue(S, "HTTP:URL", Token);
+    STREAMSetValue(S, "HTTP:HTTP-Version", ptr);
 
     Tempstr=STREAMReadLine(Tempstr, S);
     while (Tempstr)
@@ -88,10 +97,13 @@ void HTTPServerParseClientHeaders(STREAM *S)
 
         ptr=GetToken(Tempstr, ":", &Token, 0);
         StripTrailingWhitespace(Token);
-        if (strcasecmp(Token, "Cookie:")==0) HTTPServerParseClientCookies(S->Values, ptr);
+        while (isspace(*ptr)) ptr++;
+
+        if (strcasecmp(Token, "Cookie")==0) HTTPServerParseClientCookies(S->Values, ptr);
         else if (strcasecmp(Token, "Authorization")==0) HTTPServerParseAuthorization(S->Values, ptr);
         else if (strcasecmp(Token, "Sec-Websocket-Key") == 0) STREAMSetValue(S, "WEBSOCKET:KEY", ptr);
         else if (strcasecmp(Token, "Sec-Websocket-Protocol") == 0) STREAMSetValue(S, "WEBSOCKET:PROTOCOL", ptr);
+        //HTTPServerSetValue will ignore Method, URL and HTTP-Version so they can't be overridden by extra headers
         else HTTPServerSetValue(S, Token, ptr);
 
         Tempstr=STREAMReadLine(Tempstr, S);
@@ -105,6 +117,7 @@ void HTTPServerParseClientHeaders(STREAM *S)
 void HTTPServerAccept(STREAM *S)
 {
     HTTPServerParseClientHeaders(S);
+    STREAMAuth(S);
 }
 
 
@@ -144,18 +157,36 @@ void HTTPServerSendHeaders(STREAM *S, int ResponseCode, const char *ResponseText
     Destroy(Hash);
 }
 
-
-int HTTPServerSendDocument(STREAM *S, const char *Bytes, int Length, const char *ContentType, const char *Headers)
+int HTTPServerSendResponse(STREAM *S, const char *ResponseCode, const char *ResponseReason, const char *Content, int Length, const char *ContentType, const char *Headers)
 {
     char *Tempstr=NULL;
     int result;
 
     Tempstr=FormatStr(Tempstr, "Content-Length=%d ", Length);
     if (StrValid(ContentType)) Tempstr=MCatStr(Tempstr, "Content-Type=", ContentType, " ", Headers, NULL);
-    HTTPServerSendHeaders(S, 200, "OKAY", Tempstr);
-    result=STREAMWriteBytes(S, Bytes, Length);
+    HTTPServerSendHeaders(S, atoi(ResponseCode), ResponseReason, Tempstr);
+    result=STREAMWriteBytes(S, Content, Length);
 
     Destroy(Tempstr);
+    return(result);
+}
+
+
+int HTTPServerSendDocument(STREAM *S, const char *Content, int Length, const char *ContentType, const char *Headers)
+{
+    return(HTTPServerSendResponse(S, "200", "OKAY", Content, Length, ContentType, Headers));
+}
+
+int HTTPServerSendStatus(STREAM *S, const char *StatusCode, const char *StatusReason)
+{
+    char *Tempstr=NULL;
+    int result;
+
+    Tempstr=FormatStr(Tempstr, "<html><body><h1>%s - %s</h1></body></html>\r\n", StatusCode, StatusReason);
+    result=HTTPServerSendResponse(S, StatusCode, StatusReason, Tempstr, StrLen(Tempstr), "text/html", "");
+
+    Destroy(Tempstr);
+
     return(result);
 }
 

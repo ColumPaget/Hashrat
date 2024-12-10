@@ -424,8 +424,7 @@ int OAuthGrant(OAUTH *Ctx, const char *iURL, const char *PostArgs)
 {
     STREAM *S;
     char *Tempstr=NULL, *URL=NULL;
-    const char *ptr;
-    int len, result=FALSE;
+    int result=FALSE;
 
     if (LibUsefulDebugActive()) fprintf(stderr, "DEBUG: OAuthGrant: %s args: %s\n", iURL, PostArgs);
     URL=HTTPURLAddAuth(URL, iURL, GetVar(Ctx->Vars, "client_id"), GetVar(Ctx->Vars, "client_secret"));
@@ -461,7 +460,7 @@ int OAuthRefresh(OAUTH *Ctx, const char *iURL)
 {
     char *Tempstr=NULL, *URL=NULL, *Args=NULL;
     const char *ptr;
-    int result;
+    int result=FALSE;
 
 
     /*
@@ -548,7 +547,7 @@ int OAuthImplicit(OAUTH *Ctx, const char *URL, const char *Args)
 int OAuthStage1(OAUTH *Ctx, const char *URL)
 {
     char *Tempstr=NULL;
-    int result;
+    int result=FALSE;
 
     Tempstr=GetRandomAlphabetStr(Tempstr, 10);
     SetVar(Ctx->Vars, "session",Tempstr);
@@ -558,8 +557,12 @@ int OAuthStage1(OAUTH *Ctx, const char *URL)
     if (LibUsefulDebugActive()) fprintf(stderr, "OAuthStage1: %s\n", Tempstr);
     if (StrValid(Tempstr))
     {
-        if (Ctx->Flags & OAUTH_IMPLICIT) Ctx->VerifyURL=MCopyStr(Ctx->VerifyURL, URL, "?", Tempstr, NULL);
-        //result=OAuthImplicit(Ctx, URL, Tempstr);
+        if (Ctx->Flags & OAUTH_IMPLICIT)
+        {
+            Ctx->VerifyURL=MCopyStr(Ctx->VerifyURL, URL, "?", Tempstr, NULL);
+            //result=OAuthImplicit(Ctx, URL, Tempstr);
+            result=TRUE;
+        }
         else result=OAuthGrant(Ctx, URL, Tempstr);
     }
 
@@ -648,7 +651,6 @@ int OAuthLoad(OAUTH *Ctx, const char *ReqName, const char *iPath)
 {
     STREAM *S;
     char *Tempstr=NULL, *Token=NULL, *Name=NULL, *Path=NULL;
-    const char *ptr;
     int result=FALSE;
     int MatchingLines=0;
 
@@ -673,7 +675,7 @@ int OAuthLoad(OAUTH *Ctx, const char *ReqName, const char *iPath)
         while (Tempstr)
         {
             StripTrailingWhitespace(Tempstr);
-            ptr=GetToken(Tempstr, "\\S", &Token, GETTOKEN_QUOTES);
+            GetToken(Tempstr, "\\S", &Token, GETTOKEN_QUOTES);
             if (strcmp(Token, Name)==0)
             {
                 OAuthParse(Ctx, Tempstr);

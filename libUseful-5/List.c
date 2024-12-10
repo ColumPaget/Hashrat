@@ -137,7 +137,7 @@ ListNode *MapGetChain(ListNode *Map, const char *Key)
 
     if (Map->Flags & LIST_FLAG_MAP_HEAD)
     {
-        i=fnv_hash(Key, Map->ItemType);
+        i=fnv_hash((unsigned const char *) Key, Map->ItemType);
         Node=(ListNode *) Map->Item;
         return(Node + i);
     }
@@ -382,7 +382,7 @@ ListNode *ListFindNamedItemInsert(ListNode *Root, const char *Name)
 {
     ListNode *Prev, *Curr, *Next, *Head;
     int result=0, count=0;
-    int hops=0, jumps=0, miss=0;
+    int hops=0;
     unsigned long long val;
 
     if (! Root) return(Root);
@@ -540,8 +540,6 @@ ListNode *InsertItemIntoSortedList(ListNode *List, void *Item, int (*LessThanFun
 //list get next is just a macro that either calls this for maps, or returns Node->next
 ListNode *MapChainGetNext(ListNode *CurrItem)
 {
-    ListNode *SubNode;
-
     if (! CurrItem) return(NULL);
 
     if (CurrItem->Next)

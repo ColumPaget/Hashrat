@@ -16,6 +16,9 @@
 #include <sys/fanotify.h>
 #endif
 
+#ifdef USE_FSFLAGS
+#include <linux/fs.h>
+#endif
 
 #ifndef HAVE_GET_CURR_DIR
 char *get_current_dir_name()
@@ -133,17 +136,30 @@ int FileChangeExtension(const char *FilePath, const char *NewExt)
 int FileMoveToDir(const char *FilePath, const char *Dir)
 {
     char *Tempstr=NULL;
-    int result;
+    struct stat Stat;
+    int result, size;
+    int RetVal=FALSE;
 
     Tempstr=MCopyStr(Tempstr, Dir, "/", GetBasename(FilePath), NULL);
     MakeDirPath(Tempstr, 0700);
-    result=rename(FilePath,Tempstr);
-    if (result !=0) RaiseError(ERRFLAG_ERRNO, "FileMoveToDir", "cannot rename '%s' to '%s'",FilePath, Tempstr);
+    if (rename(FilePath,Tempstr) != 0)
+    {
+        RaiseError(ERRFLAG_DEBUG | ERRFLAG_ERRNO, "FileMoveToDir", "cannot rename '%s' to '%s', attempting copy",FilePath, Tempstr);
+        stat(FilePath, &Stat);
+        size=FileCopy(FilePath, Tempstr);
+        if (size==Stat.st_size)
+        {
+            unlink(FilePath);
+            RetVal=TRUE;
+        }
+        else RaiseError(ERRFLAG_ERRNO, "FileMoveToDir", "cannot rename nor copy '%s' to '%s'",FilePath, Tempstr);
+    }
+    else RetVal=TRUE;
+
 
     DestroyString(Tempstr);
 
-    if (result==0) return(TRUE);
-    else return(FALSE);
+    return(RetVal);
 }
 
 
@@ -183,7 +199,8 @@ int FindFilesInPath(const char *File, const char *Path, ListNode *Files)
 
 char *FindFileInPath(char *InBuff, const char *File, const char *Path)
 {
-    char *Tempstr=NULL, *CurrPath=NULL, *RetStr=NULL;
+    char *Tempstr=NULL, *CurrPath=NULL, *RetStr=NULL, *Link=NULL;
+    struct stat Stat;
     const char *ptr;
 
     RetStr=CopyStr(InBuff,"");
@@ -199,17 +216,31 @@ char *FindFileInPath(char *InBuff, const char *File, const char *Path)
     {
         CurrPath=SlashTerminateDirectoryPath(CurrPath);
         Tempstr=MCopyStr(Tempstr,CurrPath,File,NULL);
-        if (access(Tempstr,F_OK)==0)
+        if (lstat(Tempstr, &Stat)==0)
         {
-            RetStr=CopyStr(RetStr,Tempstr);
-            break;
+            //if we find an symlink, then remember it, but don't return it,
+            //in the hope that we will find a better match
+            if (S_ISLNK(Stat.st_mode))
+            {
+                if (! StrValid(Link)) Link=CopyStr(Link, Tempstr);
+            }
+            else
+            {
+                RetStr=CopyStr(RetStr,Tempstr);
+                break;
+            }
         }
 
         ptr=GetToken(ptr,":",&CurrPath,0);
     }
 
+    //if we didn't find an actual file, but found a link with the name
+    //then return that link
+    if (! StrValid(RetStr)) RetStr=CopyStr(RetStr, Link);
+
     DestroyString(Tempstr);
     DestroyString(CurrPath);
+    DestroyString(Link);
 
     return(RetStr);
 }
@@ -686,4 +717,80 @@ int FileSystemParsePermissions(const char *PermsStr)
 
     return(Perms);
 }
+
+
+int FDSetFlags(int fd, int Set, int UnSet)
+{
+#ifdef USE_FSFLAGS
+    int attr;
+
+    if (fd > -1)
+    {
+        if (ioctl(fd, FS_IOC_GETFLAGS, &attr) >= 0)
+        {
+            attr |= Set;
+            attr &= ~UnSet;
+            if (ioctl(fd, FS_IOC_SETFLAGS, &attr) >=0) return(TRUE);
+        }
+    }
+#else
+    RaiseError(0, "FDSetFlags", "Support for append-only/immutable filesystem flags not compiled into libUseful");
+#endif
+
+    return(FALSE);
+}
+
+int FileSetFlags(const char *Path, int Set, int Unset)
+{
+    int fd;
+    int RetVal=FALSE;
+
+#ifdef FS_IOC_GETFLAGS
+    fd=open(Path, O_RDONLY);
+    if (fd > -1)
+    {
+        RetVal=FDSetFlags(fd, Set, Unset);
+        close(fd);
+    }
+#endif
+
+    return(RetVal);
+}
+
+
+int FileSystemSetSTREAMFlags(int fd, int Set, int UnSet)
+{
+    int toset=0, tounset=0;
+
+#ifdef FS_IMMUTABLE_FL
+    if (Set & STREAM_IMMUTABLE) toset |= FS_IMMUTABLE_FL;
+    else if (UnSet & STREAM_IMMUTABLE) tounset |= FS_IMMUTABLE_FL;
+#endif
+
+#ifdef FS_APPEND_FL
+    if (Set & STREAM_APPENDONLY) toset |= FS_APPEND_FL;
+    else if (UnSet & STREAM_APPENDONLY) tounset |= FS_APPEND_FL;
+#endif
+
+    return(FDSetFlags(fd, toset, tounset));
+}
+
+
+int FileSetSTREAMFlags(const char *Path, int Set, int Unset)
+{
+    int fd;
+    int RetVal=FALSE;
+
+#ifdef FS_IOC_GETFLAGS
+    fd=open(Path, O_RDONLY);
+    if (fd > -1)
+    {
+        RetVal=FileSystemSetSTREAMFlags(fd, Set, Unset);
+        close(fd);
+    }
+#endif
+
+    return(RetVal);
+}
+
 

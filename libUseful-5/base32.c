@@ -16,7 +16,7 @@
 char *base32tobinary(char *RetStr, const char *In, const char *Encoder)
 {
     const char *ptr, *found;
-    uint32_t val=0, count=0, bit;
+    uint32_t val=0, bit;
 
     for (ptr=In; *ptr != '\0'; ptr++)
     {
@@ -76,7 +76,7 @@ char *base32encode(char *RetStr, const char *Input, int Len, const char *Encoder
     int val;
 
     RetStr=CopyStr(RetStr, "");
-    BCD=encode_bcd_bytes(BCD, Input, Len);
+    BCD=encode_bcd_bytes(BCD, (unsigned const char *) Input, Len);
 
     end=BCD+StrLen(BCD);
     for (ptr=BCD; ptr < end; ptr+=5)

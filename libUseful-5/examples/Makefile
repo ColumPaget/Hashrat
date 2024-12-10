@@ -8,6 +8,8 @@ all:
 	gcc -oHMAC.exe HMAC.c $(LIBS)
 	gcc -oTerminal.exe Terminal.c $(LIBS)
 	gcc -oTermBar.exe TermBar.c $(LIBS)
+	gcc -oTermMenu.exe TermMenu.c $(LIBS)
+	gcc -oTermChoice.exe TermChoice.c $(LIBS)
 	gcc -oTermProgress.exe TermProgress.c $(LIBS)
 	gcc -oVars.exe Vars.c $(LIBS)
 	gcc -oParseRSS.exe ParseRSS.c $(LIBS)
@@ -17,7 +19,9 @@ all:
 	gcc -oMaps.exe Maps.c $(LIBS)
 	gcc -oTTYTest.exe TTYTest.c $(LIBS)
 	gcc -oErrors.exe Errors.c $(LIBS)
+	gcc -ossh-time.exe ssh-time.c $(LIBS)
 	gcc -ossh-tunnel.exe ssh-tunnel.c $(LIBS)
+	gcc -ossh-listfiles.exe ssh-listfiles.c $(LIBS)
 	gcc -oConfig.exe Config.c $(LIBS)
 	gcc -oStrLen.exe StrLen.c $(LIBS)
 	gcc -oSSLClient.exe SSLClient.c $(LIBS)
@@ -26,3 +30,15 @@ all:
 	gcc -oHttpServer.exe HttpServer.c $(LIBS)
 	gcc -oPasswordFile.exe PasswordFile.c $(LIBS)
 	gcc -obase32.exe base32.c $(LIBS)
+	gcc -ouudecode.exe uudecode.c $(LIBS)
+	gcc -ononewprivs.exe nonewprivs.c $(LIBS)
+	gcc -ochroot.exe chroot.c $(LIBS)
+	gcc -omovetest.exe movetest.c $(LIBS)
+	gcc -oencrypt.exe encrypt.c $(LIBS)
+	gcc -odecrypt.exe decrypt.c $(LIBS)
+	gcc -opbkdf2.exe pbkdf2.c $(LIBS)
+seccomp.exe: seccomp.c
+	gcc -oseccomp.exe seccomp.c $(LIBS)
+
+clean:
+	rm -f *.exe

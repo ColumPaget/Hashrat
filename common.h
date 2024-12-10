@@ -5,7 +5,7 @@
 #include "libUseful-5/libUseful.h"
 #include "glob.h"
 
-#define VERSION "1.22"
+#define VERSION "1.23"
 
 #define ACT_NONE 0
 #define ACT_HASH 1
@@ -28,6 +28,7 @@
 #define ACT_CHECKBACKUP 25
 #define ACT_OTP 26
 #define ACT_LIST_TYPES 27
+#define ACT_RENAME 28
 
 #define FLAG_NEXTARG 1
 //Two flags with the same values, but used in different contexts

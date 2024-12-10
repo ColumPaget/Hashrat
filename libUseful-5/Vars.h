@@ -44,6 +44,9 @@ ListNode *SetTypedVar(ListNode *Vars, const char *Name, const char *Data, int Ty
 //set a variable
 ListNode *SetVar(ListNode *Vars, const char *Name, const char *Data);
 
+//append to a variable
+void AppendVar(ListNode *Vars, const char *VarName, const char *Value);
+
 //get a variable by name and type
 const char *GetTypedVar(ListNode *Vars, const char *Name, int Type);
 
@@ -65,7 +68,7 @@ void CopyVars(ListNode *Dest, ListNode *Source);
 // SUBS_STRIP                   Strip whitespace surrounding any value before substitution
 // SUBS_INTERPRET_BACKSLASH     Interpret backslash in the substitution string as a quote, so don't substitute "\$(thing)"
 // SUBS_QUOTES                  Honor quotes in the subsitution string, and don't quote anyting in quotes
-// SUBS_SHELL_SAFE              Strip vars of any shell-unsafe characters (;&`) before substituting
+// SUBS_SHELL_SAFE              Strip vars of any shell-unsafe characters (;&`$) AFTER substituting
 // SUBS_HTTP_VARS               Quote values with HTTP style substitution
 char *SubstituteVarsInString(char *Buffer, const char *Fmt, ListNode *Vars, int Flags);
 

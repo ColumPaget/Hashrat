@@ -7,7 +7,7 @@ void TerminalInternalConfig(const char *Config, int *ForeColor, int *BackColor, 
 
 void TerminalBarUpdate(TERMBAR *TB, const char *Text)
 {
-    int rows, cols, x=0, y=0, TextLen;
+    int rows, cols, y=0, TextLen;
     char *Str=NULL;
 
     TextLen=TerminalStrLen(Text);
@@ -284,7 +284,6 @@ TERMBAR *TerminalBarCreate(STREAM *Term, const char *Config, const char *Text)
 {
     TERMBAR *TB;
     char *Tempstr=NULL;
-    const char *ptr;
 
     TB=(TERMBAR *) calloc(1,sizeof(TERMBAR));
     TB->Term=Term;

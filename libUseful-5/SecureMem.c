@@ -284,7 +284,7 @@ int SecureStoreNextLine(SECURESTORE *SS, unsigned char **Line)
 
 int SecureStoreGetLine(SECURESTORE *SS, int LineNo, unsigned char **Line)
 {
-    int len, i;
+    int len=0, i;
 
     SS->CurrLine=SS->Data;
     for (i=0; i <=LineNo; i++)

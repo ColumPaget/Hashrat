@@ -238,6 +238,7 @@ HashratCtx *CommandLineParseArgs(int argc, char *argv[])
         else if (strcmp(arg,"-m")==0) Ctx->Action = ACT_FINDMATCHES;
         else if (strcmp(arg,"-lm")==0) Ctx->Action = ACT_LOADMATCHES;
         else if (strcmp(arg,"-dups")==0) Ctx->Action = ACT_FINDDUPLICATES;
+        else if (strcmp(arg,"-rename")==0) Ctx->Action = ACT_RENAME;
         else if (strcmp(arg,"-B")==0) Ctx->Action = ACT_BACKUP;
         else if (strcmp(arg,"-cB")==0) Ctx->Action = ACT_CHECKBACKUP;
         else if (strcmp(arg,"-cgi")==0) Ctx->Action = ACT_CGI;
@@ -503,6 +504,7 @@ void CommandLinePrintUsage()
     printf("  %-15s %s\n","-myear <years>", "Only hash items <years> old. Has the same format as the find command, e.g. -10 is younger than ten years, +10 is older than ten, and 10 is ten years old");
     printf("  %-15s %s\n","-exec", "In CHECK or MATCH mode only examine executable files.");
     printf("  %-15s %s\n","-dups", "Search for duplicate files.");
+    printf("  %-15s %s\n","-rename", "Rename files to <name>-<hash>.<extn>.");
     printf("  %-15s %s\n","-n <length>", "Truncate hashes to <length> bytes");
     printf("  %-15s %s\n","-segment <length>", "Break hash up into segments of <length> chars seperated by '-'");
     printf("  %-15s %s\n","-c", "CHECK hashes against list from file (or stdin)");

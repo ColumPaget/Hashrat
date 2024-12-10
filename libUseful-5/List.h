@@ -3,14 +3,44 @@ Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 * SPDX-License-Identifier: GPL-3.0
 */
 
-#ifndef LIB_USEFUL_LIST
-#define LIB_USEFUL_LIST
+#ifndef LIBUSEFUL_LIST
+#define LIBUSEFUL_LIST
 
 /*
 
-This module provides double linked lists and 'maps'. Maps are hashed arrays of linked lists, so they're very good for storing large numbers of items that can be looked up by a key or name
+This module provides double linked lists and 'maps'. Maps are hashed arrays of linked lists, so they're very good for storing large numbers of items that can be looked up by a key or name. 
+
+Items are stored as (void *) pointers, and can be tagged with a name by using 'ListAddNamedItem'. 
+
+When the list is destroyed by the 'ListDestroy' function, a Destructor function can be passed in as the second argument which is used to destroy items stored in the list. If the items in the list aren't unique copies, but are pointers to things that exist outside of the list, then pass NULL as the destructor.
+
+For example:
+
+ListNode *MyList, *Curr;
+
+MyList=ListCreate();
+ListAdd(MyList, CopyStr(NULL, "item 1"));
+ListAdd(MyList, CopyStr(NULL, "item 2"));
+
+Curr=ListGetNext(MyList);
+while (Curr)
+{
+printf("%s\n", (const char *) Curr->Item);
+Curr=ListGetNext(Curr);
+}
+
+ListDestroy(MyList, Destroy);
+
+
+Here we add two strings to the list, and use 'CopyStr' to make unique copies of them. These are then destroyed/freed using the standard 'Destroy' function, which is passed in as the second argument of 'ListDestroy'.
+
 
 */
+
+
+
+
+
 
 
 // Functions passsed to 'ListCreate' or 'MapCreate' or set against a ListNode item

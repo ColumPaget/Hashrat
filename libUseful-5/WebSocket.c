@@ -121,7 +121,7 @@ static int WebSocketReadFrameHeader(STREAM *S, uint32_t *mask)
     result=STREAMPullBytes(S, bytes, 2);
     if (result==0) return(0);
 
-    if (bytes[0] & WS_FIN) S->State |= SS_MSG_READ;
+    if (bytes[0] & WS_FIN) S->State |= LU_SS_MSG_READ;
     op=bytes[0] & WS_OP_MASK;
 
     len=bytes[1] & 0xFF;
@@ -195,11 +195,11 @@ int WebSocketReadBytes(STREAM *S, char *Data, int Len)
 
     if (msg_len==0)
     {
-        if (S->State & SS_MSG_READ)
+        if (S->State & LU_SS_MSG_READ)
         {
             if (Len > 0)
             {
-                S->State &= ~ SS_MSG_READ;;
+                S->State &= ~ LU_SS_MSG_READ;;
                 Data[0]='\n';
                 return(1);
             }
@@ -237,9 +237,8 @@ int WebSocketReadBytes(STREAM *S, char *Data, int Len)
 STREAM *WebSocketOpen(const char *WebsocketURL, const char *Config)
 {
     STREAM *S;
-    const char *p_Proto;
     char *URL=NULL, *Args=NULL, *Key=NULL, *Tempstr=NULL;
-    int Port, Type;
+    int Type;
 
 
     if (strncmp(WebsocketURL, "wss:", 4)==0)
@@ -283,7 +282,7 @@ static void WebsocketUpgradeProtocol(STREAM *S)
     HashBytes(&Hash, "sha1", Tempstr, StrLen(Tempstr), ENCODE_BASE64);
     Headers=MCatStr(Headers, "Sec-Websocket-Accept=", Hash, " ", NULL);
     HTTPServerSendHeaders(S, 101, "Switching Protocols", Headers);
-    S->State |= SS_CONNECTED;
+    S->State |= LU_SS_CONNECTED;
     S->Type = STREAM_TYPE_WS_SERVICE;
 
     Destroy(Headers);

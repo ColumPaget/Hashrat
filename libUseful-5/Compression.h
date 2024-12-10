@@ -52,7 +52,7 @@ The return value of Both CompressBytes and DecompressBytes is the length of data
 extern "C" {
 #endif
 
-int zlibProcessorInit(TProcessingModule *ProcMod, const char *Args);
+int zlibProcessorInit(TProcessingModule *ProcMod, const char *Args, unsigned char **Header, int *HeadLen);
 int CompressBytes(char **Out, const char *Alg, const char *In, unsigned long Len, int Level);
 int DeCompressBytes(char **Out, const char *Alg, const char *In, unsigned long Len);
 

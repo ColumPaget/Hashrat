@@ -1,3 +1,12 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * This base64 code is adapted from code from the fetchmail program.
+ * It is GPL v2 or later and believed written by Eric S Raymond.
+ *
+*/
+
+
 #ifndef BASE_64_H
 #define BASE_64_H
 

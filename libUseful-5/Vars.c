@@ -30,6 +30,17 @@ ListNode *SetVar(ListNode *Vars, const char *Name, const char *Data)
     return(SetDetailVar(Vars, Name, Data,0, 0));
 }
 
+void AppendVar(ListNode *Vars, const char *VarName, const char *Value)
+{
+    char *Tempstr=NULL;
+
+    Tempstr=MCopyStr(Tempstr,GetVar(Vars, VarName),Value, " ", NULL);
+    SetVar(Vars, VarName, Tempstr);
+
+    Destroy(Tempstr);
+}
+
+
 
 ListNode *FindTypedVar(ListNode *Vars, const char *Name, int Type)
 {
@@ -136,7 +147,7 @@ static char *SubstituteAppendVar(char *RetStr, const char *Var, int Flags)
 static char *SubstituteParseVar(char *OutStr, const char **Line, ListNode *LocalVars, int Flags)
 {
     char *VarName=NULL, *Tempstr=NULL;
-    const char *ptr, *vptr;
+    const char *ptr;
 
     ptr=*Line;
 
@@ -402,7 +413,6 @@ int ExtractVarsFromString(const char *Data, const char *FormatStr, ListNode *Var
 
     return(Match);
 }
-
 
 
 

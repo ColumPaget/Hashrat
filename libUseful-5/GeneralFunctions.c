@@ -180,7 +180,8 @@ int fd_remap_path(int fd, const char *Path, int Flags)
 char *MakeShellSafeString(char *RetStr, const char *String, int SafeLevel)
 {
     char *Tempstr=NULL;
-    char *BadChars=";|&`";
+    char *BadChars=";|&`$";
+    int ErrFlags=0;
 
     if (SafeLevel==SHELLSAFE_BLANK)
     {
@@ -189,9 +190,12 @@ char *MakeShellSafeString(char *RetStr, const char *String, int SafeLevel)
     }
     else Tempstr=QuoteCharsInStr(RetStr,String,BadChars);
 
-    if (CompareStr(Tempstr,String) !=0)
+
+    if ( (SafeLevel & (SHELLSAFE_REPORT | SHELLSAFE_ABORT)) && (CompareStr(Tempstr,String) !=0) )
     {
-        //if (EventCallback) EventCallback(String);
+        ErrFlags=ERRFLAG_SYSLOG;
+        if (SafeLevel & SHELLSAFE_ABORT) ErrFlags |= ERRFLAG_ABORT;
+        RaiseError(ErrFlags, "MakeShellSafeString", "unsafe chars found in %s", String);
     }
     return(Tempstr);
 }

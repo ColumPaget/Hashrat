@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
+* Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 * SPDX-License-Identifier: GPL-3.0
 */
 
@@ -45,7 +45,7 @@ extern "C" {
 
 typedef struct t_dpmod TProcessingModule;
 
-typedef int (*DATA_PROCESS_INIT_FUNC)(TProcessingModule *Mod, const char *Args);
+typedef int (*DATA_PROCESS_INIT_FUNC)(TProcessingModule *Mod, const char *Args, unsigned char **Header, int *HeadLen);
 typedef int (*DATA_PROCESS_RW_FUNC)(TProcessingModule *Mod, const char *Data, unsigned long InLen, char **OutBuff, unsigned long *OutBuffLen, int Flush);
 typedef int (*DATA_PROCESS_CLOSE_FUNC)(TProcessingModule *Mod);
 typedef void (*DATA_PROGRESS_CALLBACK)(const char *Path, int bytes, int total);
@@ -74,7 +74,7 @@ struct t_dpmod
 };
 
 
-TProcessingModule *StandardDataProcessorCreate(const char *Class, const char *Name, const char *Arg);
+TProcessingModule *StandardDataProcessorCreate(const char *Class, const char *Name, const char *Arg, unsigned char **Header, int *HeadLen);
 int DataProcessorInit(TProcessingModule *ProcMod, const char *Key, const char *InputVector);
 void DataProcessorDestroy(void *ProcMod);
 char *DataProcessorGetValue(TProcessingModule *M, const char *Name);
@@ -85,7 +85,7 @@ int DataProcessorAvailable(const char *Class, const char *Name);
 int STREAMAddStandardDataProcessor(STREAM *S, const char *Class, const char *Name, const char *Args);
 int STREAMAddProgressCallback(STREAM *S, DATA_PROGRESS_CALLBACK CallBack);
 void STREAMClearDataProcessors(STREAM *S);
-int STREAMAddDataProcessor(STREAM *S, TProcessingModule *Mod, const char *Args);
+int STREAMAddDataProcessor(STREAM *S, TProcessingModule *Mod);
 int STREAMReBuildDataProcessors(STREAM *S);
 int STREAMDeleteDataProcessor(STREAM *S, char *Class, char *Name);
 

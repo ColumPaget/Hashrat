@@ -3,8 +3,8 @@ Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 * SPDX-License-Identifier: GPL-3.0
 */
 
-#ifndef LIBUSEFUL_SYSINFO
-#define LIBUSEFUL_SYSINFO
+#ifndef LIBUSEFUL_SYSINFO_H
+#define LIBUSEFUL_SYSINFO_H
 
 
 #include "defines.h"

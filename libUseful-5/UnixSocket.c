@@ -10,7 +10,6 @@ void sun_set_path(struct sockaddr_un *sa, const char *Path)
 {
     int len, val;
     char *ptr1, *ptr2;
-    off_t pos;
 
     memset(sa,0,sizeof(struct sockaddr_un));
     sa->sun_family=AF_UNIX;
@@ -95,9 +94,9 @@ int UnixServerInit(int Type, const char *Path)
 //if (Type==0) Type=SOCK_STREAM;
     sock=socket(PF_UNIX, Type, 0);
 
-    if (sock <0)
+    if (sock < 0)
     {
-        if (result != 0) RaiseError(ERRFLAG_ERRNO, "UnixServerInit","failed to create a unix socket.");
+        RaiseError(ERRFLAG_ERRNO, "UnixServerInit","failed to create a unix socket.");
         return(-1);
     }
 

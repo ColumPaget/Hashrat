@@ -3,7 +3,7 @@
 
 TERMMENU *TerminalMenuCreate(STREAM *Term, int x, int y, int wid, int high)
 {
-    return(TerminalWidgetNew(Term, x, y, wid, high, "attribs= cursor_attribs=~e selected_attribs=~e cursor=>"));
+    return(TerminalWidgetNew(Term, x, y, wid, high, "type=menu"));
 }
 
 
@@ -56,9 +56,9 @@ static void TerminalGetLineAttributes(TERMMENU *Menu, ListNode *Curr, char **p_A
 
 
 
-static char *TerminalMenuFormatItem(char *Output, TERMMENU *Menu, ListNode *Curr)
+static char *TerminalMenuFormatItem(char *Output, TERMMENU *Menu, ListNode *Curr, int TermWidth)
 {
-    int count, margins;
+    int count, margins, wide;
     char *LineStart=NULL, *LineEnd=NULL, *Contents=NULL, *Tempstr=NULL;
     char *SingleLineCR=NULL;
     char *p_Attribs;
@@ -74,14 +74,12 @@ static char *TerminalMenuFormatItem(char *Output, TERMMENU *Menu, ListNode *Curr
     if (StrValid(p_Attribs)) Contents=ReplaceStr(Contents, Curr->Tag, "~0", p_Attribs);
     else Contents=CopyStr(Contents, Curr->Tag);
 
-    Contents=TerminalStrTrunc(Contents, Menu->wid - margins);
-    count=TerminalStrLen(Contents);
-    while (count < (Menu->wid - margins))
-    {
-        Contents=CatStr(Contents, " ");
-        count++;
-    }
+    wide=Menu->wid;
+    if (wide < 0) wide=TermWidth + wide;
 
+
+    Contents=TerminalStrTrunc(Contents, wide - margins);
+    Contents=TerminalPadStr(Contents, ' ', wide - margins);
 
     Tempstr=MCopyStr(Tempstr, SingleLineCR, LineStart, Contents, LineEnd, NULL);
 
@@ -100,13 +98,18 @@ static char *TerminalMenuFormatItem(char *Output, TERMMENU *Menu, ListNode *Curr
 
 //If a menu has fewer items in it than can fill it's full size,
 //then we need to pad it with extra lines to it's full size.
-void TerminalMenuPadToEnd(TERMMENU *Menu, int start, int end)
+static void TerminalMenuPadToEnd(TERMMENU *Menu, int start, int end, int TermWidth)
 {
-    int y;
+    int y, wide;
     char *Output=NULL;
 
     y=start;
-    Output=PadStrTo(Output, ' ', Menu->wid);
+    wide=Menu->wid;
+    if (wide < 0) wide=TermWidth + wide;
+
+
+
+    Output=PadStrTo(Output, ' ', wide);
     while (y <= end)
     {
         TerminalCursorMove(Menu->Term, Menu->x, y);
@@ -122,13 +125,19 @@ void TerminalMenuDraw(TERMMENU *Menu)
 {
     ListNode *Curr;
     char *Output=NULL;
-    int y, yend, count;
+    int y, yend, TermWide, TermHigh;
     //single line mode is a special case
     //that doesn't use 'cursor move' to build
     //a menu at a specific screen position,
     //but instead creates a simplified single-line menu
     //at the current cursor position
     int singleline=FALSE;
+
+    if (Menu->Term)
+    {
+        TermWide=atoi(STREAMGetValue(Menu->Term, "Terminal:cols"));
+        TermHigh=atoi(STREAMGetValue(Menu->Term, "Terminal:rows"));
+    }
 
     if (Menu->y==-1)
     {
@@ -139,14 +148,16 @@ void TerminalMenuDraw(TERMMENU *Menu)
     else
     {
         y=Menu->y;
-        yend=y+Menu->high;
+        if (Menu->high < 0) yend=y + (TermHigh + Menu->high);
+        else yend=y+Menu->high;
     }
+
 
     Curr=MenuGetTop(Menu);
     while (Curr)
     {
         if (! singleline) TerminalCursorMove(Menu->Term, Menu->x, y);
-        Output=TerminalMenuFormatItem(Output, Menu, Curr);
+        Output=TerminalMenuFormatItem(Output, Menu, Curr, TermWide);
 
         //length has two added for the leading space for the cursor
 
@@ -158,7 +169,7 @@ void TerminalMenuDraw(TERMMENU *Menu)
     }
 
 
-    if (! singleline) TerminalMenuPadToEnd(Menu, y, yend);
+    if (! singleline) TerminalMenuPadToEnd(Menu, y, yend, TermWide);
     STREAMFlush(Menu->Term);
 
     Destroy(Output);
@@ -287,7 +298,6 @@ ListNode *TerminalMenu(STREAM *Term, ListNode *Options, int x, int y, int wid, i
 {
     TERMMENU *Menu;
     ListNode *Node;
-    int key;
 
     Menu=TerminalMenuCreate(Term, x, y, wid, high);
     Menu->Options = Options;

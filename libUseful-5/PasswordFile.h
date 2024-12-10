@@ -5,12 +5,13 @@ Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 
 // These functions relate to a password file that stores passwords
 // in the form:
-// <user>:<pass type>:<salt>:<credential>
+// <user>:<pass type>:<salt>:<credential>:<extra>
 //
 // if 'pass type' is blank or is 'plain' then the password is stored as-is in plaintext
 // otherwise 'pass type' will be a hash type, like md5, sha256 etc.
 // For hash types a 20 character salt is generated and prepended to the password,
 // and the resulting string is then hashed before being stored
+// 'extra' is populated with any extra data for/about this user
 
 
 #ifndef LIBUSEFUL_PASSWORD_FILE_H
@@ -28,14 +29,14 @@ extern "C" {
 // to remove previous entries, this function builds an new password file, and then atomically moves
 // it into place to replace the existing one. It will not remove any duplicate entries for other
 // users.
-int PasswordFileAdd(const char *Path, const char *PassType, const char *User, const char *Password);
+int PasswordFileAdd(const char *Path, const char *PassType, const char *User, const char *Password, const char *Extra);
 
 // Add an entry to the password file, not replacing previous entries, to previous passwords can still be
 // used. This does not require rebuilding the file, and thus may be more efficient than PasswordFileAdd
-int PasswordFileAppend(const char *Path, const char *PassType, const char *User, const char *Password);
+int PasswordFileAppend(const char *Path, const char *PassType, const char *User, const char *Password, const char *Extra);
 
 //check a users password matches the one stored in password file at 'Path'
-int PasswordFileCheck(const char *Path, const char *User, const char *Password);
+int PasswordFileCheck(const char *Path, const char *User, const char *Password, char **ReturnedData);
 
 #ifdef __cplusplus
 }

@@ -207,7 +207,7 @@ TestHash z85 "ZEROMQ85 encoding" "=SI2F3[n}kp9Zn?Ra>yK"
 Title "Testing Misc. Features"
 
 HR_OUT=`./hashrat -version`
-if [ "$HR_OUT" = "version: 1.22" ]
+if [ "$HR_OUT" = "version: 1.23" ]
 then
 	OkayMessage "Version (-version) works"
 else
@@ -269,7 +269,7 @@ else
 fi
 
 HR_OUT=`./hashrat -r -dups tests`
-if [ "$HR_OUT" = "DUPLICATE: tests/quotes.txt of tests/duplicate.txt " ]
+if [ "$HR_OUT" = "DUPLICATE: [tests/quotes.txt] of [tests/duplicate.txt] " ]
 then
 	OkayMessage "Finding duplicate files works"
 else 
@@ -295,7 +295,6 @@ TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "" "HashFile"
 TestExitCodes "tests" "libUseful-5" "-r -dups" "FindDuplicates"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-cf" "CheckHash"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-m -r ." "Locate"
-TestExitCodes "tests" "libUseful-5" "-r -dups" "FindDuplicates"
 
 echo
 echo

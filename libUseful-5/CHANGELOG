@@ -1,3 +1,92 @@
+v5.30 (2024-10-29)
+  * Fix crash if TerminalTextAlign has NULL for the Terminal
+	* Added HttpGet and HttpPost functions
+  * Improvements to httpserver authentication. 
+  * Add 'extra' field to passwords file to allow storing data against a user.
+
+v5.29 (2024-10-29)
+  * much more seccomp work
+  * add 'data' option to pty config (PtyParseConfig) so if a pipe or pty is going to be used for raw data transfer, use FLUSH_ALWAYS not FLUSH_LINE
+  * support uuencoded data using either ' ' or '`' as 1st char of alphabet
+  * add support for yenc encoded data
+
+v5.28 (2024-10-21)
+  * added seccomp support, and process security levels
+  * change SS_ stream state values to LU_SS_ to prevent clashes with linux defines like SS_CONNECTING
+  * fixes for rbase64 encoding. added name 'rbase64' and decoding this encoding now works
+
+v5.27 (2024-10-16)
+  * honor timeout for connect, not just for read  
+  * added 'autorecover' feature to file STREAMS
+  * fix issues with parsing RSS feeds (some tags could have whitespace or other text prepended to them)
+
+v5.26 (2024-09-07)
+  * Fix incorrect addition of 'progress' and 'remain' to options of non-progress-bar terminal widgets.
+  * Make sure all DataProcessorInit functions fit the new function prototype.
+  * TerminalChooser now honors the 'width' setting, and intelligently fits itself into that
+
+v5.25 (2024-08-31)
+  * Symmetric Encryption now supported for STREAMs
+  * Handle situation where logfile is rotated under an app that has it open
+  * Stop trying to rotate hardened logfiles. rotate is incompatible with append-only files
+
+v5.24 (2024-08-20)
+  * Move namespace/container code to Containers.c and make general improvements
+  * Exit out of TerminalReadText if escape or ctrl-c entered
+  * Added 'l' option (list files on remote server) to SSH streams
+  * CHANGED ARGUMENTS TO SSHConnect AND SSHOpen
+  * ssh streams can now accept config options bind=<address> and config=<path>
+  * Rotate logfiles even if not open by app
+
+v5.23 (2024-07-26)
+  * Improve attribution of base64 and hashing functions
+  * fix -net/nonet (flag meaning was inverted)
+  * ProcessNoNewPrivs now handles 'already set' and is no longer static. 
+  * Call setsid before setting controlling tty in PtySpawnFunction
+  * added CGIReadDocument
+
+v5.22
+  * fix clash of flags between PROC_NO_NEW_PRIV and PROC_NOSHELL
+
+v5.21
+  * replaced 'exit if can't chroot/chdir' with 'strict' option to ProcessApplyConfig
+  * Added ERRFLAG_ABORT to error handling functions, aborts the process after reporting the error
+  * Added ERRFLAG_SYSLOG to error handling functions, forces syslog even if library-wide syslog flag isn't set
+  * MakeShellSafeStr now quotes/blanks out '$' in addition to other dangerous characters
+  * MakeShellSafeStr can now report unsafe characters via syslog if the SHELLSAFE_REPORT flag is passed
+  * MakeShellSafeStr can now abort program if the SHELLSAFE_ABORT flag is passed and unsafe chars are found
+  * FileMoveToDir will now copy the file if a simple rename fails
+  * Negative values for width and height on TerminalMenu and TerminalProgress set width as 'terminal width minus that value'
+
+
+v5.20 (2024-07-11)
+  * Added  TOTPAtTime and TOTPPrevCurrNext
+
+v5.19 (2024-07-09)
+  * Added 'nosu', 'noprivs' options to 'ProcessApplyConfig' that prevent a process escalating priviledges via su/sudo/setuid
+  * check for prctl properly using './configure'
+  * Eliminate use of 'fopen' in 'GetHostARP'
+  * General cleanup of 'ProcessApplyConfig'
+  * If chdir or chroot fail in 'ProcessApplyConfig' print "too dangerous to continue" and exit
+
+v5.18 (2024-07-01)
+  * FindFileInPath now returns a real file, rather than symlink, unless a symlink is all it can find (now it really does).
+  * Clean up some errors revealed by -Wall
+
+v5.17 (2024-06-30)
+  * FindFileInPath now returns a real file, rather than symlink, unless a symlink is all it can find.
+  * Added TerminalPrint function.
+
+v5.16 (2024-06-26)
+  * handle http digest authentication
+  * add 'AppendVar' function
+
+v5.15 (2024-06-20)
+  * add/fix support for calling hmac functions via the Hash interface
+  * use of openssl hashing functions no longer experimental
+  * support sha384 hash
+  * Added 'UnpackURL' function
+
 v5.14 (2024-06-03)
   * add ini file support to DataParser
   * fix/add 'bcast' socket type
@@ -8,7 +97,7 @@ v5.13 (2024-04-17)
 v5.12 (2024-04-06)
   * Added TerminalProgress progress bars
   * Fix ~W escape sequence for setting white background
-	* Fixes to TerminalTheme
+  * Fixes to TerminalTheme
 
 v5.11 (2024-02-27)
   * Don't follow symbolic links in FileSystemRmDir

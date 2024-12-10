@@ -13,7 +13,7 @@ Copyright (c) 2015 Colum Paget <colums.projects@googlemail.com>
 Support for very basic in-app http servers.
 Usage is:
 
-Serv=STREAMServerNew("http:127.0.0.1:8080");
+Serv=STREAMServerNew("http:127.0.0.1:8080", "");
 S=STREAMServerAccept(Serv);
 if (S)
 {
@@ -59,7 +59,7 @@ while (1)
 {
 STREAMSelect(Connections, NULL);
 S=STREAMServerAccept(Serv);
-if (! STREAMAuth(S)) HTTPServerSendHeaders(S, 401, "Authentication Required", "WWW-Authenticate=Basic");
+if (! STREAMIsAuth(S)) HTTPServerSendHeaders(S, 401, "Authentication Required", "WWW-Authenticate=Basic");
 else
 {
 
@@ -79,6 +79,9 @@ void HTTPServerParseClientHeaders(STREAM *S);
 void HTTPServerSendHeaders(STREAM *S, int ResponseCode, const char *ResponseText, const char *Headers);
 void HTTPServerAccept(STREAM *S);
 
+int HTTPServerSendResponse(STREAM *S, const char *ResponseCode, const char *ResponseReason, const char *Content, int Length, const char *ContentType, const char *Headers);
+int HTTPServerSendDocument(STREAM *S, const char *Content, int Length, const char *ContentType, const char *Headers);
+int HTTPServerSendStatus(STREAM *S, const char *ErrorCode, const char *ErrorReason);
 int HTTPServerSendDocument(STREAM *S, const char *Bytes, int Length, const char *ContentType, const char *Headers);
 int HTTPServerSendFile(STREAM *S, const char *Path, const char *ContentType, const char *Headers);
 

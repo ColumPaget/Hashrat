@@ -17,7 +17,7 @@ extern "C" {
 #include "TerminalWidget.h"
 
 ListNode *TerminalThemeInit();
-const char *TerminalThemeGet(const char *Name);
+const char *TerminalThemeGet(const char *Scope, const char *AttributeName);
 void TerminalThemeSet(const char *Name, const char *Value);
 void TerminalThemeApply(TERMWIDGET *TW, const char *Type);
 

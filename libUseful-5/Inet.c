@@ -133,7 +133,6 @@ int IPGeoLocate(const char *IP, ListNode *Vars)
     STREAM *S=NULL;
     char *Tempstr=NULL, *Token=NULL;
     const char *ptr;
-    const char *DesiredTags[]= {"CountryCode","CountryName","City","RegionName","Latitude","Longitude","TimeZone",NULL};
     int result=FALSE;
 
     if (! StrValid(IP)) return(FALSE);

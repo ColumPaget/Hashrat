@@ -10,7 +10,7 @@ int IPServerNew(int iType, const char *Address, int Port, int Flags)
 {
     int sock, val, Type;
     int BindFlags=0;
-    const char *p_Addr=NULL, *ptr;
+    const char *p_Addr=NULL;
 
 //if IP6 not compiled in then throw error if one is passed
 #ifndef USE_INET6
@@ -115,9 +115,8 @@ static void STREAMServerParseConfig(STREAM *S, const char *Config)
     ptr=GetNameValuePair(Config, "\\S", "=", &Name, &Value);
     while (ptr)
     {
-        if (strncasecmp(Name, "SSL:", 4)==0) STREAMSetValue(S, Name, Value);
-        else if (strcasecmp(Name, "Authentication")==0) STREAMSetValue(S, "Authenticator", Value);
-        else if (strcasecmp(Name, "Auth")==0) STREAMSetValue(S, "Authenticator", Value);
+        if (strcasecmp(Name, "Auth")==0) STREAMSetValue(S, "AUTH:Types", Value);
+        else STREAMSetValue(S, Name, Value);
 
         ptr=GetNameValuePair(ptr, "\\S", "=", &Name, &Value);
     }
@@ -130,7 +129,7 @@ static void STREAMServerParseConfig(STREAM *S, const char *Config)
 STREAM *STREAMServerNew(const char *URL, const char *Config)
 {
     char *Proto=NULL, *Host=NULL, *Token=NULL;
-    int fd=-1, Port=0, Type, Flags=0;
+    int fd=-1, Port=0, Type=-1, Flags=0;
     TSockSettings Settings;
     STREAM *S=NULL;
 
@@ -222,13 +221,17 @@ STREAM *STREAMServerNew(const char *URL, const char *Config)
     }
 
 
-    S=STREAMFromSock(fd, Type, NULL, Host, Port);
-    if (S)
+    if (Type == -1) RaiseError(0, "STREAMServerNew","Unable to parse protocol: '%s'", Proto);
+    else
     {
-        S->Path=CopyStr(S->Path, URL);
-        if (Flags & SOCK_TLS_AUTO) S->Flags |= SF_TLS_AUTO;
-        else if (Flags & SF_TLS) S->Flags |= SF_TLS;
-        STREAMServerParseConfig(S, Config);
+        S=STREAMFromSock(fd, Type, NULL, Host, Port);
+        if (S)
+        {
+            S->Path=CopyStr(S->Path, URL);
+            if (Flags & SOCK_TLS_AUTO) S->Flags |= SF_TLS_AUTO;
+            else if (Flags & SF_TLS) S->Flags |= SF_TLS;
+            STREAMServerParseConfig(S, Config);
+        }
     }
 
     DestroyString(Proto);
@@ -249,7 +252,7 @@ STREAM *STREAMServerAccept(STREAM *Serv)
 {
     char *Tempstr=NULL, *DestIP=NULL;
     STREAM *S=NULL;
-    int fd=-1, type=0, DestPort=0, result;
+    int fd=-1, type=0, DestPort=0;
 
     if (! Serv) return(NULL);
 

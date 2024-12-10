@@ -1455,7 +1455,7 @@ static int TerminalReadCSISeqNum(STREAM *S, char PrevChar)
 static int TerminalReadCSIMouse(STREAM *S)
 {
     char *Tempstr=NULL;
-    int flags, x, y, val, keycode=0;
+    int flags, x, y, keycode=0;
 
     flags=STREAMReadChar(S)-32;
     x=STREAMReadChar(S)-32;
