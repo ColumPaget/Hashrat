@@ -280,11 +280,11 @@ DevMode: read from a \fIfile\fP EVEN IF IT'S A DEVNODE.
 .TP
 .B
 \fB-lines\fP
-Read lines from stdin and \fIhash\fP each line independantly.
+Read lines from stdin and \fIhash\fP each line independently.
 .TP
 .B
 \fB-rl\fP, \fB-rawlines\fP
-Read lines from stdin and \fIhash\fP each line independantly, INCLUDING any trailing whitespace. This is compatible with 'echo text | md5sum'.
+Read lines from stdin and \fIhash\fP each line independently, INCLUDING any trailing whitespace. This is compatible with 'echo text | md5sum'.
 .TP
 .B
 \fB-cgi\fP
@@ -500,7 +500,7 @@ you use the 'echo' method shown above your password will be saved on disk. To co
 This reads lines from stdin, so type into \fBhashrat\fP and then press ENTER, and you'll be given the \fIhash\fP of the line you typed. By this method your password is neither
 visible in 'ps ax', nor is ever stored on disk.
 .PP
-A \fB-lines\fP will produce a different \fIhash\fP to the 'echo' method listed above, because it strips any trailing whiespace off the lines read. If you want strict compatiblity
+A \fB-lines\fP will produce a different \fIhash\fP to the 'echo' method listed above, because it strips any trailing whitespace off the lines read. If you want strict compatibility
 with 'echo' (by default echo adds a newline to the end of the text to output) then use rawlines mode:
 .PP
 .nf
@@ -659,13 +659,13 @@ HashType <type>      Type of hash to generate
 .TP
 Encoding <type>      Type of encoding to use for outputted hash
 .TP
-Line Ending <type>   Line ending to append to input text. This is for compatability with command-line usage with "-rawlines". Options are "none", "lf", "crlf" or "cr", meaning "none", "newline", "carriage-return newline" and "carriage-return" respectively.
+Line Ending <type>   Line ending to append to input text. This is for compatibility with command-line usage with "-rawlines". Options are "none", "lf", "crlf" or "cr", meaning "none", "newline", "carriage-return newline" and "carriage-return" respectively.
 .TP
 OutputLength <len>   Crop output hash to length len "len"
 .TP
 SegmentLength <len>  Break output up into segments of length "len"
 .TP
-SegmentChar <char>   Seperate output segments with character "char"
+SegmentChar <char>   Separate output segments with character "char"
 .TP
 NoOptions            Do not offer the user the options so they can change them. Just show an entry box to enter text.
 .TP
@@ -792,7 +792,7 @@ And using the \fB-txattr\fP flag to set trusted attributes (you must be root to 
 
 .fam T
 .fi
-When checking either flag can be used, but \fBhashrat\fP will always use trusted attributes when running as root, if those are avaialable, otherwise it will fall
+When checking either flag can be used, but \fBhashrat\fP will always use trusted attributes when running as root, if those are available, otherwise it will fall
 back to user attributes.
 .PP
 .nf

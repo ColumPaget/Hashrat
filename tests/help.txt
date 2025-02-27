@@ -22,16 +22,16 @@ Options:
   -?              Print this help
   --version       Print program version
   -version        Print program version
-  -md5            Use md5 hash algorithmn
-  -sha1           Use sha1 hash algorithmn
-  -sha256         Use sha256 hash algorithmn
-  -sha512         Use sha512 hash algorithmn
-  -whirl          Use whirlpool hash algorithmn
-  -whirlpool      Use whirlpool hash algorithmn
-  -jh224          Use jh-224 hash algorithmn
-  -jh256          Use jh-256 hash algorithmn
-  -jh384          Use jh-384 hash algorithmn
-  -jh512          Use jh-512 hash algorithmn
+  -md5            Use md5 hash algorithm
+  -sha1           Use sha1 hash algorithm
+  -sha256         Use sha256 hash algorithm
+  -sha512         Use sha512 hash algorithm
+  -whirl          Use whirlpool hash algorithm
+  -whirlpool      Use whirlpool hash algorithm
+  -jh224          Use jh-224 hash algorithm
+  -jh256          Use jh-256 hash algorithm
+  -jh384          Use jh-384 hash algorithm
+  -jh512          Use jh-512 hash algorithm
   -hmac           HMAC using specified hash algorithm
   -8              Encode with octal instead of hex
   -10             Encode with decimal instead of hex
@@ -64,9 +64,9 @@ Options:
   -fs             Stay one one file system
   -dirmode        DirMode: Read all files in directory and create one hash for them!
   -devmode        DevMode: read from a file EVEN OF IT'S A DEVNODE
-  -lines          Read lines from stdin and hash each line independantly.
-  -rawlines       Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
-  -rl             Read lines from stdin and hash each line independantly, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
+  -lines          Read lines from stdin and hash each line independently.
+  -rawlines       Read lines from stdin and hash each line independently, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
+  -rl             Read lines from stdin and hash each line independently, INCLUDING any trailing whitespace. (This is compatible with 'echo text | md5sum')
   -cgi            Run in HTTP CGI mode
   -net            Treat 'file' arguments as either ssh or http URLs, and pull files over the network and then hash them (Allows hashing of files on remote machines).
                   URLs are in the format ssh://[username]:[password]@[host]:[port] or http://[username]:[password]@[host]:[port]..
