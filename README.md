@@ -296,7 +296,7 @@ There are some dangers to using the 'echo' method shown above if you are on a sh
  ```
 This reads lines from stdin, so type into hashrat and then press 'enter', and you'll be given the hash of the line you typed. By this method your password is neither visible in 'ps ax', nor is ever stored on disk.
 
-'-lines' will produce a different hash  to the 'echo' method listed above, because it strips any trailing whiespace off the lines read. If you want strict compatiblity with 'echo' (by default echo adds a 'newline' to the end of the text to output) then use 'rawlines' mode:
+'-lines' will produce a different hash  to the 'echo' method listed above, because it strips any trailing whitespace off the lines read. If you want strict compatibility with 'echo' (by default echo adds a 'newline' to the end of the text to output) then use 'rawlines' mode:
   ```
 		hashrat -sha1 -64 -rawlines
   ```
@@ -421,11 +421,11 @@ If an options file is used, then CGI mode uses the options in the file as its de
 ```
 HashType <type>      Type of hash to generate
 Encoding <type>      Type of encoding to use for outputted hash
-Line Ending <type>   Line ending to append to input text. This is for compatability with command-line usage with '-rawlines'. Options are 'none', 'lf', 'crlf' or 'cr', meaning 'none
+Line Ending <type>   Line ending to append to input text. This is for compatibility with command-line usage with '-rawlines'. Options are 'none', 'lf', 'crlf' or 'cr', meaning 'none
 ', 'newline', 'carriage-return newline' and 'carriage-return' respectively.
 OutputLength <len>   Crop output hash to length len 'len'
 SegmentLength <len>  Break output up into segments of length 'len'
-SegmentChar <char>   Seperate output segments with character 'char'
+SegmentChar <char>   Separate output segments with character 'char'
 NoOptions            Do not offer the user the options so they can change them. Just show an entry box to enter text.
 HideText             Hide inputted text (overrides any other config)
 ShowText             Show inputted text (overrides any other config)
