@@ -16,7 +16,7 @@ Hashrat is a hash-generation utility that supports the md5, sha1, sha256, sha512
 
 CREDITS 
 =======
-Thanks for bug reports/advice to: Stephan Hegel, Michael Shigorin <mike@altlinux.org> and Joao Eriberto Mota Filho <eriberto@debian.org>
+Thanks for bug reports/advice to: Stephan Hegel, Michael Shigorin `mike@altlinux.org` and Joao Eriberto Mota Filho `eriberto@debian.org`
 
 Thanks to the people who invented the hash functions!
 * MD5: Ronald Rivest
@@ -490,7 +490,7 @@ The default list of image viewers can be overridden using the `-viewcmd` option.
 RENAME FILES
 ============
 
-The '-rename' option allows renaming files to include a hash in their filename. The filename format is '<name>-<hash>.<extn>'. For example:
+The '-rename' option allows renaming files to include a hash in their filename. The filename format is `<name>-<hash>.<extn>`. For example:
 
 
 ```

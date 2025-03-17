@@ -2,10 +2,15 @@
 #ifndef HASHRAT_COMMON_H
 #define HASHRAT_COMMON_H
 
+#ifdef USE_LIBUSEFUL_BUNDLED
+#include "libUseful-bundled/libUseful.h"
+#else
 #include "libUseful-5/libUseful.h"
+#endif
+
 #include "glob.h"
 
-#define VERSION "1.24"
+#define VERSION "1.25"
 
 #define ACT_NONE 0
 #define ACT_HASH 1

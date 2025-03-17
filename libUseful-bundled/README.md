@@ -16,15 +16,15 @@ should be as simple as:
 make
 make install
 
-.h files will be copied to <prefix>/include/libUseful-4
+.h files will be copied to `<prefix>/include/libUseful-4`
 
 On linux a few linux-specific functions can be activated via configure:
 
---enable-sendfile   enable kernel-level 'fastcopy' within the STREAMSendFile function
+`--enable-sendfile`   enable kernel-level 'fastcopy' within the STREAMSendFile function
 
 On intel systems some MMX/SSE/SSE2 features can be turned on by
 
---enable-simd=<level>    where level is one of 'mmx', 'sse' or 'sse2'
+`--enable-simd=<level>`    where level is one of 'mmx', 'sse' or 'sse2'
 
 the major use of --enable-simd is SSE2 cache hinting in the list/map system, which can prevent large lists from poisoning the cache and so improve program performance.
 

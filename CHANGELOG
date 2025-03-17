@@ -1,3 +1,7 @@
+v1.25 (2025-03-17)
+  * fix building when no system-wide libuseful installed
+  * fixes to README.md as suggested by albert-github@github.com
+
 v1.24 (2025-03-17)
   * spelling fixes in manpage etc from  polkornyipt@github.com
   * switch to 'libUseful-bundled' directory to prevent any confusion with installed libUseful when building with bundled libUseful

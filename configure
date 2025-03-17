@@ -4543,6 +4543,8 @@ STATIC_LIBS="libUseful-bundled/libUseful.a"
 
 subdirs="$subdirs libUseful-bundled"
 
+printf "%s\n" "#define USE_LIBUSEFUL_BUNDLED 1" >>confdefs.h
+
 fi
 
 echo

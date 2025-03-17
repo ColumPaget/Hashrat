@@ -133,6 +133,7 @@ LUSEFUL="bundled"
 STATIC_LIBS="libUseful-bundled/libUseful.a"
 AC_SUBST(STATIC_LIBS)
 AC_CONFIG_SUBDIRS([libUseful-bundled])
+AC_DEFINE([USE_LIBUSEFUL_BUNDLED])
 fi
 
 echo
