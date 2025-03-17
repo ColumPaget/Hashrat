@@ -13,8 +13,8 @@ all: hashrat
 hashrat: $(OBJ) main.c @STATIC_LIBS@
 	$(CC) $(FLAGS) -o$(EXE) $(OBJ) main.c $(LIBS) 
 
-libUseful-5/libUseful.a:
-	@cd libUseful-5; $(MAKE)
+libUseful-bundled/libUseful.a:
+	@cd libUseful-bundled; $(MAKE)
 
 common.o: common.h common.c
 	$(CC) $(FLAGS) -c common.c

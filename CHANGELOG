@@ -1,3 +1,8 @@
+v1.24 (2025-03-17)
+  * spelling fixes in manpage etc from  polkornyipt@github.com
+  * switch to 'libUseful-bundled' directory to prevent any confusion with installed libUseful when building with bundled libUseful
+  * inherit changes to base32 and xxencode encoding from latest libUseful
+
 v1.23 (2024-12-10)
   * Add '-rename' option that inserts a hash into filenames.
   * Filenames in 'duplicates' option are now contained in '[]', to allow extracting them with 'cut'.

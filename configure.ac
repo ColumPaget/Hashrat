@@ -130,9 +130,9 @@ echo "No installed libUseful found, using bundled version."
 fi
 
 LUSEFUL="bundled"
-STATIC_LIBS="libUseful-5/libUseful.a"
+STATIC_LIBS="libUseful-bundled/libUseful.a"
 AC_SUBST(STATIC_LIBS)
-AC_CONFIG_SUBDIRS([libUseful-5])
+AC_CONFIG_SUBDIRS([libUseful-bundled])
 fi
 
 echo

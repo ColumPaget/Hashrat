@@ -196,10 +196,10 @@ TestHash 8 "base 8 (octal) encoding" 3221770260322023222031123743152462773013210
 TestHash 10 "base 10 (decimal) encoding" 210127022026130210131074252205166191193209011032036252110192
 TestHash 16 "lowercase base 16 (hex) encoding" d27f161a82d2834afccda6bfc1d10b2024fc6ec0
 TestHash HEX "UPPERCASE base 16 (HEX) encoding" D27F161A82D2834AFCCDA6BFC1D10B2024FC6EC0
-TestHash 32 "base 32 encoding" "2J7RMGUC2KBUV7GNU274DUILEASPY3WA========"
+TestHash 32 "base 32 encoding" "2J7RMGUC2KBUV7GNU274DUILEASPY3WA"
 TestHash 64 "base 64 encoding" "0n8WGoLSg0r8zaa/wdELICT8bsA="
-TestHash x64 "xx-encode style base 64 encoding" "obwK4c9GUofwnOOzkR2960HwPg++"
-TestHash p64 "'website compatible' base 64 encoding" "obwL6cAHVofwnPPzkS4A82IwQg0"
+TestHash x64 "xx-encode style base 64 encoding" "obwK4c9GUofwnOOzkR2960HwPg+"
+TestHash p64 "'website compatible' base 64 encoding" "obwL6cAHVofwnPPzkS4A82IwQg0="
 TestHash a85 "ASCII85 encoding" 'dXN#K$o9r6;+_9iW,lDP'
 TestHash z85 "ZEROMQ85 encoding" "=SI2F3[n}kp9Zn?Ra>yK"
 
@@ -207,7 +207,7 @@ TestHash z85 "ZEROMQ85 encoding" "=SI2F3[n}kp9Zn?Ra>yK"
 Title "Testing Misc. Features"
 
 HR_OUT=`./hashrat -version`
-if [ "$HR_OUT" = "version: 1.23" ]
+if [ "$HR_OUT" = "version: 1.24" ]
 then
 	OkayMessage "Version (-version) works"
 else
@@ -292,7 +292,7 @@ TestLocateHook "hash='md5:6933ee7eb504d29312b23a47d2dac374' mode='100644' uid='0
 
 Title "Testing exit codes for different operations"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "" "HashFile"
-TestExitCodes "tests" "libUseful-5" "-r -dups" "FindDuplicates"
+TestExitCodes "tests" "libUseful-bundled" "-r -dups" "FindDuplicates"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-cf" "CheckHash"
 TestExitCodes "6ec9de513a8ff1768eb4768236198cf3" "tests/help.txt" "-m -r ." "Locate"
 

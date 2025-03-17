@@ -1,20 +1,20 @@
 CC = gcc
 CFLAGS = -g -O2
-LIBS = libUseful-5/libUseful.a -lssl -lcrypto -lz  
-INSTALL=/bin/install -c
+LIBS = libUseful-bundled/libUseful.a -lssl -lcrypto -lz  
+INSTALL=/usr/bin/install -c
 prefix=/usr/local
 bindir=$(prefix)${exec_prefix}/bin
-FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DHAVE_STDIO_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_STRINGS_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_UNISTD_H=1 -DSTDC_HEADERS=1 -D_FILE_OFFSET_BITS=64 -DHAVE_LIBZ=1 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1
+FLAGS=$(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DHAVE_STDIO_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_STRINGS_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_UNISTD_H=1 -DSTDC_HEADERS=1 -DHAVE_LIBZ=1 -DHAVE_LIBCRYPTO=1 -DHAVE_LIBSSL=1
 OBJ=common.o encodings.o command-line-args.o ssh.o http.o fingerprint.o include-exclude.o files.o filesigning.o xattr.o check-hash.o find.o otp.o memcached.o frontend.o cgi.o xdialog.o output.o
 EXE=hashrat
 
 all: hashrat
 
-hashrat: $(OBJ) main.c libUseful-5/libUseful.a
+hashrat: $(OBJ) main.c libUseful-bundled/libUseful.a
 	$(CC) $(FLAGS) -o$(EXE) $(OBJ) main.c $(LIBS) 
 
-libUseful-5/libUseful.a:
-	@cd libUseful-5; $(MAKE)
+libUseful-bundled/libUseful.a:
+	@cd libUseful-bundled; $(MAKE)
 
 common.o: common.h common.c
 	$(CC) $(FLAGS) -c common.c
