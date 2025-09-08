@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-STREAM *XDialogDisplayPage();
-void XDialogFrontend();
+STREAM *XDialogDisplayPage(const char *Dialog, HashratCtx *Config);
+void XDialogFrontend(HashratCtx *Config);
 
 #endif
